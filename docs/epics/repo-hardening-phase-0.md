@@ -6,7 +6,8 @@
 - **Owner(s):** @anthonythanpoovong (teammates join via story 8)
 - **Phase:** 0 (De-risk)
 - **Related:** #40 Engineering foundations (parent epic), #48 CI/CD + environments, #2 codegen, #50 observability
-- **Epic issue:** Not a new epic. Stories under **#40**: #125 (1), #126 (2), #127 (3), #128 (4), #129 (5), #130 (6), #131 (7), #132 (8)
+- **Epic issue:** Not a new epic. Stories under **#40**: #125 (1), #126 (2), #127 (3), #128 (4), #129 (5), #130 (6), #131 (7), #132 (8); stories 9–11 get issues after the amendment below merges
+- **Amended:** 2026-09-30: stories 9–11 (pin actions to SHAs, Dependabot, dependency and security scanning) added. They were deferred when this was accepted (#124) and are now in Phase 0 scope.
 
 ## Problem
 
@@ -29,16 +30,19 @@ Before the first real code PRs: every PR shows **which files changed and what th
 - The Armour eval set runs on demand and records a score
 - CONTRIBUTING.md, PR and issue templates, and pre-commit hooks are in place
 - Both teammates are collaborators with review responsibilities
+- Every `uses:` in the workflows is pinned to a commit SHA, enforced in CI
+- Dependabot opens weekly grouped PRs for GitHub Actions (other ecosystems as their manifests appear), and Armour skips those PRs visibly
+- CI runs Semgrep (plus `pip-audit` and `npm audit` once lockfiles exist) and fails on high-severity findings
 
 ## Success metric
 
 By the **Phase 0 gate**:
 - **(a)** Armour catches **≥ 4 of 5** seeded bugs in its eval set (including the RLS bypass), re-checked whenever `armour.md` or the Armour model changes
 - **(b)** The **first 5 code PRs** pass the changed-line coverage gate **without a bypass**, and each Armour review shows the changed files and coverage
+- **(c)** Every workflow `uses:` is SHA-pinned (enforced in CI), Dependabot has opened its first grouped PR, and CI catches a **seeded workflow-injection pattern** (and, once lockfiles exist, a **seeded vulnerable dependency**)
 
 ## Out of scope
 
-- **Dependabot, dependency/security scanning (pip-audit, npm audit, Semgrep), pinning actions to SHAs:** deferred. Revisit when dependencies exist.
 - **CodeQL:** needs a paid Code Security plan for private repos.
 - **Armour finding feedback (👍/👎 tracking):** deferred.
 - **Anything #48 already covers:** lint, typecheck, tests, preview deploys, staging/prod, secrets.
@@ -52,6 +56,8 @@ By the **Phase 0 gate**:
 - **Do nothing until code exists:** rejected. Retrofitting gates and habits after the first PRs is harder than starting with them.
 
 ## Stories
+
+**Stories 9–11 (added 2026-09-30):** ship **9** (pin actions) first, then **10** (Dependabot, which keeps the pinned SHAs current). **11** (scanning) is independent. Stories 9–11 edit workflows or `.github/`, so **Armour skips its own review on them until the skip notice (story 2) lands**, and they need a manual owner review.
 
 **Suggested ship order** (story numbers don't follow dependencies): **2** (skip notice) and **8** (teammates accept invites slowly) first, then **5** (coverage gate), **1** (files + coverage in reviews), **4** (eval set), **3** (sharper rules, scored by the eval set), then **6** (CONTRIBUTING, needs the review rules from 8) and **7** (pre-commit, documented in 6).
 
@@ -196,6 +202,54 @@ By the **Phase 0 gate**:
   - [ ] The admin-bypass decision is recorded in CONTRIBUTING.md, and if a second `/.github/` owner is added, the coverage-exemption allowlist is updated on purpose
 - **Depends on:** —
 
+### 9. Pin GitHub Actions to commit SHAs
+- **Labels:** `story`, `type:build`, `area:infra`, `platform`
+- **Owner:** @anthonythanpoovong · **Phase:** 0
+- **Context:** the workflows reference actions by moving tags (`@v6`, `@v1`), so a re-tagged or compromised action would run with our secrets, including the Pro token. Pinning to a full commit SHA makes every update deliberate.
+- **Scope:**
+  - Pin every `uses:` in `.github/workflows/*.yml` to a **full 40-character commit SHA**, with the version in a trailing comment (e.g. `actions/checkout@<sha> # v6`). Today that's six actions: `actions/checkout` (v6 in most places, **v4 in `claude.yml`**, so pick one version), `actions/setup-python`, `actions/setup-node`, `astral-sh/setup-uv`, `gitleaks/gitleaks-action` and `anthropics/claude-code-action`
+  - A CI check that **fails on any `uses:` that isn't a full SHA** (local `./` actions are allowed)
+  - Story 10 (Dependabot) keeps the SHAs current
+- **Acceptance criteria:**
+  - [ ] No `uses:` in `.github/workflows/` references a tag or branch, and the CI check fails if one is added
+  - [ ] Each pin has a version comment, and all three workflows (CI, Armour, `@claude`) still run, verified on a follow-up PR since this one edits workflows
+  - [ ] `actions/checkout` is on one version across all workflows
+- **Depends on:** story 2
+- **Note:** this PR edits the Armour and `@claude` workflows, so both skip it (workflow validation) and it needs a manual owner review.
+
+### 10. Dependabot for actions and dependencies
+- **Labels:** `story`, `type:build`, `area:infra`, `platform`
+- **Owner:** @anthonythanpoovong · **Phase:** 0
+- **Context:** pinned actions and (soon) npm and Python dependencies stop getting fixes unless something proposes the updates.
+- **Scope:**
+  - `.github/dependabot.yml`: **weekly**, **grouped** updates, with a cap on open PRs (e.g. 5)
+  - **GitHub Actions now** (this updates the SHA pins from story 9). **npm (`web/`) and Python (`uv`) are added when those manifests exist**, using the same detection as CI's `detect` job, so no ecosystem is configured with nothing to update
+  - **Dependabot PRs can't read Actions secrets**, so Armour and `@claude` (which use the Pro token) would fail on them. Decision: they **skip PRs from `dependabot[bot]`**, shown by the skip notice from story 2, and the Pro token is **never** added as a Dependabot secret. CI needs no secrets, so it still runs and gates them.
+  - The owner reviews and merges Dependabot PRs (CODEOWNERS covers `.github/`)
+- **Acceptance criteria:**
+  - [ ] Dependabot opens one grouped weekly PR for GitHub Actions
+  - [ ] npm and Python aren't configured until their manifests exist
+  - [ ] A Dependabot PR runs CI but not Armour, and shows the skip notice
+  - [ ] No secret is exposed to Dependabot
+- **Depends on:** story 9, story 2
+
+### 11. Dependency and security scanning in CI
+- **Labels:** `story`, `type:build`, `area:infra`, `platform`
+- **Owner:** @anthonythanpoovong · **Phase:** 0
+- **Context:** gitleaks is the only scanner today. Known-vulnerable dependencies and risky workflow or code patterns would get in unnoticed.
+- **Scope:**
+  - **Semgrep OSS** (free CLI, **ruleset version pinned**) in CI. It runs **today** on `.github/workflows/` (GitHub Actions rules, e.g. untrusted `${{ github.event.* }}` used in a `run:` step) and on source once code exists
+  - **`pip-audit`** (from the uv lockfile) and **`npm audit --omit=dev`** (from `web/package-lock.json`): **each switches on through the `detect` job** only when its lockfile exists, so it's skipped, not failed, before then
+  - **`ci-ok` fails** on **high or critical** audit findings and on **ERROR-severity** Semgrep findings. Lower severities are reported in the job summary and don't block.
+  - An **ignore file** under `.github/` (so CODEOWNERS covers it): every entry needs a **reason and an expiry date**, and an expired entry fails CI
+  - CodeQL stays deferred (it needs a paid plan for private repos)
+- **Acceptance criteria:**
+  - [ ] A workflow with an injectable `${{ github.event.* }}` in a `run:` step is flagged and fails CI (seeded test)
+  - [ ] Once lockfiles exist, a seeded known-vulnerable dependency fails CI; with no lockfile the audit jobs are skipped
+  - [ ] An ignore entry with no reason or no expiry date is rejected, and an expired entry fails CI
+  - [ ] Non-blocking findings appear in the job summary
+- **Depends on:** #48 (CI jobs and the `detect` job)
+
 ## Risks & costs
 
 | Risk / cost | Likelihood / size | Mitigation |
@@ -208,16 +262,22 @@ By the **Phase 0 gate**:
 | Pro usage from eval runs | Low | Manual trigger, only on rules or model change, ~5 reviews |
 | `ARMOUR_EVAL_TOKEN` leaked or over-scoped | Low | Fine-grained, this repo only, contents + PRs only; stored as an environment secret limited to `main` with the owner as required reviewer (or kept local if the plan doesn't allow it); expiry set and rotated |
 | Hooks slow down commits | Low | Fast hooks only; CI stays the source of truth |
+| Dependabot PRs can't read Actions secrets, so Armour and `@claude` fail on them | Certain | Both skip `dependabot[bot]` PRs with a visible notice (story 10); the Pro token is never a Dependabot secret; CI still runs |
+| Dependabot noise and Pro usage | Medium | Weekly, grouped, capped open PRs; Armour doesn't review Dependabot PRs |
+| Pinned actions stop getting automatic security fixes | Medium | Dependabot bumps the pinned SHAs weekly (story 10); the owner reviews `claude-code-action` bumps |
+| Audit or Semgrep false positives block merges | Medium | Only high/critical (audits) and ERROR (Semgrep) block; ignore entries need a reason and an expiry date and are owner-reviewed; the ruleset version is pinned |
 
-Cost: $0 in tools. Pro usage for eval runs.
+Cost: $0 in tools (Dependabot, `pip-audit`, `npm audit` and Semgrep OSS are free). Pro usage for eval runs.
 
 ## Security & data
 
-No schema, DB or MCP changes. Eval cases contain deliberate security bugs, isolated as described above. gitleaks runs locally (pre-commit) as well as in CI.
+No schema, DB or MCP changes. Eval cases contain deliberate security bugs, isolated as described above. gitleaks runs locally (pre-commit) as well as in CI. Scanner output and the ignore file contain no secrets, and the ignore file is owner-reviewed (CODEOWNERS on `/.github/`).
 
 ## Open questions
 
 - **Admin bypass:** (a) keep it until a second `/.github/` owner exists, or (b) add one and enforce for admins. Decided in story 8 once teammates are active; the default is (a).
+- **Semgrep ruleset (story 11):** which pinned ruleset (security-audit plus GitHub Actions rules), confirmed in the story.
+- **Scanners on day one (stories 10–11):** only GitHub Actions (Dependabot) and the workflow files (Semgrep) have anything to scan today. npm and Python switch on when their manifests and lockfiles exist.
 - **Coverage for generated code:** exclude generated types (#2) from coverage. Confirm the paths when codegen lands.
 - **How Armour waits for coverage (story 1):** a bounded poll keeps a runner idle for up to ~10 min per push, which counts against private-repo Actions minutes. Prefer triggering Armour when the coverage job completes (`workflow_run`) if `claude-code-action` supports that context. Otherwise keep the poll, but short. Decide during implementation.
 
@@ -226,7 +286,7 @@ No schema, DB or MCP changes. Eval cases contain deliberate security bugs, isola
 | Area | Verdict | Note |
 |---|---|---|
 | Problem & evidence | ⚠️ | Mostly preventive; Armour gaps seen in #93/#94/#95/#112 |
-| Smallest valuable version | ✅ | 8 stories; security scanning etc. deferred |
+| Smallest valuable version | ✅ | 11 stories (8 + security hygiene added 2026-09-30); CodeQL and finding feedback deferred |
 | Alternatives | ✅ | AI-estimated coverage, hosted services, overall gate: rejected |
 | Fit with Key Decisions | ✅ | Deterministic first: CI measures, Armour reports |
 | Data & schema | ✅ | None |
