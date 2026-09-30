@@ -64,7 +64,9 @@ Metric (a) checks that detectors report their limits, so "incomplete" **can't be
 
 **Empty output alone never counts.** A video with no on-screen text or no music legitimately yields empty OCR or sound output, so "empty" isn't a signal. To keep limits visible, detectors **keep a low-confidence element in the template (with its confidence) instead of omitting one they're unsure about** (story 3), which is what the plan already specifies, so this epic doesn't change what users or exporters receive, so a real limitation shows up as a low-confidence element rather than as silence.
 
-The result is stored on the job record (an `incomplete` flag plus which rule fired). **Coverage = incomplete jobs with at least one gap record ÷ all incomplete jobs.** A detector that fails to report shows up as uncovered, and gap rows on jobs that weren't flagged incomplete are counted separately.
+The result is stored on the job record (an `incomplete` flag plus which rule fired). **Coverage = incomplete jobs with at least one gap record ÷ all incomplete jobs, computed per digest week over that week's jobs** (when both the gap rows and the `incomplete` flags are still within retention). **Each week's value is posted in the digest, so the history lives in the digests, not in rows that get purged**, and coverage can't drift down as old gap rows expire. A detector that fails to report shows up as uncovered, and gap rows on jobs that weren't flagged incomplete are counted separately.
+
+**`input_unsupported` jobs are outside metric (a).** A video rejected before analysis (too long, corrupt, unusual format) never produces a merged template, so it can't be "incomplete". Its gap records still appear in the digest's counts, but those jobs are excluded from the coverage denominator, like failed workers.
 
 **Failed workers aren't incomplete jobs.** A worker that crashed or timed out is an error (#50), not a gap. The completeness check reads each worker's **status**: a job with a failed worker is **excluded from the denominator** (it belongs to error tracking), and the digest shows how many jobs were excluded so they stay visible.
 
@@ -105,7 +107,7 @@ The result is stored on the job record (an `incomplete` flag plus which rule fir
 - **Labels:** `story`, `type:build`, `area:backend`, `platform`
 - **Owner:** @anthonythanpoovong · **Phase:** 1
 - **Context:** the digest and the later agent need queryable history.
-- **Scope:** a `detector_gaps` table with a unique key on (`job_id`, detector, reason), **written as an upsert that overwrites** `occurrences` (never increments it). Backend access only: **RLS on, no user policies**, written by the workers' service role. **`job_id` is a foreign key with `ON DELETE CASCADE`, so deleting a job (or a user's data) deletes its gap rows.** Rows are purged after a **configurable retention period, with a proposed default of 90 days until #56 (terms, privacy policy and data retention) sets the final value**. #56 tunes it; it doesn't block this story. Migration through `/db-migration`.
+- **Scope:** a `detector_gaps` table with a unique key on (`job_id`, detector, reason), **written as an upsert that overwrites** `occurrences` (never increments it). Backend access only: **RLS on, no user policies**, written by the workers' service role. **`job_id` is a foreign key with `ON DELETE CASCADE`, so deleting a job (or a user's data) deletes its gap rows.** Rows are purged after a **configurable retention period (at least 8 weeks, so the full metric window can be re-audited), with a proposed default of 90 days until #56 (terms, privacy policy and data retention) sets the final value**. #56 tunes it; it doesn't block this story. Migration through `/db-migration`.
 - **Acceptance criteria:**
   - [ ] The two-user RLS test shows an authenticated user cannot read any gap row
   - [ ] Reporting the same gap again (for example on a retry) leaves one row with the same `occurrences`; it never adds a row or increments the count
@@ -157,6 +159,8 @@ The result is stored on the job record (an `incomplete` flag plus which rule fir
   - [ ] A job whose merged template has a low-confidence element but **no** gap record is flagged incomplete and counted as uncovered
   - [ ] The completeness check gives the same result with the gap table empty (it doesn't depend on it)
   - [ ] A job with a crashed or timed-out worker is excluded from the coverage denominator, and the digest counts how many were excluded
+  - [ ] An `input_unsupported` job (no merged template) is excluded from the denominator too, but still appears in the digest's gap counts
+  - [ ] Each digest posts that week's coverage value, and the value doesn't change when older gap rows are purged
   - [ ] A video with no text and no music (legitimately empty output) is **not** flagged incomplete
   - [ ] A simulated Discord outage triggers the delivery alert within a day
 - **Depends on:** stories 3, 4, and #53 (the orchestrator's merge step)
