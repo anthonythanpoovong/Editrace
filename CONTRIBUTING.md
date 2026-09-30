@@ -8,7 +8,7 @@ Code ownership is shared: @anthonythanpoovong, @calvinkafaiyuen and @sktchan are
 
 ### Admin bypass: none
 
-Branch protection on `main` is enforced for admins too. Nobody, including the repo owner, can merge without the required code-owner approval.
+Admins can't bypass the review requirement on `main`. Nobody, including the repo owner, can merge without the required code-owner approval. This is the "Do not allow bypassing the above settings" (enforce for admins) option in Settings → Branches, which the owner turns on once the PR that adds the second and third `/.github/` owners has merged.
 
 **Why:** with a single `/.github/` owner, enforcing for admins would have blocked the owner's own PRs to those files, since nobody else could approve them. All three collaborators are now `/.github/` owners, so each can approve the others' changes.
 
