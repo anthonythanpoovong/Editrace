@@ -127,9 +127,7 @@ By the **Phase 0 gate**:
 - **Owner:** @anthonythanpoovong · **Phase:** 0
 - **Context:** without a gate, untested code merges. Gating only **changed** lines avoids punishing unrelated PRs.
 - **Scope:**
-  - **Step 0 (spike-sized, do this first, before the exemption design is built):** on a throwaway PR, verify how a review-triggered run behaves. `pull_request_review` runs against the merge ref, so confirm whether its result attaches to the PR's **head SHA** and satisfies the required `ci-ok`. Record the finding **in this story** before building the rest of the exemption.
-    - **If it works:** the exemption can re-run on `pull_request_review` as designed below.
-    - **If it doesn't (the assumed fallback):** the owner exempts by submitting the review and then **re-running the failed `ci-ok` job** (`gh run rerun --failed <run-id>`, or the Actions UI). That works because the gate **reads the PR's reviews live from the API at run time**, not from the original event payload, so a re-run sees the new review. `pull_request_review` is then dropped from the triggers, and CONTRIBUTING.md (story 6) documents the two steps. A `workflow_dispatch` run is **not** a fallback: its result wouldn't attach to the PR's head commit as `ci-ok`.
+  - **How an exemption takes effect: the owner re-runs the failed `ci-ok` job.** There is **no `pull_request_review` trigger**: those runs execute against the merge ref, and whether their result attaches to the PR's head commit is uncertain, so the design doesn't depend on it. The owner submits the exemption review, then re-runs the failed job (`gh run rerun --failed <run-id>`, or the Actions UI). That works because the gate **reads the PR's reviews live from the API at run time**, not from the original event payload, so a re-run sees the new review (or a `/coverage-revoke`). CONTRIBUTING.md (story 6) documents the two steps. A `workflow_dispatch` run isn't an alternative: its result wouldn't attach to the PR's head commit as `ci-ok`.
   - Collect coverage in the existing CI jobs: `pytest --cov` (Python), Vitest/Jest coverage (web)
   - Use **`diff-cover`** on the coverage reports vs `main`: **fail when changed lines are < 80% covered**
   - Switches on automatically via the existing `detect` job (only when `web/` or Python code exists)
@@ -142,7 +140,7 @@ By the **Phase 0 gate**:
     - The **author is in the exemption allowlist**: the plain `@username` entries on the **single line in `.github/CODEOWNERS` whose pattern is exactly `/.github/`** (today, @anthonythanpoovong), read from the file on `main`, not from the PR branch. It's a literal line match, **not** CODEOWNERS last-match-wins, so area entries added in story 8 can't change who may exempt. Team (`@org/team`) and email entries are ignored, not expanded.
     - **Fail closed:** if the review author is a bot or can't be resolved, if the `/.github/` line is missing or duplicated, if the allowlist has no plain `@username` entries, or if the API call fails, the exemption is ignored and the gate applies. CI says why.
     - A **label named `coverage-exempt` has no effect at all.**
-    - The gate **reads reviews live at run time**, so any re-run picks up a new review or revoke. Whether that re-run is triggered by `pull_request_review` or by the owner re-running the job is decided by **Step 0** above. Either way the job writes the exemption (reviewer, reason, SHA) into the job summary.
+    - The gate **reads reviews live at run time**, so any re-run picks up a new review or revoke. The owner's re-run (above) is what triggers it, and the job writes the exemption (reviewer, reason, SHA) into the job summary.
     - **Threat model, stated plainly:** this stops accidental or casual self-exemption by trusted collaborators, and it doesn't depend on anything a collaborator can create (labels, statuses, comments). It can't stop a *malicious* insider with write access: on GitHub any workflow, including one pushed on a collaborator's own branch, can create a check named `ci-ok`. Write access is therefore treated as trusted. If that changes, move the gate to a repository ruleset with required workflows.
     - **Protecting the gate itself:** the check lives in `.github/workflows/ci.yml`, which a PR could edit. That's covered by CODEOWNERS on `/.github/` plus `main`'s required code-owner review: any PR that touches the workflow needs the owner's approval. Story 8's admin-bypass decision determines whether the owner's own PRs are also reviewed.
 - **Acceptance criteria:**
@@ -156,7 +154,7 @@ By the **Phase 0 gate**:
   - [ ] Editing the CODEOWNERS allowlist in the PR itself doesn't change the result (read from `main`), and adding an area line (story 8) doesn't change who may exempt
   - [ ] Fail closed: a bot or unresolvable reviewer, a missing or duplicated `/.github/` line, or an API error leaves the gate in force
   - [ ] Each push updates one sticky "Coverage" comment (no duplicates)
-  - [ ] **Step 0 done first and recorded in this story:** a review-triggered run either attaches to the head SHA and satisfies `ci-ok`, or the re-run-the-failed-job fallback is adopted and documented in CONTRIBUTING.md (story 6). No exemption logic is written before this is recorded.
+  - [ ] On a real PR, submitting the owner's `/coverage-exempt` review and then re-running the failed `ci-ok` job turns the check green on the head commit, and the re-run picks up the review live (no new push)
 - **Depends on:** #48 (test jobs)
 
 ### 6. CONTRIBUTING.md + PR and issue templates
