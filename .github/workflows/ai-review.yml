@@ -1,0 +1,44 @@
+name: Sequa Armour (AI review)
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+
+concurrency:
+  group: armour-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    # Advisory only: never make this a required check. Skips drafts and forks (forks can't read the API key).
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            You are Sequa Armour, the automated reviewer for this repo.
+            Read .github/armour.md and follow it exactly. Also read docs/plan.md for project context.
+            The PR branch is checked out in the current working directory. Use `gh pr diff` to see the changes.
+
+            Post exactly one top-level comment with `gh pr comment`, in the format armour.md defines.
+            Use `mcp__github_inline_comment__create_inline_comment` (with `confirmed: true`) for findings tied to specific lines.
+            Only post GitHub comments; don't reply with review text as a message.
+          claude_args: |
+            --model claude-sonnet-5
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Glob,Grep"
