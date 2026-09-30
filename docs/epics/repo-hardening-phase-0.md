@@ -77,7 +77,7 @@ By the **Phase 0 gate**:
 - **Owner:** @anthonythanpoovong · **Phase:** 0
 - **Context:** Armour exits "successfully" without reviewing when the PR changes its workflow or when the action errors or hits a usage limit, and nobody can tell.
 - **Scope:**
-  - A **separate job in `ai-review.yml` that always runs** (`if: always()`, `needs: review`), because a step inside the review job never runs when that job is skipped or fails early. It checks the review job's result and the action's log/outputs, and detects a skip (workflow validation, error, usage limit).
+  - A **separate job in `ai-review.yml` that always runs** (`if: always()`, `needs: review`), because a step inside the review job never runs when that job is skipped or fails early. It decides using only what a separate job can read: **`needs.review.result`** (`skipped`, `failure`, `cancelled`) and a **declared job output** from the review job (e.g. `reviewed=true`, set by a final step only after Armour actually posted a review). Not-`reviewed` or a non-success result means "did not review". The reason is inferred from the result (skipped/cancelled/failed); a workflow-validation skip looks like a "success" with no review, and is covered by the missing `reviewed` output.
   - It posts or updates one **sticky notice comment**, marked with a hidden HTML marker, saying "⚠️ Editrace Armour did not review this commit: <reason>". When Armour later reviews the PR, the notice is deleted or replaced. **The "exactly one top-level comment" rule in the Armour prompt is about reviews; this notice is separate and never both exist for the same commit.**
   - **Forks are out of scope:** the repo is private, and fork PRs get a read-only token that can't post comments anyway (the alternative, `pull_request_target`, would run with secrets against untrusted code, so we don't).
 - **Acceptance criteria:**
@@ -151,6 +151,7 @@ By the **Phase 0 gate**:
   - [ ] Editing the CODEOWNERS allowlist in the PR itself doesn't change the result (read from `main`), and adding an area line (story 8) doesn't change who may exempt
   - [ ] Fail closed: a bot or unresolvable reviewer, a missing or duplicated `/.github/` line, or an API error leaves the gate in force
   - [ ] Each push updates one sticky "Coverage" comment (no duplicates)
+  - [ ] **First verified on a real PR:** a `pull_request_review` re-run's result attaches to the PR's head SHA (not only the merge ref) and satisfies `ci-ok`. If it doesn't, the owner re-runs the failed job after reviewing, and CONTRIBUTING.md (story 6) says so.
 - **Depends on:** #48 (test jobs)
 
 ### 6. CONTRIBUTING.md + PR and issue templates
