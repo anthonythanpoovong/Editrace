@@ -191,7 +191,7 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 | Assistant gives wrong tool advice | Ontology-first answers, citations required, eval gate #39 |
 | Docs licensing | #21 before ingestion; link-only mode as fallback |
 | Detection quality below "feels like the original" | Phase 0 gate; confidence shown in the UI and passed to adapters |
-| GPU cost from users' raw footage (footage match) | Score slotted clips only, trimmed to slot + 2 s, 2 fps / 720p, total ≤ source duration, 3-minute ceiling (#102) |
+| GPU cost from users' raw footage (footage match) | Score slotted clips only, trimmed to slot + 2 s, 2 fps / 720p, total ≤ source duration, 3-minute ceiling; per-plan quota (#19); cache by clip hash + slot; bounded retries with backoff (#102). Video-only: audio stripped at ingest (#101). |
 | Wrong "re-film" advice costs a user a real reshoot | Flags show confidence and a reason, phrased as suggestions; validated on a labeled set (#101) |
 
 ## Metrics

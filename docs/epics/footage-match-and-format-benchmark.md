@@ -74,17 +74,25 @@ Before editing, a user can put their own clips into a template's slots and see, 
 - **Acceptance criteria:**
   - [ ] Flags agree with editor judgment on a labeled set of clip/slot pairs (target set with CV 2)
   - [ ] Every flag includes a reason and a confidence level
+  - [ ] Video-only: the scorer never reads the audio track (stripped at ingest; see Security & data)
 - **Depends on:** story 2, #24, #26
 
 ### 4. Cost guardrails for user footage
 - **Labels:** `story`, `type:build`, `area:infra`, `platform`
 - **Owner:** TBD · **Phase:** 3
 - **Context:** raw footage can be far larger than a finished short-form video.
-- **Scope:** score **only clips placed in a slot**; trim each clip to its slot length + 2 s of margin; downsample to 2 fps / 720p; **total scored footage ≤ the template's source duration**, with a **hard 3-minute ceiling** stored as a config value; log GPU seconds per run.
+- **Scope:**
+  - **Per run:** score **only clips placed in a slot**; trim each clip to its slot length + 2 s of margin; downsample to 2 fps / 720p; **total scored footage ≤ the template's source duration**, with a **hard 3-minute ceiling** stored as a config value.
+  - **Per user:** a **per-plan quota of scored footage minutes per billing period**, enforced through entitlements (#19). Values are set with billing (TBD), stored as config and checked **before** any GPU work.
+  - **Caching:** results keyed by **clip content hash + slot id + worker version**, following the worker base's idempotency (#53). Re-scoring the same clip for the same slot is a cache hit and doesn't count against the quota.
+  - **Retries:** use the worker base's bounded retry policy (#53): capped attempts with exponential backoff and jitter. **No retries** on validation, cap or quota errors. Failed attempts are logged, and retries after a system error don't count against the user's quota.
+  - Log GPU seconds per run.
 - **Acceptance criteria:**
-  - [ ] Runs over the cap are rejected with a clear message
-  - [ ] GPU seconds and cap hits are visible in observability (#50)
-- **Depends on:** story 3, #50
+  - [ ] Runs over the per-run cap or the user's quota are rejected before GPU work, with a clear message
+  - [ ] Scoring an unchanged clip in the same slot again is a cache hit (no GPU time, no quota)
+  - [ ] Retries back off and stop at the attempt limit; cap and quota errors are never retried
+  - [ ] GPU seconds, cache hit rate, quota usage and cap hits are visible in observability (#50)
+- **Depends on:** story 3, #50, #53, #19
 
 ### 5. Curated niche benchmark set
 - **Labels:** `story`, `type:build`, `area:worker`, `ml`, `risk:research-heavy`
@@ -121,7 +129,7 @@ Before editing, a user can put their own clips into a template's slots and see, 
 | Risk / cost | Likelihood / size | Mitigation |
 |---|---|---|
 | Wrong "re-film" advice costs a user a real reshoot | Medium | Show confidence and reason; phrase as a suggestion; validate on a labeled set |
-| GPU cost from raw footage | High without caps | Story 4 caps; GPU seconds logged |
+| GPU cost from raw footage | High without caps | Story 4: per-run caps, per-plan quota, caching by clip + slot, bounded retries with backoff; GPU seconds logged |
 | Benchmark too small to be meaningful | Medium | Minimum videos per niche; hide stats below the threshold |
 | No real user demand for pre-edit feedback | Unknown | Validate with design partners (#55) before Phase 3 build |
 
@@ -129,7 +137,9 @@ Infra cost estimate at 100 / 10k users: TODO (CV owners to estimate GPU seconds 
 
 ## Security & data
 
-Additive, optional schema fields (a two-way door, no ADR). User clips follow the existing upload storage and retention rules. The benchmark uses curated, consented videos and stores features only. No other user's data is used until #56 covers it.
+Additive, optional schema fields (a two-way door, no ADR). User clips follow the existing upload storage and retention rules.
+
+**Audio:** footage match is **video-only**. Framing, angle, motion and lighting need no sound. The audio track of a user's clip is **stripped at ingest for scoring** and never decoded, stored, fingerprinted or returned by footage match. This follows the Key Decision that copyrighted audio is never kept: a clip may have music playing in the background. The benchmark uses curated, consented videos and stores features only. No other user's data is used until #56 covers it.
 
 ## Open questions
 
