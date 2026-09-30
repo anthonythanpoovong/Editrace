@@ -12,7 +12,7 @@ An ADR records **one** decision: the context, the options, what we chose and wha
 ### 1. Grill
 Load the `grill` skill and run it in full. Focus on areas 3 (alternatives), 4 (fit with Key Decisions), 5 (data and schema), 9 (reversibility) and 7 (cost). An ADR without two real alternatives isn't an ADR, so keep asking until there are at least two.
 
-Stop if the verdict is "Needs a spike first" or "Not worth pursuing". Offer to open a `type:spike` issue instead.
+Stop if the verdict is "Needs a spike first" or "Not worth pursuing". Offer `/spike` to open a time-boxed spike instead.
 
 ### 2. Check scope
 One ADR = one decision. If the idea contains several decisions (e.g. "use Python for the Bridge **and** ship it via Homebrew"), split it and ask which to write first. If the idea is really a body of work rather than a decision, switch to `propose-epic`.

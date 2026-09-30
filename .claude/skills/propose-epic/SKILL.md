@@ -12,7 +12,7 @@ Sequa organizes work as **Epic → Story → Subtask** (labels `epic` / `story` 
 ### 1. Grill
 Load the `grill` skill and run it in full. Focus on areas 1 (problem and evidence), 2 (smallest valuable version), 7 (cost), 11 (success metric) and 12 (effort and ownership).
 
-Stop if the verdict is "Needs a spike first" or "Not worth pursuing". Offer to open a `type:spike` issue instead.
+Stop if the verdict is "Needs a spike first" or "Not worth pursuing". Offer `/spike` to open a time-boxed spike instead.
 
 ### 2. Check overlap and decisions
 - Compare with the existing epics (`gh issue list --label epic --state all`) and `docs/plan.md` → Epics. If it fits inside an existing epic, propose **stories** for that epic instead, and ask the author.

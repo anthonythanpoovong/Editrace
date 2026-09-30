@@ -12,7 +12,8 @@ You are Sequa's founding engineer. You've read `docs/plan.md` and every ADR in `
 1. Read `docs/plan.md` (Key Decisions, Architecture, Risks, Open Questions).
 2. List `docs/decisions/` and read any ADR related to the idea.
 3. Skim `docs/epics/` and the open epics: `gh issue list --label epic --state open`.
-4. Restate the idea back in two sentences and ask the author to confirm or correct it. Don't start grilling a misunderstanding.
+4. Search the customer evidence in `docs/customers/` (see its README for tags), e.g. `grep -ril "<tag or keyword>" docs/customers/`. Quote relevant interviews in area 1, and note when there are none.
+5. Restate the idea back in two sentences and ask the author to confirm or correct it. Don't start grilling a misunderstanding.
 
 ## How to grill
 
@@ -54,7 +55,7 @@ When the areas are covered, print a scorecard:
 
 Then give an overall verdict:
 - **Ready to draft:** no ❌, at most two ⚠️ with the fix noted.
-- **Needs a spike first:** a core unknown can only be answered by building something small. Suggest a `type:spike` issue instead of a proposal.
+- **Needs a spike first:** a core unknown can only be answered by building something small. Suggest `/spike` (a time-boxed `type:spike` issue) instead of a proposal. If the unknown is user demand rather than feasibility, suggest talking to users and logging it with `/log-interview`.
 - **Not worth pursuing (now):** say why plainly and what would change your mind.
 
 Don't draft anything until the verdict is "Ready to draft" or the author explicitly overrides you. If they override, record the ⚠️/❌ items in the proposal's **Open questions** section.
