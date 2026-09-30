@@ -119,25 +119,26 @@ By the **Phase 0 gate**:
   - Use **`diff-cover`** on the coverage reports vs `main`: **fail when changed lines are < 80% covered**
   - Switches on automatically via the existing `detect` job (only when `web/` or Python code exists)
   - Publish a coverage summary (overall %, change vs `main`, changed-lines %) as **check output** and as a **sticky "Coverage" PR comment** (updated in place on each push), so the numbers are visible even if Armour hasn't run. Armour quotes them (story 1).
-  - **Exemption, enforced by CI rather than by who can label:** GitHub can't restrict who applies a label, since anyone with triage or write access can (and story 8 adds two write collaborators). So `ci-ok` **honors `coverage-exempt` only if the code owner applied it**:
-    - **Precondition: the label is on the PR right now.** The job reads the PR's current labels (`gh pr view --json labels`) at run time. If `coverage-exempt` isn't there, the gate applies, whatever the event history says. Removing the label always restores the gate.
-    - The coverage job reads the PR's issue events (`GET /repos/{owner}/{repo}/issues/{n}/events`, **all pages**: `gh api --paginate`), finds the **most recent `labeled` event for `coverage-exempt`**, and takes its `actor.login`
-    - That login must be in the **exemption allowlist**: the `@username` entries on the **single line in `.github/CODEOWNERS` whose pattern is exactly `/.github/`** (today, @anthonythanpoovong), read from the file on `main`, not from the PR branch, so a PR can't add itself. This is a literal line match, **not** CODEOWNERS last-match-wins resolution, so area entries added in story 8 can't change who may exempt. If that line is missing or appears more than once, fail closed.
-    - **Only plain `@username` entries count.** Team (`@org/team`) and email entries in that CODEOWNERS line are ignored, not expanded.
-    - **Fail closed:** the exemption is ignored (the gate applies) if the actor can't be resolved (a deleted or "ghost" user, or a missing actor), if the actor is a bot (`actor.type == "Bot"`), if the allowlist has no plain `@username` entries, or if the events API call fails
-    - If anyone else applied it, or it was removed and re-added by someone else, the gate **still applies**, and CI says who applied the label and why it was ignored
-    - The job re-runs on `labeled` / `unlabeled` events as well as new commits, and it writes the exemption and approver into the job summary for the record
-    - **An exemption covers only the commit it was given for, and must be race-free.** Don't rely on removing the label on push (that races with the coverage job). Instead, **bind the exemption to a head SHA**: when the owner applies the label, the run triggered by the `labeled` event records the PR's head SHA at that moment (e.g. as a commit status or check on that SHA, created by the workflow, not by a user). The gate honors the exemption only if a record exists **for the exact head SHA being checked**. A new push has a new SHA, so the gate applies until the owner re-exempts it.
+  - **Exemption: the owner's PR review, checked by CI.** A label can't carry this authority: anyone with triage or write access can apply one (and story 8 adds two write collaborators), a commit status or stored record can be created by any collaborator, and even a check run can be faked by a workflow on a collaborator's own branch. So the exemption rests on something **GitHub records itself**: a **pull request review**. Every review carries the **exact commit SHA it was submitted on** (`commit_id`, set by GitHub), and only its author can submit it. `ci-ok` honors an exemption only when **all** of these hold, checked against `GET /repos/{owner}/{repo}/pulls/{n}/reviews` (**all pages**: `gh api --paginate`):
+    - The review's **`commit_id` equals the PR's current head SHA**, read at gate time. A new push changes the head SHA, so an old exemption stops applying on its own, with no label to clear and no race with the coverage job.
+    - The review's **body starts with `/coverage-exempt`**, followed by a reason. A "Comment" review works, so the owner can exempt their own PR (GitHub doesn't allow approving your own PR).
+    - The review's **state isn't `DISMISSED`**. Dismissing the review revokes the exemption.
+    - The **author is in the exemption allowlist**: the plain `@username` entries on the **single line in `.github/CODEOWNERS` whose pattern is exactly `/.github/`** (today, @anthonythanpoovong), read from the file on `main`, not from the PR branch. It's a literal line match, **not** CODEOWNERS last-match-wins, so area entries added in story 8 can't change who may exempt. Team (`@org/team`) and email entries are ignored, not expanded.
+    - **Fail closed:** if the review author is a bot or can't be resolved, if the `/.github/` line is missing or duplicated, if the allowlist has no plain `@username` entries, or if the API call fails, the exemption is ignored and the gate applies. CI says why.
+    - A **label named `coverage-exempt` has no effect at all.**
+    - The job re-runs when a review is submitted or dismissed (`pull_request_review` events) and writes the exemption (reviewer, reason, SHA) into the job summary. Story 5 must confirm the re-run's result attaches to the head SHA; if it doesn't, the owner re-runs the failed job after reviewing.
+    - **Threat model, stated plainly:** this stops accidental or casual self-exemption by trusted collaborators, and it doesn't depend on anything a collaborator can create (labels, statuses, comments). It can't stop a *malicious* insider with write access: on GitHub any workflow, including one pushed on a collaborator's own branch, can create a check named `ci-ok`. Write access is therefore treated as trusted. If that changes, move the gate to a repository ruleset with required workflows.
     - **Protecting the gate itself:** the check lives in `.github/workflows/ci.yml`, which a PR could edit. That's covered by CODEOWNERS on `/.github/` plus `main`'s required code-owner review: any PR that touches the workflow needs the owner's approval. Story 8's admin-bypass decision determines whether the owner's own PRs are also reviewed.
 - **Acceptance criteria:**
   - [ ] A PR that adds untested code fails `ci-ok`; adding tests makes it pass
   - [ ] Docs-only PRs aren't affected
-  - [ ] `coverage-exempt` applied by the code owner lets an under-covered PR pass; the same label applied by a non-owner collaborator is **ignored**, and the gate still fails with a message naming who applied it
-  - [ ] Editing the CODEOWNERS allowlist in the PR itself doesn't change the result (the allowlist is read from `main`)
-  - [ ] Fail closed: a label applied by a bot, or by an actor that can't be resolved, or an events API error, leaves the gate in force
-  - [ ] Removing `coverage-exempt` (after the owner applied it) re-runs the job, and the gate applies again
-  - [ ] Pushing a new commit to an exempted PR makes the gate apply to the new code, even if the label is still present (the exemption is bound to the old SHA)
-  - [ ] Adding an area line to CODEOWNERS (story 8) doesn't change who may exempt; only the exact `/.github/` line counts
+  - [ ] An owner "Comment" review starting `/coverage-exempt <reason>` on the current head commit lets an under-covered PR pass, and the job summary records reviewer, reason and SHA
+  - [ ] The same review by a non-owner collaborator is **ignored**, and the gate still fails with a message naming the reviewer
+  - [ ] A `coverage-exempt` **label** has no effect
+  - [ ] Pushing a new commit makes the gate apply to the new code again (the review is bound to the old SHA)
+  - [ ] Dismissing the owner's review restores the gate
+  - [ ] Editing the CODEOWNERS allowlist in the PR itself doesn't change the result (read from `main`), and adding an area line (story 8) doesn't change who may exempt
+  - [ ] Fail closed: a bot or unresolvable reviewer, a missing or duplicated `/.github/` line, or an API error leaves the gate in force
   - [ ] Each push updates one sticky "Coverage" comment (no duplicates)
 - **Depends on:** #48 (test jobs)
 
@@ -182,8 +183,9 @@ By the **Phase 0 gate**:
 | Risk / cost | Likelihood / size | Mitigation |
 |---|---|---|
 | Armour skips on its own workflow PRs while this is being built | Certain | Story 2 ships first; test the others on a separate PR after merge |
-| The coverage gate blocks an urgent fix | Medium | `coverage-exempt` label, honored by CI only when the labeling actor (from the issue events API) is a `/.github/` code owner per `main`'s CODEOWNERS |
-| A collaborator self-exempts by applying the label | Medium (labels can't be permission-restricted) | Same check: a non-owner's label is ignored and logged |
+| The coverage gate blocks an urgent fix | Medium | Owner's `/coverage-exempt` PR review, bound to the head SHA and honored by CI only when its author is the `/.github/` code owner per `main`'s CODEOWNERS |
+| A collaborator self-exempts (label, status or comment tricks) | Medium | Only the owner's PR review counts: GitHub sets its author and commit; labels, statuses and comments have no effect |
+| A malicious insider with write access forges `ci-ok` | Low | Out of scope by threat model; write access is trusted. Move to a ruleset with required workflows if that changes |
 | Eval PRs with deliberate bugs get merged | Low | Always drafts, labeled `armour-eval`, closed automatically, never merged |
 | Pro usage from eval runs | Low | Manual trigger, only on rules or model change, ~5 reviews |
 | `ARMOUR_EVAL_TOKEN` leaked or over-scoped | Low | Fine-grained, this repo only, contents + PRs only, used by one manual workflow, expiry set and rotated |
@@ -212,7 +214,7 @@ No schema, DB or MCP changes. Eval cases contain deliberate security bugs, isola
 | Data & schema | ✅ | None |
 | Security & privacy | ✅ | Eval PRs isolated; gitleaks locally |
 | Cost | ✅ | $0 tools; ~5 Sonnet reviews per eval run |
-| Failure modes | ✅ | Exemption label checked against the labeling actor; skip notice first |
+| Failure modes | ✅ | Exemption via the owner's PR review bound to the head SHA; skip notice first |
 | Reversibility | ✅ | Two-way door |
 | Observability | ✅ | Eval score history; coverage on every PR |
 | Success metric | ✅ | Eval ≥ 4/5 + first 5 code PRs pass, by the Phase 0 gate |
