@@ -53,6 +53,8 @@ By the **Phase 0 gate**:
 
 ## Stories
 
+**Suggested ship order** (story numbers don't follow dependencies): **2** (skip notice) and **8** (teammates accept invites slowly) first, then **5** (coverage gate), **1** (files + coverage in reviews), **4** (eval set), **3** (sharper rules, scored by the eval set), then **6** (CONTRIBUTING, needs the review rules from 8) and **7** (pre-commit, documented in 6).
+
 ### 1. Armour: changed files + coverage in every review
 - **Labels:** `story`, `type:build`, `area:infra`, `platform`
 - **Owner:** @anthonythanpoovong · **Phase:** 0
@@ -73,11 +75,15 @@ By the **Phase 0 gate**:
 ### 2. Armour: visible skip notice
 - **Labels:** `story`, `type:build`, `area:infra`, `platform`
 - **Owner:** @anthonythanpoovong · **Phase:** 0
-- **Context:** Armour exits "successfully" without reviewing when the PR changes its workflow, when it's a fork, or when the action errors, and nobody can tell.
-- **Scope:** a step after the Armour action that detects a skip (workflow validation, fork, error, usage limit) and posts or updates one comment: "⚠️ Editrace Armour did not review this commit: <reason>".
+- **Context:** Armour exits "successfully" without reviewing when the PR changes its workflow or when the action errors or hits a usage limit, and nobody can tell.
+- **Scope:**
+  - A **separate job in `ai-review.yml` that always runs** (`if: always()`, `needs: review`), because a step inside the review job never runs when that job is skipped or fails early. It checks the review job's result and the action's log/outputs, and detects a skip (workflow validation, error, usage limit).
+  - It posts or updates one **sticky notice comment**, marked with a hidden HTML marker, saying "⚠️ Editrace Armour did not review this commit: <reason>". When Armour later reviews the PR, the notice is deleted or replaced. **The "exactly one top-level comment" rule in the Armour prompt is about reviews; this notice is separate and never both exist for the same commit.**
+  - **Forks are out of scope:** the repo is private, and fork PRs get a read-only token that can't post comments anyway (the alternative, `pull_request_target`, would run with secrets against untrusted code, so we don't).
 - **Acceptance criteria:**
   - [ ] A PR that edits `ai-review.yml` gets the skip notice
-  - [ ] A normal PR gets no notice
+  - [ ] A normal PR gets no notice, and after a real review any earlier notice for that PR is gone
+  - [ ] The notice is posted even when the review job itself is skipped or fails
 - **Depends on:** —
 - **Note:** ship this **first**. **This story's own PR edits `ai-review.yml`, so Armour skips it and it needs a manual review.** The same goes for any later story that edits `ai-review.yml` (e.g. story 1's wait step), but once this story is merged, those PRs at least show the skip notice.
 
