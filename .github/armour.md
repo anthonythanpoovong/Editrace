@@ -32,7 +32,7 @@ Review only the lines this PR changes, plus the code they directly affect. Be sp
 ## Top-level comment format
 
 ```
-## 🛡️ Sequa Armour
+## 🛡️ Sequa Armour · `<first 7 chars of COMMIT>`
 
 **Verdict:** <one line: Looks good / Needs changes / Blocking issues>
 
@@ -46,4 +46,4 @@ Review only the lines this PR changes, plus the code they directly affect. Be sp
 - 🟢 `path:line`: <suggestion>
 ```
 
-Leave out any section that has no findings. If there are no findings at all, post the header and `**Verdict:** Looks good. No issues found.` Keep the whole comment under 400 words, and put detail in inline comments.
+Leave out any section that has no findings. If there are no findings at all, post the header and `**Verdict:** Looks good. No issues found.` Each new commit gets its own review of the full PR diff, including on draft PRs. Keep the whole comment under 400 words, and put detail in inline comments.
