@@ -30,7 +30,7 @@ The team sees, once a week in a Discord channel, **which detector limitations ha
 
 By the **Phase 1 gate + 8 weeks**:
 - **(a) Coverage:** at least **95%** of jobs that finish with an **incomplete template** (defined in "Incomplete template" below, independently of gap reporting) have at least one gap record
-- **(c) Action:** at least **3 detector improvements** (issues opened or closed) trace back to the digest
+- **(b) Action:** at least **3 detector improvements** (issues opened or closed) trace back to the digest
 
 ## Gap vs. error
 
@@ -60,10 +60,12 @@ Audio, video frames, fingerprints that could recover audio, **any text from the 
 Metric (a) checks that detectors report their limits, so "incomplete" **can't be decided by the detectors' own gap reports or thresholds**. It's computed from the **merged template** by a separate **completeness check** at merge time, which never reads the gap table. A job is incomplete if the merged, schema-valid template has any of:
 
 - an element whose `confidence` is below **one global low-confidence threshold** (`T_low`, set once in the merge validator with the CV owners, not per detector)
-- a scheduled detector whose output is **absent or empty** (the orchestrator knows which workers it scheduled)
+- a scheduled detector that **finished successfully but returned empty output** (the orchestrator knows which workers it scheduled)
 - **no `sound_ref`** although beat or sound detection ran
 
 The result is stored on the job record (an `incomplete` flag plus which rule fired). **Coverage = incomplete jobs with at least one gap record ÷ all incomplete jobs.** A detector that fails to report shows up as uncovered, and gap rows on jobs that weren't flagged incomplete are counted separately.
+
+**Failed workers aren't incomplete jobs.** A worker that crashed or timed out is an error (#50), not a gap. The completeness check reads each worker's **status**: a job with a failed worker is **excluded from the denominator** (it belongs to error tracking), and the digest shows how many jobs were excluded so they stay visible.
 
 ## Out of scope
 
@@ -102,10 +104,10 @@ The result is stored on the job record (an `incomplete` flag plus which rule fir
 - **Labels:** `story`, `type:build`, `area:backend`, `platform`
 - **Owner:** @anthonythanpoovong · **Phase:** 1
 - **Context:** the digest and the later agent need queryable history.
-- **Scope:** a `detector_gaps` table with a unique key on (`job_id`, detector, reason). Backend access only: **RLS on, no user policies**, written by the workers' service role. **`job_id` is a foreign key with `ON DELETE CASCADE`, so deleting a job (or a user's data) deletes its gap rows.** Rows also follow the retention period set in #56 (terms, privacy policy and data retention). Migration through `/db-migration`.
+- **Scope:** a `detector_gaps` table with a unique key on (`job_id`, detector, reason), **written as an upsert** (insert, or update `occurrences` if the row exists). Backend access only: **RLS on, no user policies**, written by the workers' service role. **`job_id` is a foreign key with `ON DELETE CASCADE`, so deleting a job (or a user's data) deletes its gap rows.** Rows also follow the retention period set in #56 (terms, privacy policy and data retention). Migration through `/db-migration`.
 - **Acceptance criteria:**
   - [ ] The two-user RLS test shows an authenticated user cannot read any gap row
-  - [ ] Duplicate inserts for the same job, detector and reason are ignored
+  - [ ] Reporting the same gap again updates the existing row's `occurrences` (upsert) and never adds a second row
   - [ ] Deleting a job deletes its gap rows
   - [ ] The retention period from #56 is applied (rows older than it are purged)
 - **Depends on:** #49, story 1
@@ -133,7 +135,7 @@ The result is stored on the job record (an `incomplete` flag plus which rule fir
   - A scheduled job (weekly, e.g. Monday morning) that counts the past 7 days by **reason and detector**, plus total jobs, incomplete jobs, and the change vs. the previous week. Top 5 only; one short embed that links out
   - Posts to a Discord channel through a **channel webhook**. The webhook URL is a secret in GitHub/Modal/Vercel secrets, never in the repo (gitleaks enforces it)
   - **No user data in messages:** counts and codes only, no emails, names, media or job lists
-  - A `from-digest` label, and a line in the digest explaining how to file a detector issue from it (used to count metric (c))
+  - A `from-digest` label, and a line in the digest explaining how to file a detector issue from it (used to count metric (b))
   - Documented on the wiki (how to read the digest, who acts on it)
 - **Acceptance criteria:**
   - [ ] A test run posts a correct digest from seeded gap records
@@ -146,13 +148,14 @@ The result is stored on the job record (an `incomplete` flag plus which rule fir
 - **Owner:** @anthonythanpoovong · **Phase:** 1
 - **Context:** the digest is only trustworthy if gaps are actually being recorded and the digest actually arrives.
 - **Scope:**
-  - **Completeness check (at template merge, independent of gap reporting):** flag a job `incomplete` using only the merged template, per "Incomplete template" above (global `T_low`, absent or empty scheduled-detector output, missing `sound_ref` when sound detection ran). It never reads the gap table. Store the flag and which rule fired on the job record.
+  - **Completeness check (at template merge, independent of gap reporting):** flag a job `incomplete` using only the merged template, per "Incomplete template" above (global `T_low`, a scheduled detector that finished with empty output (jobs with a crashed or timed-out worker are excluded, not counted), missing `sound_ref` when sound detection ran). It never reads the gap table. Store the flag and which rule fired on the job record.
   - **Coverage check (metric a):** incomplete jobs that have at least one gap record ÷ all incomplete jobs; show the coverage % in the digest, and list (by reason count only) which rules fired on uncovered jobs
   - **Delivery monitor:** if a digest hasn't been posted by a set time, alert through a **different channel** than Discord (for example the scheduled workflow's failure notification or email), because Discord being down is one of the failure cases
 - **Acceptance criteria:**
   - [ ] The digest shows a coverage %, and a seeded uncovered job lowers it
   - [ ] A job whose merged template has a low-confidence element but **no** gap record is flagged incomplete and counted as uncovered
   - [ ] The completeness check gives the same result with the gap table empty (it doesn't depend on it)
+  - [ ] A job with a crashed or timed-out worker is excluded from the coverage denominator, and the digest counts how many were excluded
   - [ ] A simulated Discord outage triggers the delivery alert within a day
 - **Depends on:** stories 3, 4, and #53 (the orchestrator's merge step)
 
@@ -160,7 +163,7 @@ The result is stored on the job record (an `incomplete` flag plus which rule fir
 - **Labels:** `story`, `type:research`, `area:infra`, `platform`, `risk:blocked`
 - **Owner:** @anthonythanpoovong · **Phase:** 2
 - **Context:** once there's data, an LLM can turn recurring gaps into draft backlog issues faster than a person can.
-- **Gate (must all hold before anyone builds this):** at least **4 weeks of digests**, at least **100 gap records** (value TBD), the coverage check (story 5) at or above 95%, and the digest already producing action (metric c progressing).
+- **Gate (must all hold before anyone builds this):** at least **4 weeks of digests**, at least **100 gap records** (value TBD), the coverage check (story 5) at or above 95%, and the digest already producing action (metric b progressing).
 - **Scope:**
   - Reads the **aggregated gap table only**: reason codes, counts, detector versions, confidence buckets. **No user media, no identifiers, no text from videos.**
   - The gap table holds **no user-derived text at all** (no OCR or caption text, no identifiers), so there's no prompt-injection path from user content. If a later version ever adds any, it must be passed as quoted data with no tool access.
