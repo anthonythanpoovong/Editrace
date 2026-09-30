@@ -7,7 +7,8 @@ Project documentation, decisions, and customer research.
 - `plan.md` — Project plan and roadmap
 - `schema.md` — Template schema documentation
 - `architecture.md` — System architecture overview
-- `decisions/` — Architectural decision records (ADRs)
+- `decisions/` — Architectural decision records (ADRs); propose with `/propose-adr`
+- `epics/` — Epic proposals, approved before any issues are created; propose with `/propose-epic`
 - `customers/` — Customer interview notes and GTM research
 
 ## Writing Guidelines

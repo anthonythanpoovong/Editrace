@@ -45,3 +45,7 @@ htmlcov/
 # Temporary
 *.tmp
 .tmp/
+
+# Claude Code (skills in .claude/skills/ are shared)
+.claude/worktrees/
+.claude/settings.local.json
