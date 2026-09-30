@@ -60,7 +60,10 @@ By the **Phase 0 gate**:
 - **Scope:**
   - Add a collapsible **Files changed** section to the review format in `.github/armour.md`: each file, lines added/removed, and reviewed or skipped (e.g. generated or lock files)
   - Add a **Coverage** line from CI's coverage summary (story 5): overall %, the change vs `main`, and changed-lines %. If there's no data yet, say "no coverage data yet". **Armour reports CI's numbers and never estimates them.**
-  - Give Armour read access to the coverage summary (a CI artifact or check output)
+  - **Ordering:** Armour and CI both run on `pull_request`, in parallel, so coverage usually won't exist yet when Armour starts. Two parts:
+    - **CI posts its own sticky "Coverage" comment** (story 5), so the numbers are always on the PR no matter when Armour runs. This is the source of truth.
+    - Armour's workflow **waits for the coverage check to finish** (poll `gh pr checks` for it, bounded to ~10 minutes) before reviewing, then quotes the numbers. On timeout, or if the coverage job didn't run, it says "coverage pending: see the CI coverage comment" and never estimates.
+  - Give Armour read access to the coverage summary (the check output or sticky comment)
   - Keep the whole comment under 400 words (the files list is collapsed)
 - **Acceptance criteria:**
   - [ ] A test PR shows the files list and "no coverage data yet"
@@ -76,7 +79,7 @@ By the **Phase 0 gate**:
   - [ ] A PR that edits `ai-review.yml` gets the skip notice
   - [ ] A normal PR gets no notice
 - **Depends on:** —
-- **Note:** ship this **first**. Every other Armour story edits the workflow, so Armour skips on those PRs.
+- **Note:** ship this **first**. **This story's own PR edits `ai-review.yml`, so Armour skips it and it needs a manual review.** The same goes for any later story that edits `ai-review.yml` (e.g. story 1's wait step), but once this story is merged, those PRs at least show the skip notice.
 
 ### 3. Armour: sharper review rules
 - **Labels:** `story`, `type:build`, `area:infra`, `platform`
@@ -115,10 +118,12 @@ By the **Phase 0 gate**:
   - Collect coverage in the existing CI jobs: `pytest --cov` (Python), Vitest/Jest coverage (web)
   - Use **`diff-cover`** on the coverage reports vs `main`: **fail when changed lines are < 80% covered**
   - Switches on automatically via the existing `detect` job (only when `web/` or Python code exists)
-  - Publish a coverage summary (overall %, change vs `main`, changed-lines %) as an artifact or check output that Armour reads (story 1)
+  - Publish a coverage summary (overall %, change vs `main`, changed-lines %) as **check output** and as a **sticky "Coverage" PR comment** (updated in place on each push), so the numbers are visible even if Armour hasn't run. Armour quotes them (story 1).
   - **Exemption, enforced by CI rather than by who can label:** GitHub can't restrict who applies a label, since anyone with triage or write access can (and story 8 adds two write collaborators). So `ci-ok` **honors `coverage-exempt` only if the code owner applied it**:
-    - The coverage job reads the PR's issue events (`GET /repos/{owner}/{repo}/issues/{n}/events`), finds the **most recent `labeled` event for `coverage-exempt`**, and takes its `actor.login`
+    - The coverage job reads the PR's issue events (`GET /repos/{owner}/{repo}/issues/{n}/events`, **all pages**: `gh api --paginate`), finds the **most recent `labeled` event for `coverage-exempt`**, and takes its `actor.login`
     - That login must be in the **exemption allowlist**: the owners listed for `/.github/` in `.github/CODEOWNERS` (today, @anthonythanpoovong), read from the file on `main`, not from the PR branch, so a PR can't add itself to the allowlist
+    - **Only plain `@username` entries count.** Team (`@org/team`) and email entries in that CODEOWNERS line are ignored, not expanded.
+    - **Fail closed:** the exemption is ignored (the gate applies) if the actor can't be resolved (a deleted or "ghost" user, or a missing actor), if the actor is a bot (`actor.type == "Bot"`), if the allowlist has no plain `@username` entries, or if the events API call fails
     - If anyone else applied it, or it was removed and re-added by someone else, the gate **still applies**, and CI says who applied the label and why it was ignored
     - The job re-runs on `labeled` / `unlabeled` events as well as new commits, and it writes the exemption and approver into the job summary for the record
 - **Acceptance criteria:**
@@ -126,6 +131,8 @@ By the **Phase 0 gate**:
   - [ ] Docs-only PRs aren't affected
   - [ ] `coverage-exempt` applied by the code owner lets an under-covered PR pass; the same label applied by a non-owner collaborator is **ignored**, and the gate still fails with a message naming who applied it
   - [ ] Editing the CODEOWNERS allowlist in the PR itself doesn't change the result (the allowlist is read from `main`)
+  - [ ] Fail closed: a label applied by a bot, or by an actor that can't be resolved, or an events API error, leaves the gate in force
+  - [ ] Each push updates one sticky "Coverage" comment (no duplicates)
 - **Depends on:** #48 (test jobs)
 
 ### 6. CONTRIBUTING.md + PR and issue templates
