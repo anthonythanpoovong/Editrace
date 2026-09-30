@@ -66,7 +66,7 @@ By the **Phase 0 gate**:
     - **CI posts its own sticky "Coverage" comment** (story 5), so the numbers are always on the PR no matter when Armour runs. This is the source of truth.
     - Armour's workflow **waits for the coverage check to finish** (poll `gh pr checks` for it, bounded to ~10 minutes) before reviewing, then quotes the numbers. On timeout, or if the coverage job didn't run, it says "coverage pending: see the CI coverage comment" and never estimates.
   - Give Armour read access to the coverage summary (the check output or sticky comment)
-  - Keep the whole comment under 400 words (the files list is collapsed)
+  - **Comment rules, reworded in `armour.md` and the workflow prompt:** the "exactly one top-level comment" rule becomes "exactly one top-level **review** comment per commit". CI's sticky **Coverage** comment (story 5) and the skip notice (story 2) are separate comments and don't count. The **400-word limit applies to the visible review text only**; the collapsed **Files changed** section is excluded, but capped (e.g. 50 files, then "+N more").
 - **Acceptance criteria:**
   - [ ] A test PR shows the files list and "no coverage data yet"
   - [ ] Once story 5 lands, a PR with code shows the real coverage numbers from CI
@@ -100,6 +100,7 @@ By the **Phase 0 gate**:
   - Severity calibration examples, so 🔴 means "must fix"
 - **Acceptance criteria:**
   - [ ] The rules are in `armour.md`, and the eval set (story 4) still scores ≥ 4/5 after the change
+  - [ ] **Each new rule gets at least one seeded case added to the eval set** (uncovered risky logic, missing test for a new endpoint/tool/worker/migration, missing `/sync-docs` note), so the set grows past 5 and the target stays ≥ 80%
 - **Depends on:** stories 1, 4, 5
 
 ### 4. Armour eval set
@@ -188,10 +189,13 @@ By the **Phase 0 gate**:
 - **Scope:**
   - Invite @calvinkafaiyuen and @sktchan as collaborators
   - Extend CODEOWNERS by area (e.g. `workers/`, `exporters/` → CV owners), keeping `.github/`, `.claude/`, `docs/decisions/` and `docs/epics/` with the owner
-  - Decide on and record **admin bypass**: once two reviewers exist, turn on "enforce for admins" so owner PRs also need a review (or document why not)
+  - Decide on and record **admin bypass**. The catch: `/.github/` (workflows, Armour rules, the coverage gate, skills) has a **single code owner**, so turning on "enforce for admins" would block the owner's own PRs to those files, since nobody else can approve them. Options to record:
+    - **(a) Keep admin bypass** (the default until a second owner exists), and rely on Armour + CI + the owner's own review
+    - **(b) Add a second `/.github/` code owner** (e.g. @calvinkafaiyuen) and then enforce for admins. **That person also joins the coverage-exemption allowlist** (story 5: the plain `@username` entries on the `/.github/` line), so decide it deliberately.
+    - Either way, don't turn on "enforce for admins" while there's a single `/.github/` owner.
 - **Acceptance criteria:**
   - [ ] Both teammates accepted, and each has reviewed at least one PR
-  - [ ] The admin-bypass decision is recorded in CONTRIBUTING.md
+  - [ ] The admin-bypass decision is recorded in CONTRIBUTING.md, and if a second `/.github/` owner is added, the coverage-exemption allowlist is updated on purpose
 - **Depends on:** —
 
 ## Risks & costs
@@ -215,7 +219,7 @@ No schema, DB or MCP changes. Eval cases contain deliberate security bugs, isola
 
 ## Open questions
 
-- **Admin bypass:** decided in story 8 once teammates are active.
+- **Admin bypass:** (a) keep it until a second `/.github/` owner exists, or (b) add one and enforce for admins. Decided in story 8 once teammates are active; the default is (a).
 - **Coverage for generated code:** exclude generated types (#2) from coverage. Confirm the paths when codegen lands.
 - **How Armour waits for coverage (story 1):** a bounded poll keeps a runner idle for up to ~10 min per push, which counts against private-repo Actions minutes. Prefer triggering Armour when the coverage job completes (`workflow_run`) if `claude-code-action` supports that context. Otherwise keep the poll, but short. Decide during implementation.
 
