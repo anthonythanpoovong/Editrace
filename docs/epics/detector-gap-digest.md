@@ -53,7 +53,7 @@ Reason code, detector name and version, an `occurrences` count (how many element
 
 ### What is never recorded
 
-Audio, video frames, fingerprints that could recover audio, **any text from the video (OCR or captions)**, or any user identifier. The internal `job_id` is the only identifier stored, and it is never shown in the digest or given to the agent. The Discord digest shows **counts by reason and detector only**.
+Audio, video frames, fingerprints that could recover audio, **any text from the video (OCR or captions)**, or any **direct** user identifier (no user ID, email or name). The internal `job_id` is the only identifier stored; it links to a user only through the `jobs` table, so gap rows count as user-linked data and follow the cascade delete and the #56 retention period. It is never shown in the digest or given to the agent. The Discord digest shows **counts by reason and detector only**.
 
 ## Incomplete template (the denominator for metric a)
 
@@ -170,7 +170,7 @@ The result is stored on the job record (an `incomplete` flag plus which rule fir
   - [ ] Each digest posts that week's coverage value, and the value doesn't change when older gap rows are purged
   - [ ] A video with no text and no music (legitimately empty output) is **not** flagged incomplete
   - [ ] A simulated Discord outage triggers the delivery alert within a day
-- **Depends on:** stories 3, 4, and #53 (the orchestrator's merge step)
+- **Depends on:** stories 3, 4, and #59 (the orchestrator's merge step)
 
 ### 6. Gap triage agent (gated)
 - **Labels:** `story`, `type:research`, `area:infra`, `platform`, `risk:blocked`
@@ -206,7 +206,7 @@ Cost: $0 for the digest (existing infra, a free webhook). The agent (Phase 2) is
 
 ## Security & data
 
-New additive schema file (`schema/detector-gap.schema.json`) and a `detector_gaps` table with RLS enabled and **no user policies** (backend only). No template schema change. **No audio, frames, fingerprints, OCR or caption text, or user identifiers are stored**; only codes, counts and numeric scores. Gap rows are **deleted with their job** (`ON DELETE CASCADE`) and follow the retention period from #56. The Discord webhook is a secret.
+New additive schema file (`schema/detector-gap.schema.json`) and a `detector_gaps` table with RLS enabled and **no user policies** (backend only). No template schema change. **No audio, frames, fingerprints, OCR or caption text, or direct user identifiers are stored**; only codes, counts and numeric scores. Gap rows are **deleted with their job** (`ON DELETE CASCADE`) and follow the retention period from #56. The Discord webhook is a secret.
 
 ## Open questions
 
