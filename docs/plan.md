@@ -129,6 +129,8 @@ Quality is gated by the eval harness (#39): retrieval recall@5, citation support
 | CV 2: Signals & scoring | sktchan | `ml` | Audio, OCR/captions, color, Format Match Score, ontology (signals) |
 | Product, MCP & assistant | anthonythanpoovong | `product` | Web app, auth, billing, job queue, MCP server + Bridge core, RAG assistant, GTM |
 
+All three collaborators are code owners on every path, so any of them can approve any PR. There is no admin bypass on `main` (#132); as `/.github/` owners they can also grant coverage exemptions. See CONTRIBUTING.md.
+
 ## Epics
 
 Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and the `epic` / `story` / `subtask` labels. Phases are GitHub milestones. Subtasks exist only where a story has separable, parallel parts (#9, #16, #18, #19, #22, #27, #31, #32); other stories use checklists.
@@ -200,7 +202,7 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 | Marketing over-promises features (e.g. MCP for CapCut before Phase 2) | "Preview" labels before the MVP; lead with the breakdown + CapCut export (#10), not the Bridge (#36) |
 | One person can't sustain marketing alongside product work | Organic, 2 posts/week max, batch-produced (#119); revisit if the cadence slips |
 | Armour skips silently (workflow-change PRs, errors, usage limits), and its accuracy is unmeasured | Visible skip notice from an always-run job (#126); eval set of seeded bugs, target ≥ 4/5, re-run when rules or model change (#128) |
-| Untested code merges, or the coverage gate is bypassed | 80% changed-line coverage gate in `ci-ok` (#129). An exemption is only the code owner's `/coverage-exempt` PR review on the current head commit; labels and statuses have no effect; fails closed. Write access is treated as trusted. |
+| Untested code merges, or the coverage gate is bypassed | 80% changed-line coverage gate in `ci-ok` (#129). An exemption is only a `/coverage-exempt` PR review from a `/.github/` code owner (all three collaborators) on the current head commit; labels and statuses have no effect; fails closed. Write access is treated as trusted. |
 | Armour eval token exposed to collaborators' branch workflows | Stored as a `main`-only environment secret with owner approval, or the eval runs from a local script with no stored token (#128) |
 
 ## Metrics
@@ -224,7 +226,6 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 - **Trending / discovery feed:** parked. No scraping, because it conflicts with upload-first and platform terms. An embed-only (oEmbed) feed is the option to revisit, with no user evidence yet. Virality scoring was rejected (no legitimate ground truth); the niche format benchmark (#103) replaces it.
 - **Marketing beyond Phase A:** paid ads wait for the MVP, billing (#19) and a budget (#121). Premiere/Resolve/FCP editors as a primary audience, Product Hunt, a newsletter and affiliate/referral programs are deferred (see `docs/epics/marketing-launch.md`).
 - **Repo hardening, deferred:** Dependabot, dependency/security scanning (pip-audit, npm audit, Semgrep) and pinning actions to SHAs wait until dependencies exist; CodeQL needs a paid plan for private repos; 👍/👎 tracking of Armour findings is deferred (see `docs/epics/repo-hardening-phase-0.md`).
-- **Admin bypass (#132):** keep it until a second `/.github/` code owner exists, or add one and enforce for admins (that person would also join the coverage-exemption allowlist). Default: keep.
 - **Eval token storage (#128):** environment protection on private repos may need a paid GitHub plan; otherwise the Armour eval runs from a local script. Generated code paths to exclude from coverage are confirmed when codegen (#2) lands.
 
 ## Links

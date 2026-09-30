@@ -107,7 +107,7 @@ Three workflows in `.github/workflows/` run on every pull request:
 
 **Authentication:** Armour and `@claude` authenticate with the `CLAUDE_CODE_OAUTH_TOKEN` repo secret, which is billed to the owner's Claude Pro plan. CI runs count against the same Pro usage limits as personal Claude use. A Console API key (`ANTHROPIC_API_KEY`) would need separately purchased API credits, because Pro doesn't include them.
 
-**Ownership:** `.github/CODEOWNERS` requires owner approval for changes under `.github/` (workflows and Armour rules), `docs/decisions/`, `docs/epics/` and `.claude/` (skills).
+**Ownership:** `.github/CODEOWNERS` requires owner approval for changes under `.github/` (workflows and Armour rules), `docs/decisions/`, `docs/epics/` and `.claude/` (skills). All three collaborators are code owners on every path, so any of them can approve any PR. Review rules and the no-admin-bypass decision are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 **Gotcha:** a PR that changes a Claude workflow file skips its own Armour/`@claude` run ("workflow validation failed"). The action only runs when the workflow matches `main`, so a green check on that PR doesn't mean Claude ran. Merge it first, then test on another PR (for example, close and reopen it).
 
