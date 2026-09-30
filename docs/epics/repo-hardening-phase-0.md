@@ -89,7 +89,7 @@ By the **Phase 0 gate**:
   - Severity calibration examples, so 🔴 means "must fix"
 - **Acceptance criteria:**
   - [ ] The rules are in `armour.md`, and the eval set (story 4) still scores ≥ 4/5 after the change
-- **Depends on:** stories 1, 5
+- **Depends on:** stories 1, 4, 5
 
 ### 4. Armour eval set
 - **Labels:** `story`, `type:build`, `area:infra`, `platform`, `risk:research-heavy`
@@ -98,11 +98,13 @@ By the **Phase 0 gate**:
 - **Scope:**
   - **5 seeded-bug cases**, each a small diff with a known expected finding: (1) service-role client bypassing RLS, (2) template time stored as float seconds, (3) a hand-written type instead of a generated one, (4) an LLM/GPU call with no limit or backoff, (5) audio persisted from user uploads
   - A **manual** (`workflow_dispatch`) runner that opens each case as a **draft PR labeled `armour-eval`**, waits for Armour, scores caught / missed, posts a summary, then **closes the PRs and deletes the branches**
+  - **The runner opens PRs with a dedicated token, not the default `GITHUB_TOKEN`.** Events caused by `GITHUB_TOKEN` don't trigger other workflows, so Armour would never run on the eval PRs. Use a fine-grained PAT (or GitHub App token) scoped to this repo only (contents + pull requests: read/write), stored as the `ARMOUR_EVAL_TOKEN` secret and used only by this runner.
   - Run only when `armour.md` or the Armour model changes (bounded Pro usage: about 5 reviews per run)
 - **Acceptance criteria:**
   - [ ] One command runs all 5 cases and reports a score
   - [ ] Eval PRs are never merged, and are closed automatically
   - [ ] Score recorded for the current rules and model (target ≥ 4/5)
+  - [ ] Armour actually runs on every eval PR (PRs opened with `ARMOUR_EVAL_TOKEN`, not `GITHUB_TOKEN`)
 - **Depends on:** story 2
 
 ### 5. CI: changed-line coverage gate (80%)
@@ -171,6 +173,7 @@ By the **Phase 0 gate**:
 | A collaborator self-exempts by applying the label | Medium (labels can't be permission-restricted) | Same check: a non-owner's label is ignored and logged |
 | Eval PRs with deliberate bugs get merged | Low | Always drafts, labeled `armour-eval`, closed automatically, never merged |
 | Pro usage from eval runs | Low | Manual trigger, only on rules or model change, ~5 reviews |
+| `ARMOUR_EVAL_TOKEN` leaked or over-scoped | Low | Fine-grained, this repo only, contents + PRs only, used by one manual workflow, expiry set and rotated |
 | Hooks slow down commits | Low | Fast hooks only; CI stays the source of truth |
 
 Cost: $0 in tools. Pro usage for eval runs.
