@@ -16,7 +16,7 @@ Editrace's analysis pipeline is designed so that **partial failure still yields 
 
 ## Goal
 
-The team sees, once a week in a Discord channel, **which detector limitations happen most**, so detector improvements are chosen from real counts instead of guesses. Internal only: users see nothing new.
+The team sees, once a week in a Discord channel, **which detector limitations happen most**, so detector improvements are chosen from real counts instead of guesses. Internal only: no new user-facing notices or screens. Low-confidence elements follow the plan's existing rule (kept with their confidence, shown in the UI and passed to adapters); this epic doesn't change how they're presented.
 
 ## Exit criteria
 
@@ -62,7 +62,7 @@ Metric (a) checks that detectors report their limits, so "incomplete" **can't be
 - an element whose `confidence` is below **one global low-confidence threshold** (`T_low`, set once in the merge validator with the CV owners, not per detector)
 - **no `sound_ref`** although a **beat track was detected** (music is evidently present, so an unidentified song is expected to produce a gap)
 
-**Empty output alone never counts.** A video with no on-screen text or no music legitimately yields empty OCR or sound output, so "empty" isn't a signal. To keep limits visible, detectors **emit a low-confidence element instead of omitting one they're unsure about** (story 3), so a real limitation shows up as a low-confidence element rather than as silence.
+**Empty output alone never counts.** A video with no on-screen text or no music legitimately yields empty OCR or sound output, so "empty" isn't a signal. To keep limits visible, detectors **keep a low-confidence element in the template (with its confidence) instead of omitting one they're unsure about** (story 3), which is what the plan already specifies, so this epic doesn't change what users or exporters receive, so a real limitation shows up as a low-confidence element rather than as silence.
 
 The result is stored on the job record (an `incomplete` flag plus which rule fired). **Coverage = incomplete jobs with at least one gap record ÷ all incomplete jobs.** A detector that fails to report shows up as uncovered, and gap rows on jobs that weren't flagged incomplete are counted separately.
 
@@ -93,7 +93,7 @@ The result is stored on the job record (an `incomplete` flag plus which rule fir
 - **Context:** every detector needs one way to say "I finished but couldn't be confident".
 - **Scope:**
   - Define the gap record in a new **`schema/detector-gap.schema.json`** (reason-code enum from the table above, detector, version, confidence, `occurrences`, `job_id`, timestamp; for fonts only a normalized box size and a font-match score). **No free-text fields.** Types are **generated** by codegen (#2), never hand-written
-  - Add `report_gap(reason, confidence, ...)` to the worker base (#53). It is **idempotent: one row per job + detector + reason**; repeated calls update that row's `occurrences` instead of adding rows, so retries don't inflate counts
+  - Add `report_gap(reason, confidence, ...)` to the worker base (#53). It is **idempotent: one row per job + detector + reason**; a repeated call **overwrites** that row's `occurrences` with the value just computed (it never increments), so a retry that recomputes the same total leaves the same row and the same count
   - Reject fields outside the schema (so audio, frames or identifiers can't be added by accident)
 - **Acceptance criteria:**
   - [ ] Reason codes and record shape come from the generated types
@@ -105,19 +105,19 @@ The result is stored on the job record (an `incomplete` flag plus which rule fir
 - **Labels:** `story`, `type:build`, `area:backend`, `platform`
 - **Owner:** @anthonythanpoovong · **Phase:** 1
 - **Context:** the digest and the later agent need queryable history.
-- **Scope:** a `detector_gaps` table with a unique key on (`job_id`, detector, reason), **written as an upsert** (insert, or update `occurrences` if the row exists). Backend access only: **RLS on, no user policies**, written by the workers' service role. **`job_id` is a foreign key with `ON DELETE CASCADE`, so deleting a job (or a user's data) deletes its gap rows.** Rows also follow the retention period set in #56 (terms, privacy policy and data retention). Migration through `/db-migration`.
+- **Scope:** a `detector_gaps` table with a unique key on (`job_id`, detector, reason), **written as an upsert that overwrites** `occurrences` (never increments it). Backend access only: **RLS on, no user policies**, written by the workers' service role. **`job_id` is a foreign key with `ON DELETE CASCADE`, so deleting a job (or a user's data) deletes its gap rows.** Rows are purged after a **configurable retention period, with a proposed default of 90 days until #56 (terms, privacy policy and data retention) sets the final value**. #56 tunes it; it doesn't block this story. Migration through `/db-migration`.
 - **Acceptance criteria:**
   - [ ] The two-user RLS test shows an authenticated user cannot read any gap row
-  - [ ] Reporting the same gap again updates the existing row's `occurrences` (upsert) and never adds a second row
+  - [ ] Reporting the same gap again (for example on a retry) leaves one row with the same `occurrences`; it never adds a row or increments the count
   - [ ] Deleting a job deletes its gap rows
-  - [ ] The retention period from #56 is applied (rows older than it are purged)
-- **Depends on:** #49, #56 (retention period), story 1
+  - [ ] Rows older than the configured retention (default 90 days until #56 sets it) are purged
+- **Depends on:** #49, story 1 (#56 sets the final retention value later; not a blocker)
 
 ### 3. Detectors report their gaps
 - **Labels:** `story`, `type:build`, `area:worker`, `ml`
 - **Owner:** the detector owners, @calvinkafaiyuen and @sktchan (proposed) · **Phase:** 1 (2 for transitions)
 - **Context:** only the detectors know when they aren't confident.
-- **Scope:** each detector calls the gap API with its documented threshold, and **emits a low-confidence element instead of omitting one it's unsure about**:
+- **Scope:** each detector calls the gap API with its documented threshold, and **keeps a low-confidence element (with its confidence) instead of omitting one it's unsure about**, as the plan already specifies:
   - [ ] Beat + sound ID (#14): `sound_not_identified`
   - [ ] OCR (#13): `font_unrecognized`, `text_low_confidence`
   - [ ] Orchestrator / upload (#16): `input_unsupported`
@@ -203,6 +203,7 @@ New additive schema file (`schema/detector-gap.schema.json`) and a `detector_gap
 - **Digest timing:** day and time, and whether a minimum number of jobs is needed before posting.
 - **Confidence thresholds** that define a gap for each detector: owned by the detector owners.
 - **`T_low`**, the single low-confidence threshold used by the completeness check: set once with the CV owners.
+- **Presentation of elements below `T_low`** (hidden, flagged, or approximated in the UI, exporters and the Bridge): decided in the breakdown-page and adapter stories (#18, #33–#36). This epic doesn't change it.
 - **Retention period** for gap rows: set with terms/privacy/retention (#56).
 - **Agent gate values:** the exact number of gap records and weeks (proposed: 100 and 4).
 - **Evidence:** no interviews yet; the first real data arrives with the design-partner beta (#55).
