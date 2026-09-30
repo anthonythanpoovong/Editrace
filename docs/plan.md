@@ -129,15 +129,32 @@ Quality is gated by the eval harness (#39): retrieval recall@5, citation support
 | CV 2: Signals & scoring | sktchan | `ml` | Audio, OCR/captions, color, Format Match Score, ontology (signals) |
 | Product, MCP & assistant | anthonythanpoovong | `product` | Web app, auth, billing, job queue, MCP server + Bridge core, RAG assistant, GTM |
 
+## Epics
+
+Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and the `epic` / `story` / `subtask` labels. Phases are GitHub milestones. Subtasks exist only where a story has separable, parallel parts (#9, #16, #18, #19, #22, #27, #31, #32); other stories use checklists.
+
+| Epic | Stories | Owner |
+|---|---|---|
+| #40 Engineering foundations | #1 schema, #2 codegen, #3 scaffold, #48 CI/CD + environments, #49 migrations + RLS tests, #50 observability + cost guardrails, #51 product analytics | anthonythanpoovong |
+| #41 Video analysis pipeline | #52 golden dataset, #53 worker framework, #4, #7, #8, #11, #12, #13, #14, #23, #24, #26 | calvinkafaiyuen, sktchan |
+| #42 Editor exports & tool ontology | #5, #6, #9, #10, #31 | calvinkafaiyuen |
+| #43 MCP platform & Sequa Bridge | #29, #27, #32, #33, #34, #35, #36, #37 | anthonythanpoovong, calvinkafaiyuen |
+| #44 Web app core experience | #15, #16, #17, #18 | anthonythanpoovong |
+| #45 Template assistant (RAG) | #30, #38, #22, #39 | anthonythanpoovong |
+| #46 Billing & accounts | #19, #25, #28 | anthonythanpoovong |
+| #47 Discovery, legal & GTM | #20, #21, #54 landing + waitlist, #55 design partners, #56 terms/privacy/retention | anthonythanpoovong |
+
 ## Roadmap
 
 ### Phase 0: De-risk (spikes & foundation)
 - Template JSON Schema v0 (#1), type generation (#2), monorepo scaffold (#3, done)
+- Foundations: CI/CD + environments (#48), migrations + RLS test harness (#49)
+- Pipeline: golden video dataset (#52), worker framework (#53)
 - CV1: cut detection spike (#4), Resolve rebuild spike (#5), CapCut draft spike (#6)
 - CV1: **live editor control spike (#29)**
 - CV2: beat tracking + sound ID spike (#11)
 - Product: **RAG corpus + retrieval spike (#30)**
-- Product: customer interviews incl. MCP appetite and assistant questions (#20); legal consult incl. docs corpus and editor TOS (#21)
+- Product: customer interviews incl. MCP appetite and assistant questions (#20); legal consult incl. docs corpus and editor TOS (#21); landing page + waitlist (#54)
 
 **Gate:** An editor reviews a detected cut timeline rebuilt in Resolve and confirms it feels like the original. #29 shows at least one editor can be driven live.
 
@@ -147,6 +164,8 @@ Quality is gated by the eval harness (#39): retrieval recall@5, citation support
 **Ontology:** editor tool ontology (#31)
 **Product:** auth (#15), upload + job queue (#16), history (#17), breakdown page with the Tools used panel (#18), Stripe Solo + trial (#19)
 **MCP:** remote MCP server v1 (#27), settings page (#37), Sequa Bridge (#32), Resolve adapter (#33), FCP adapter (#34)
+**Foundations:** observability + cost guardrails (#50), product analytics (#51)
+**GTM:** design partner program (#55), terms/privacy/retention (#56)
 
 **Gate:** A new user uploads a video, sees a breakdown, and from Claude Desktop applies it to Resolve or FCP in under 10 minutes.
 
