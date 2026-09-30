@@ -43,10 +43,11 @@ Check the PR is merged (`gh pr view <n> --json state` must be `MERGED`) and the 
 - Set `Status: Accepted` and the accepted date.
 - If it supersedes an ADR, set the old one to `Status: Superseded by NNNN`.
 - If it changes a Key Decision, update `docs/plan.md` to match.
+- Update the **Index** table in `docs/decisions/README.md`: add or update the row (number, linked title, status), change a superseded ADR's status, and remove the `No ADRs yet` placeholder row.
 - Open a normal PR with those changes.
 
 ### Rejecting
-A closed PR never reaches `main`, so to keep the record: on the proposal branch, set `Status: Rejected` and add a **Rejection reason** section. The code owner then approves and merges it. Rejected ADRs stop the same debate happening twice. For trivial ideas, just closing the PR is fine.
+A closed PR never reaches `main`, so to keep the record: on the proposal branch, set `Status: Rejected`, add a **Rejection reason** section, and add a `Rejected` row to the Index in `docs/decisions/README.md`. The code owner then approves and merges it. Rejected ADRs stop the same debate happening twice. For trivial ideas, just closing the PR is fine.
 
 ## Rules
 - Never set `Accepted` on an unmerged ADR, and never merge the PR yourself.
