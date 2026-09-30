@@ -29,7 +29,7 @@ The team sees, once a week in a Discord channel, **which detector limitations ha
 ## Success metric
 
 By the **Phase 1 gate + 8 weeks**:
-- **(a) Coverage:** at least **95%** of jobs that finish with an incomplete template have a gap record (the detectors report their limits instead of failing silently)
+- **(a) Coverage:** at least **95%** of jobs that finish with an **incomplete template** (defined in "Incomplete template" below, independently of gap reporting) have at least one gap record
 - **(c) Action:** at least **3 detector improvements** (issues opened or closed) trace back to the digest
 
 ## Gap vs. error
@@ -49,11 +49,21 @@ By the **Phase 1 gate + 8 weeks**:
 
 ### What a gap record holds
 
-Reason code, detector name and version, the detector's confidence, the `job_id`, a timestamp. For fonts, at most the OCR text and box size.
+Reason code, detector name and version, the detector's confidence, an `occurrences` count (how many elements in the job were affected), the `job_id`, and a timestamp. For `font_unrecognized`, the normalized box size and the best font-match score (numbers only). **No text of any kind is stored**, because OCR and caption text can contain names, handles or emails.
 
 ### What is never recorded
 
-Audio, video frames, fingerprints that could recover audio, or any user identifier. The Discord digest shows **counts by reason and detector only**.
+Audio, video frames, fingerprints that could recover audio, **any text from the video (OCR or captions)**, or any user identifier. The Discord digest shows **counts by reason and detector only**.
+
+## Incomplete template (the denominator for metric a)
+
+Metric (a) checks that detectors report their limits, so "incomplete" **can't be decided by the detectors' own gap reports or thresholds**. It's computed from the **merged template** by a separate **completeness check** at merge time, which never reads the gap table. A job is incomplete if the merged, schema-valid template has any of:
+
+- an element whose `confidence` is below **one global low-confidence threshold** (`T_low`, set once in the merge validator with the CV owners, not per detector)
+- a scheduled detector whose output is **absent or empty** (the orchestrator knows which workers it scheduled)
+- **no `sound_ref`** although beat or sound detection ran
+
+The result is stored on the job record (an `incomplete` flag plus which rule fired). **Coverage = incomplete jobs with at least one gap record ÷ all incomplete jobs.** A detector that fails to report shows up as uncovered, and gap rows on jobs that weren't flagged incomplete are counted separately.
 
 ## Out of scope
 
@@ -79,8 +89,8 @@ Audio, video frames, fingerprints that could recover audio, or any user identifi
 - **Owner:** @calvinkafaiyuen (proposed) · **Phase:** 1
 - **Context:** every detector needs one way to say "I finished but couldn't be confident".
 - **Scope:**
-  - Define the gap record in a new **`schema/detector-gap.schema.json`** (reason-code enum from the table above, detector, version, confidence, `job_id`, timestamp, optional OCR text and box size for fonts), with types **generated** by codegen (#2), never hand-written
-  - Add `report_gap(reason, confidence, ...)` to the worker base (#53). It is **idempotent: one gap per job + detector + reason**, so retries don't inflate counts
+  - Define the gap record in a new **`schema/detector-gap.schema.json`** (reason-code enum from the table above, detector, version, confidence, `occurrences`, `job_id`, timestamp; for fonts only a normalized box size and a font-match score). **No free-text fields.** Types are **generated** by codegen (#2), never hand-written
+  - Add `report_gap(reason, confidence, ...)` to the worker base (#53). It is **idempotent: one row per job + detector + reason**; repeated calls update that row's `occurrences` instead of adding rows, so retries don't inflate counts
   - Reject fields outside the schema (so audio, frames or identifiers can't be added by accident)
 - **Acceptance criteria:**
   - [ ] Reason codes and record shape come from the generated types
@@ -92,10 +102,12 @@ Audio, video frames, fingerprints that could recover audio, or any user identifi
 - **Labels:** `story`, `type:build`, `area:backend`, `platform`
 - **Owner:** @anthonythanpoovong · **Phase:** 1
 - **Context:** the digest and the later agent need queryable history.
-- **Scope:** a `detector_gaps` table with a unique key on (`job_id`, detector, reason). Backend access only: **RLS on, no user policies**, written by the workers' service role. Migration through `/db-migration`.
+- **Scope:** a `detector_gaps` table with a unique key on (`job_id`, detector, reason). Backend access only: **RLS on, no user policies**, written by the workers' service role. **`job_id` is a foreign key with `ON DELETE CASCADE`, so deleting a job (or a user's data) deletes its gap rows.** Rows also follow the retention period set in #56 (terms, privacy policy and data retention). Migration through `/db-migration`.
 - **Acceptance criteria:**
   - [ ] The two-user RLS test shows an authenticated user cannot read any gap row
   - [ ] Duplicate inserts for the same job, detector and reason are ignored
+  - [ ] Deleting a job deletes its gap rows
+  - [ ] The retention period from #56 is applied (rows older than it are purged)
 - **Depends on:** #49, story 1
 
 ### 3. Detectors report their gaps
@@ -134,12 +146,15 @@ Audio, video frames, fingerprints that could recover audio, or any user identifi
 - **Owner:** @anthonythanpoovong · **Phase:** 1
 - **Context:** the digest is only trustworthy if gaps are actually being recorded and the digest actually arrives.
 - **Scope:**
-  - **Coverage check (metric a):** compare jobs that finished with an incomplete template (low-confidence or missing parts) against gap records, and show the coverage % in the digest
+  - **Completeness check (at template merge, independent of gap reporting):** flag a job `incomplete` using only the merged template, per "Incomplete template" above (global `T_low`, absent or empty scheduled-detector output, missing `sound_ref` when sound detection ran). It never reads the gap table. Store the flag and which rule fired on the job record.
+  - **Coverage check (metric a):** incomplete jobs that have at least one gap record ÷ all incomplete jobs; show the coverage % in the digest, and list (by reason count only) which rules fired on uncovered jobs
   - **Delivery monitor:** if a digest hasn't been posted by a set time, alert through a **different channel** than Discord (for example the scheduled workflow's failure notification or email), because Discord being down is one of the failure cases
 - **Acceptance criteria:**
   - [ ] The digest shows a coverage %, and a seeded uncovered job lowers it
+  - [ ] A job whose merged template has a low-confidence element but **no** gap record is flagged incomplete and counted as uncovered
+  - [ ] The completeness check gives the same result with the gap table empty (it doesn't depend on it)
   - [ ] A simulated Discord outage triggers the delivery alert within a day
-- **Depends on:** stories 3, 4
+- **Depends on:** stories 3, 4, and #53 (the orchestrator's merge step)
 
 ### 6. Gap triage agent (gated)
 - **Labels:** `story`, `type:research`, `area:infra`, `platform`, `risk:blocked`
@@ -147,13 +162,13 @@ Audio, video frames, fingerprints that could recover audio, or any user identifi
 - **Context:** once there's data, an LLM can turn recurring gaps into draft backlog issues faster than a person can.
 - **Gate (must all hold before anyone builds this):** at least **4 weeks of digests**, at least **100 gap records** (value TBD), the coverage check (story 5) at or above 95%, and the digest already producing action (metric c progressing).
 - **Scope:**
-  - Reads the **aggregated gap table only**: reason codes, counts, detector versions, confidence buckets. **No user media, no identifiers, no raw OCR text.**
-  - **OCR text and any other user-derived text is untrusted input** (prompt injection). The agent doesn't receive it; if a later version needs text, it's passed as quoted data with no tool access.
+  - Reads the **aggregated gap table only**: reason codes, counts, detector versions, confidence buckets. **No user media, no identifiers, no text from videos.**
+  - The gap table holds **no user-derived text at all** (no OCR or caption text, no identifiers), so there's no prompt-injection path from user content. If a later version ever adds any, it must be passed as quoted data with no tool access.
   - Output is **drafts only**: a markdown file or Discord message for the owner to file or discard. **It never files issues itself**, and has no tools beyond reading the aggregate and writing the draft.
   - **Cost cap:** one call a week with a hard token limit.
 - **Acceptance criteria:**
   - [ ] The gate is met and recorded on the issue before work starts
-  - [ ] A test with hostile text in a gap field doesn't change the agent's behavior
+  - [ ] A test confirms the data the agent receives has no free-text fields from users
   - [ ] The agent has no write access to issues, code or the database
   - [ ] Spend stays within the weekly cap
 - **Depends on:** stories 4, 5, plus the gate above
@@ -167,7 +182,7 @@ Audio, video frames, fingerprints that could recover audio, or any user identifi
 | Discord down, or the webhook revoked, and nobody notices | Medium | Delivery monitor through a different channel (story 5) |
 | Gap data leaks user information | Low | Schema-enforced fields, no identifiers or media, counts-only digest |
 | Webhook URL leaked | Low | Secret in the platform secret stores; gitleaks; rotate if exposed |
-| Prompt injection through OCR text reaching the agent | Medium if unguarded | The agent never receives raw text; no tools; drafts only (story 6) |
+| Metric (a) audits the detectors using their own thresholds | Medium | "Incomplete" is computed from the merged template by a separate completeness check, never from gap records (story 5) |
 | Digest noise leads to it being ignored | Medium | Top 5 only, week-over-week deltas, one short message |
 | Extra work for every detector owner | Medium | One shared API; reporting is a few lines per detector |
 
@@ -175,13 +190,15 @@ Cost: $0 for the digest (existing infra, a free webhook). The agent (Phase 2) is
 
 ## Security & data
 
-New additive schema file (`schema/detector-gap.schema.json`) and a `detector_gaps` table with RLS enabled and **no user policies** (backend only). No template schema change, and no audio, frames, fingerprints or user identifiers are stored. The Discord webhook is a secret.
+New additive schema file (`schema/detector-gap.schema.json`) and a `detector_gaps` table with RLS enabled and **no user policies** (backend only). No template schema change. **No audio, frames, fingerprints, OCR or caption text, or user identifiers are stored**; only codes, counts and numeric scores. Gap rows are **deleted with their job** (`ON DELETE CASCADE`) and follow the retention period from #56. The Discord webhook is a secret.
 
 ## Open questions
 
 - **Discord setup:** which server and channel, who creates the webhook, and how it's rotated.
 - **Digest timing:** day and time, and whether a minimum number of jobs is needed before posting.
 - **Confidence thresholds** that define a gap for each detector: owned by the detector owners.
+- **`T_low`**, the single low-confidence threshold used by the completeness check: set once with the CV owners.
+- **Retention period** for gap rows: set with terms/privacy/retention (#56).
 - **Agent gate values:** the exact number of gap records and weeks (proposed: 100 and 4).
 - **Evidence:** no interviews yet; the first real data arrives with the design-partner beta (#55).
 - **Ownership:** @calvinkafaiyuen and @sktchan haven't been told, and this adds work for each detector.
@@ -195,7 +212,7 @@ New additive schema file (`schema/detector-gap.schema.json`) and a `detector_gap
 | Alternatives | ✅ | Do nothing, error tracker, per-alert pings, agent-first: rejected |
 | Fit with Key Decisions | ✅ | Deterministic first; no audio stored; generated types |
 | Data & schema | ✅ | New additive schema file and table |
-| Security & privacy | ✅ | Backend-only, no PII or media, prompt-injection guard |
+| Security & privacy | ✅ | Backend-only, no PII, media or text; cascade delete + #56 retention |
 | Cost | ✅ | $0 digest; ≤1 capped call/week later |
 | Failure modes | ✅ | Delivery monitor, unique key, counts-only |
 | Reversibility | ✅ | Two-way door |
