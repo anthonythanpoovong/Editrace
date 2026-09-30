@@ -53,15 +53,16 @@ Reason code, detector name and version, the detector's confidence, an `occurrenc
 
 ### What is never recorded
 
-Audio, video frames, fingerprints that could recover audio, **any text from the video (OCR or captions)**, or any user identifier. The Discord digest shows **counts by reason and detector only**.
+Audio, video frames, fingerprints that could recover audio, **any text from the video (OCR or captions)**, or any user identifier. The internal `job_id` is the only identifier stored, and it is never shown in the digest or given to the agent. The Discord digest shows **counts by reason and detector only**.
 
 ## Incomplete template (the denominator for metric a)
 
 Metric (a) checks that detectors report their limits, so "incomplete" **can't be decided by the detectors' own gap reports or thresholds**. It's computed from the **merged template** by a separate **completeness check** at merge time, which never reads the gap table. A job is incomplete if the merged, schema-valid template has any of:
 
 - an element whose `confidence` is below **one global low-confidence threshold** (`T_low`, set once in the merge validator with the CV owners, not per detector)
-- a scheduled detector that **finished successfully but returned empty output** (the orchestrator knows which workers it scheduled)
-- **no `sound_ref`** although beat or sound detection ran
+- **no `sound_ref`** although a **beat track was detected** (music is evidently present, so an unidentified song is expected to produce a gap)
+
+**Empty output alone never counts.** A video with no on-screen text or no music legitimately yields empty OCR or sound output, so "empty" isn't a signal. To keep limits visible, detectors **emit a low-confidence element instead of omitting one they're unsure about** (story 3), so a real limitation shows up as a low-confidence element rather than as silence.
 
 The result is stored on the job record (an `incomplete` flag plus which rule fired). **Coverage = incomplete jobs with at least one gap record ÷ all incomplete jobs.** A detector that fails to report shows up as uncovered, and gap rows on jobs that weren't flagged incomplete are counted separately.
 
@@ -110,13 +111,13 @@ The result is stored on the job record (an `incomplete` flag plus which rule fir
   - [ ] Reporting the same gap again updates the existing row's `occurrences` (upsert) and never adds a second row
   - [ ] Deleting a job deletes its gap rows
   - [ ] The retention period from #56 is applied (rows older than it are purged)
-- **Depends on:** #49, story 1
+- **Depends on:** #49, #56 (retention period), story 1
 
 ### 3. Detectors report their gaps
 - **Labels:** `story`, `type:build`, `area:worker`, `ml`
 - **Owner:** the detector owners, @calvinkafaiyuen and @sktchan (proposed) · **Phase:** 1 (2 for transitions)
 - **Context:** only the detectors know when they aren't confident.
-- **Scope:** each detector calls the gap API with its documented threshold:
+- **Scope:** each detector calls the gap API with its documented threshold, and **emits a low-confidence element instead of omitting one it's unsure about**:
   - [ ] Beat + sound ID (#14): `sound_not_identified`
   - [ ] OCR (#13): `font_unrecognized`, `text_low_confidence`
   - [ ] Orchestrator / upload (#16): `input_unsupported`
@@ -148,7 +149,7 @@ The result is stored on the job record (an `incomplete` flag plus which rule fir
 - **Owner:** @anthonythanpoovong · **Phase:** 1
 - **Context:** the digest is only trustworthy if gaps are actually being recorded and the digest actually arrives.
 - **Scope:**
-  - **Completeness check (at template merge, independent of gap reporting):** flag a job `incomplete` using only the merged template, per "Incomplete template" above (global `T_low`, a scheduled detector that finished with empty output (jobs with a crashed or timed-out worker are excluded, not counted), missing `sound_ref` when sound detection ran). It never reads the gap table. Store the flag and which rule fired on the job record.
+  - **Completeness check (at template merge, independent of gap reporting):** flag a job `incomplete` using only the merged template, per "Incomplete template" above (global `T_low`, no `sound_ref` although a beat track was detected; empty output alone never counts, and jobs with a crashed or timed-out worker are excluded, missing `sound_ref` when sound detection ran). It never reads the gap table. Store the flag and which rule fired on the job record.
   - **Coverage check (metric a):** incomplete jobs that have at least one gap record ÷ all incomplete jobs; show the coverage % in the digest, and list (by reason count only) which rules fired on uncovered jobs
   - **Delivery monitor:** if a digest hasn't been posted by a set time, alert through a **different channel** than Discord (for example the scheduled workflow's failure notification or email), because Discord being down is one of the failure cases
 - **Acceptance criteria:**
@@ -156,6 +157,7 @@ The result is stored on the job record (an `incomplete` flag plus which rule fir
   - [ ] A job whose merged template has a low-confidence element but **no** gap record is flagged incomplete and counted as uncovered
   - [ ] The completeness check gives the same result with the gap table empty (it doesn't depend on it)
   - [ ] A job with a crashed or timed-out worker is excluded from the coverage denominator, and the digest counts how many were excluded
+  - [ ] A video with no text and no music (legitimately empty output) is **not** flagged incomplete
   - [ ] A simulated Discord outage triggers the delivery alert within a day
 - **Depends on:** stories 3, 4, and #53 (the orchestrator's merge step)
 
