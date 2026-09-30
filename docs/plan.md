@@ -133,6 +133,8 @@ Quality is gated by the eval harness (#39): retrieval recall@5, citation support
 
 Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and the `epic` / `story` / `subtask` labels. Phases are GitHub milestones. Subtasks exist only where a story has separable, parallel parts (#9, #16, #18, #19, #22, #27, #31, #32); other stories use checklists.
 
+**New work starts as a proposal, not an issue.** New epics and stories are drafted in `docs/epics/` (`/propose-epic`), and technical decisions in `docs/decisions/` as ADRs (`/propose-adr`). Both are questioned first by `/grill`. Code-owner approval and merging the proposal PR is the approval; issues are created only after that. See the [Claude Code Skills](https://github.com/anthonythanpoovong/Sequa/wiki/Claude-Code-Skills) wiki page.
+
 | Epic | Stories | Owner |
 |---|---|---|
 | #40 Engineering foundations | #1 schema, #2 codegen, #3 scaffold, #48 CI/CD + environments, #49 migrations + RLS tests, #50 observability + cost guardrails, #51 product analytics | anthonythanpoovong |
@@ -189,12 +191,15 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 | Assistant gives wrong tool advice | Ontology-first answers, citations required, eval gate #39 |
 | Docs licensing | #21 before ingestion; link-only mode as fallback |
 | Detection quality below "feels like the original" | Phase 0 gate; confidence shown in the UI and passed to adapters |
+| GPU cost from users' raw footage (footage match) | Score slotted clips only, trimmed to slot + 2 s, 2 fps / 720p, total ≤ source duration, 3-minute ceiling (#102) |
+| Wrong "re-film" advice costs a user a real reshoot | Flags show confidence and a reason, phrased as suggestions; validated on a labeled set (#101) |
 
 ## Metrics
 
 - **Time to editor:** upload → template open in the user's editor (target < 10 min, MVP gate)
 - **Editing time saved:** minutes to rebuild with Sequa vs manually
 - **Format Match Score:** 1–10 with sub-scores (lighting, loudness/pitch, framing/angle, pacing); similarity to the original, not "virality"
+- **Footage match lift:** average Format Match Score of recreations made with pre-edit footage feedback vs without; target +1.5 at Phase 3 exit (#105)
 - **MCP adoption:** % of active users with a connected client; applies per week per editor
 - **Assistant quality:** #39 scores; thumbs-up rate; % of answers with citations
 - **Editor satisfaction:** qualitative feedback on template accuracy
@@ -204,8 +209,12 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 - Bridge language: Python (Resolve API is Python) or Node (MCP SDK, UXP)? Decided in #29.
 - Windows support timing for the Bridge.
 - Should the assistant be available to trial users, and with what quota?
+- **Link input / "Send to Sequa"** (browser extension, Android share target, iOS Shortcut): parked. It needs written guidance from #21 on analyzing one public video on request without keeping it, then an ADR replacing upload-first. User demand is unvalidated; ask design partners (#55).
+- **Trending / discovery feed:** parked. No scraping, because it conflicts with upload-first and platform terms. An embed-only (oEmbed) feed is the option to revisit, with no user evidence yet. Virality scoring was rejected (no legitimate ground truth); the niche format benchmark (#103) replaces it.
 
 ## Links
 
 - GitHub: https://github.com/anthonythanpoovong/Sequa
 - Project Board: https://github.com/users/anthonythanpoovong/projects/2 (views: Spikes, Blocked, Quick wins, per-area incl. MCP and RAG)
+- Wiki (per-feature docs): https://github.com/anthonythanpoovong/Sequa/wiki
+- Proposals: [`docs/epics/`](epics/README.md) (epics) · [`docs/decisions/`](decisions/README.md) (ADRs)

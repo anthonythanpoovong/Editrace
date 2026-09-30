@@ -66,7 +66,7 @@ The repo ships Claude Code skills in `.claude/skills/`. They're available automa
 | `/grill` | Pressure-test an idea like a founding engineer: problem, alternatives, cost, security, failure modes, reversibility and success metric. Nothing gets written. |
 | `/propose-epic` | Grill → break into stories → draft `docs/epics/<name>.md` → draft PR. After approval, it creates the `epic` and `story` issues. |
 | `/propose-adr` | Grill → draft `docs/decisions/NNNN-<name>.md` (options, decision, consequences) → draft PR. |
-| `/sync-docs` | After large changes merge, update this README (via PR) and the wiki to match `main`. |
+| `/sync-docs` | After large changes merge, update this README, `docs/plan.md` (via PR) and the wiki to match `main`. |
 
 **New features and architecture changes are drafted, grilled and approved before they become issues or code.** Approval = code-owner review and merge of the proposal PR (CODEOWNERS covers `docs/decisions/`, `docs/epics/` and `.claude/`). See the [Claude Code Skills wiki page](https://github.com/anthonythanpoovong/Sequa/wiki/Claude-Code-Skills) for walkthroughs.
 
