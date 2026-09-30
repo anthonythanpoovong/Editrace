@@ -1,12 +1,12 @@
 # Epic proposal: Repo hardening for Phase 0 (stories for #40)
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-09-30, via #124)
 - **Date:** 2026-09-30
 - **Author:** @anthonythanpoovong
 - **Owner(s):** @anthonythanpoovong (teammates join via story 8)
 - **Phase:** 0 (De-risk)
 - **Related:** #40 Engineering foundations (parent epic), #48 CI/CD + environments, #2 codegen, #50 observability
-- **Epic issue:** Not a new epic. These are new stories under **#40**.
+- **Epic issue:** Not a new epic. Stories under **#40**: #125 (1), #126 (2), #127 (3), #128 (4), #129 (5), #130 (6), #131 (7), #132 (8)
 
 ## Problem
 
