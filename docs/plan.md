@@ -199,6 +199,9 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 | Copyright strike or account ban from marketing content | Only owned, licensed or permitted footage and audio in posts and demos; sources recorded (#118, #119) |
 | Marketing over-promises features (e.g. MCP for CapCut before Phase 2) | "Preview" labels before the MVP; lead with the breakdown + CapCut export (#10), not the Bridge (#36) |
 | One person can't sustain marketing alongside product work | Organic, 2 posts/week max, batch-produced (#119); revisit if the cadence slips |
+| Armour skips silently (workflow-change PRs, errors, usage limits), and its accuracy is unmeasured | Visible skip notice from an always-run job (#126); eval set of seeded bugs, target ≥ 4/5, re-run when rules or model change (#128) |
+| Untested code merges, or the coverage gate is bypassed | 80% changed-line coverage gate in `ci-ok` (#129). An exemption is only the code owner's `/coverage-exempt` PR review on the current head commit; labels and statuses have no effect; fails closed. Write access is treated as trusted. |
+| Armour eval token exposed to collaborators' branch workflows | Stored as a `main`-only environment secret with owner approval, or the eval runs from a local script with no stored token (#128) |
 
 ## Metrics
 
@@ -210,6 +213,7 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 - **Assistant quality:** #39 scores; thumbs-up rate; % of answers with citations
 - **Editor satisfaction:** qualitative feedback on template accuracy
 - **Marketing (Phase A):** 10 qualified conversations (creators or UGC agencies) and 5 design partners sourced from marketing channels, by the Phase 1 gate; attributed by UTM + waitlist source (#115)
+- **Repo hardening (Phase 0):** Armour's eval catches ≥ 4/5 seeded bugs, re-checked when its rules or model change (#128), and the first 5 code PRs pass the 80% changed-line coverage gate with no bypass, each Armour review showing the changed files and coverage (#125, #129), by the Phase 0 gate
 
 ## Open Questions
 
@@ -219,6 +223,9 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 - **Link input / "Send to Editrace"** (browser extension, Android share target, iOS Shortcut): parked. It needs written guidance from #21 on analyzing one public video on request without keeping it, then an ADR replacing upload-first. User demand is unvalidated; ask design partners (#55).
 - **Trending / discovery feed:** parked. No scraping, because it conflicts with upload-first and platform terms. An embed-only (oEmbed) feed is the option to revisit, with no user evidence yet. Virality scoring was rejected (no legitimate ground truth); the niche format benchmark (#103) replaces it.
 - **Marketing beyond Phase A:** paid ads wait for the MVP, billing (#19) and a budget (#121). Premiere/Resolve/FCP editors as a primary audience, Product Hunt, a newsletter and affiliate/referral programs are deferred (see `docs/epics/marketing-launch.md`).
+- **Repo hardening, deferred:** Dependabot, dependency/security scanning (pip-audit, npm audit, Semgrep) and pinning actions to SHAs wait until dependencies exist; CodeQL needs a paid plan for private repos; 👍/👎 tracking of Armour findings is deferred (see `docs/epics/repo-hardening-phase-0.md`).
+- **Admin bypass (#132):** keep it until a second `/.github/` code owner exists, or add one and enforce for admins (that person would also join the coverage-exemption allowlist). Default: keep.
+- **Eval token storage (#128):** environment protection on private repos may need a paid GitHub plan; otherwise the Armour eval runs from a local script. Generated code paths to exclude from coverage are confirmed when codegen (#2) lands.
 
 ## Links
 
