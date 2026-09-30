@@ -127,6 +127,8 @@ By the **Phase 0 gate**:
     - **Fail closed:** the exemption is ignored (the gate applies) if the actor can't be resolved (a deleted or "ghost" user, or a missing actor), if the actor is a bot (`actor.type == "Bot"`), if the allowlist has no plain `@username` entries, or if the events API call fails
     - If anyone else applied it, or it was removed and re-added by someone else, the gate **still applies**, and CI says who applied the label and why it was ignored
     - The job re-runs on `labeled` / `unlabeled` events as well as new commits, and it writes the exemption and approver into the job summary for the record
+    - **An exemption covers only the commit it was given for.** On every new push (`synchronize`), a workflow step removes `coverage-exempt`, so new code must meet the gate or be re-exempted by the owner.
+    - **Protecting the gate itself:** the check lives in `.github/workflows/ci.yml`, which a PR could edit. That's covered by CODEOWNERS on `/.github/` plus `main`'s required code-owner review: any PR that touches the workflow needs the owner's approval. Story 8's admin-bypass decision determines whether the owner's own PRs are also reviewed.
 - **Acceptance criteria:**
   - [ ] A PR that adds untested code fails `ci-ok`; adding tests makes it pass
   - [ ] Docs-only PRs aren't affected
@@ -134,6 +136,7 @@ By the **Phase 0 gate**:
   - [ ] Editing the CODEOWNERS allowlist in the PR itself doesn't change the result (the allowlist is read from `main`)
   - [ ] Fail closed: a label applied by a bot, or by an actor that can't be resolved, or an events API error, leaves the gate in force
   - [ ] Removing `coverage-exempt` (after the owner applied it) re-runs the job, and the gate applies again
+  - [ ] Pushing a new commit to an exempted PR removes the label, and the gate applies to the new code
   - [ ] Adding an area line to CODEOWNERS (story 8) doesn't change who may exempt; only the exact `/.github/` line counts
   - [ ] Each push updates one sticky "Coverage" comment (no duplicates)
 - **Depends on:** #48 (test jobs)
