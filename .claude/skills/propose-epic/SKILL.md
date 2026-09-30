@@ -49,7 +49,7 @@ Tell the author: mark it **Ready for review** when discussion is done. It merges
 ### 6. After approval: create the issues
 Only when asked, and only if **all** of these hold (otherwise stop and say which failed):
 - The proposal PR is merged: `gh pr view <n> --json state` → `MERGED`. Merging is the approval. The file still says `Proposed`, because `main` dismisses approvals on new commits, so status is flipped afterwards in step 6.5.
-- The proposal file exists on `origin/main`.
+- The proposal file exists on `origin/main` and says `Status: Proposed`. A merged `Rejected` file is a record, not an approval.
 - The epic doesn't already exist (search issues for its title).
 
 Then:
@@ -67,4 +67,4 @@ Show the author the list of issues before creating them and get a yes. Creating 
 ## Rules
 - Never create epic or story issues from an unmerged proposal.
 - Never merge the proposal PR yourself.
-- A rejected proposal keeps its file with `Status: Rejected` and the reason.
+- To record a rejection (a closed PR never reaches `main`): on the proposal branch, set `Status: Rejected`, add a **Rejection reason** section and have the code owner merge it. For trivial ideas, just closing the PR is fine.

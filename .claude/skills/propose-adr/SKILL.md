@@ -18,7 +18,7 @@ Stop if the verdict is "Needs a spike first" or "Not worth pursuing". Offer to o
 One ADR = one decision. If the idea contains several decisions (e.g. "use Python for the Bridge **and** ship it via Homebrew"), split it and ask which to write first. If the idea is really a body of work rather than a decision, switch to `propose-epic`.
 
 ### 3. Draft
-- Next number: take the highest `NNNN` in `docs/decisions/` and add 1. Zero-pad to 4 digits. `0000-template.md` doesn't count.
+- Next number: take the highest `NNNN` across **both** `docs/decisions/` on `origin/main` **and** open ADR PRs (`gh pr list --label adr --state open --json title`, titles start `ADR NNNN:`), then add 1. Zero-pad to 4 digits. `0000-template.md` doesn't count. If a collision still happens at merge, renumber the later PR.
 - Filename: `docs/decisions/NNNN-kebab-title.md`.
 - Copy `docs/decisions/0000-template.md` and fill in every section **from the author's grill answers**. Don't invent facts, numbers or evidence. Anything unknown goes under **Open questions**.
 - `Status: Proposed`, today's date, the author's GitHub handle, and links to related issues/ADRs.
@@ -39,13 +39,14 @@ gh pr create --draft --label proposal,adr \
 Tell the author: the PR is a draft. Mark it **Ready for review** when discussion is done. It merges only with code-owner approval (CODEOWNERS covers `docs/decisions/`).
 
 ### 5. After approval (only when asked, and only once merged)
-Check the PR is merged: `gh pr view <n> --json state` must be `MERGED`. If it isn't, stop. Merging is the approval. Status isn't flipped inside the proposal PR, because `main` dismisses approvals on new commits. Then, on a new branch:
+Check the PR is merged (`gh pr view <n> --json state` must be `MERGED`) and the file on `origin/main` still says `Status: Proposed`. A merged `Rejected` file is a record, not an approval. If either check fails, stop. Merging a Proposed ADR is the approval. Status isn't flipped inside the proposal PR, because `main` dismisses approvals on new commits. Then, on a new branch:
 - Set `Status: Accepted` and the accepted date.
 - If it supersedes an ADR, set the old one to `Status: Superseded by NNNN`.
 - If it changes a Key Decision, update `docs/plan.md` to match.
 - Open a normal PR with those changes.
 
-If a proposal PR is closed without merging, set `Status: Rejected` with the reason. Rejected ADRs are kept; they stop the same debate happening twice.
+### Rejecting
+A closed PR never reaches `main`, so to keep the record: on the proposal branch, set `Status: Rejected` and add a **Rejection reason** section. The code owner then approves and merges it. Rejected ADRs stop the same debate happening twice. For trivial ideas, just closing the PR is fine.
 
 ## Rules
 - Never set `Accepted` on an unmerged ADR, and never merge the PR yourself.

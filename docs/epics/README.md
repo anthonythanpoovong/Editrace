@@ -9,6 +9,6 @@ New bodies of work start here as a proposal, **not** as GitHub issues. One file 
 3. **Approve:** CODEOWNERS covers this folder, so the PR can't merge without code-owner approval. **Merged = approved.**
 4. **Create issues:** run `/propose-epic` again and ask it to create the issues for the merged proposal. It creates the `epic` issue and its `story` sub-issues, adds them to the project board, and marks the file `Accepted` with the issue numbers.
 
-No epic or story issues are created from an unmerged proposal. Rejected proposals stay here with `Status: Rejected` and the reason.
+No epic or story issues are created from an unmerged proposal. To reject a proposal, set `Status: Rejected` with a reason on the PR branch and merge it (a closed PR never reaches `main`). Merging a Rejected file is a record, not an approval.
 
 Just want to pressure-test an idea without writing anything? Run `/grill`.
