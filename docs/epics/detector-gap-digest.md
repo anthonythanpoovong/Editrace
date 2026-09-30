@@ -49,7 +49,7 @@ By the **Phase 1 gate + 8 weeks**:
 
 ### What a gap record holds
 
-Reason code, detector name and version, the detector's confidence, an `occurrences` count (how many elements in the job were affected), the `job_id`, and a timestamp. For `font_unrecognized`, the normalized box size and the best font-match score (numbers only). **No text of any kind is stored**, because OCR and caption text can contain names, handles or emails.
+Reason code, detector name and version, an `occurrences` count (how many elements in the job were affected), the **lowest** confidence among them, the `job_id`, and a timestamp. For `font_unrecognized`, the normalized size of the **largest** affected box and the **lowest** font-match score among the affected text (numbers only). **One row summarizes every affected element for that job, detector and reason**; per-element rows are out of scope, because they'd multiply storage and drift toward storing content. **No text of any kind is stored**, because OCR and caption text can contain names, handles or emails.
 
 ### What is never recorded
 
@@ -65,6 +65,8 @@ Metric (a) checks that detectors report their limits, so "incomplete" **can't be
 **Empty output alone never counts.** A video with no on-screen text or no music legitimately yields empty OCR or sound output, so "empty" isn't a signal. To keep limits visible, detectors **keep a low-confidence element in the template (with its confidence) instead of omitting one they're unsure about** (story 3), which is what the plan already specifies, so this epic doesn't change what users or exporters receive, so a real limitation shows up as a low-confidence element rather than as silence.
 
 The result is stored on the job record (an `incomplete` flag plus which rule fired). **Coverage = incomplete jobs with at least one gap record ÷ all incomplete jobs, computed per digest week over that week's jobs** (when both the gap rows and the `incomplete` flags are still within retention). **Each week's value is posted in the digest, so the history lives in the digests, not in rows that get purged**, and coverage can't drift down as old gap rows expire. A detector that fails to report shows up as uncovered, and gap rows on jobs that weren't flagged incomplete are counted separately.
+
+**Detector thresholds can't be looser than `T_low`.** A detector reports a gap when an element falls below its own gap threshold, while `T_low` flags the job as incomplete. If a detector's threshold were lower than `T_low`, an element between the two would make the job incomplete with no gap record, and the 95% target would be unreachable. So **every detector's gap threshold must be at least `T_low`** (a detector may report more gaps than the completeness check flags, never fewer), and the sound detector **must report `sound_not_identified` whenever a beat track was detected but no `sound_ref` was produced**. `T_low` is one shared config value that detectors read, not a copy.
 
 **`input_unsupported` jobs are outside metric (a).** A video rejected before analysis (too long, corrupt, unusual format) never produces a merged template, so it can't be "incomplete". Its gap records still appear in the digest's counts, but those jobs are excluded from the coverage denominator, like failed workers.
 
@@ -94,7 +96,7 @@ The result is stored on the job record (an `incomplete` flag plus which rule fir
 - **Owner:** @calvinkafaiyuen (proposed) · **Phase:** 1
 - **Context:** every detector needs one way to say "I finished but couldn't be confident".
 - **Scope:**
-  - Define the gap record in a new **`schema/detector-gap.schema.json`** (reason-code enum from the table above, detector, version, confidence, `occurrences`, `job_id`, timestamp; for fonts only a normalized box size and a font-match score). **No free-text fields.** Types are **generated** by codegen (#2), never hand-written
+  - Define the gap record in a new **`schema/detector-gap.schema.json`** (reason-code enum from the table above, detector, version, confidence, `occurrences`, `job_id`, timestamp; for fonts only a normalized box size and a font-match score; each row aggregates a job's affected elements: lowest confidence, count, largest box, lowest match score). **No free-text fields.** Types are **generated** by codegen (#2), never hand-written
   - Add `report_gap(reason, confidence, ...)` to the worker base (#53). It is **idempotent: one row per job + detector + reason**; a repeated call **overwrites** that row's `occurrences` with the value just computed (it never increments), so a retry that recomputes the same total leaves the same row and the same count
   - Reject fields outside the schema (so audio, frames or identifiers can't be added by accident)
 - **Acceptance criteria:**
@@ -127,6 +129,8 @@ The result is stored on the job record (an `incomplete` flag plus which rule fir
   - Each detector documents its confidence threshold for "gap" in its own page on the wiki
 - **Acceptance criteria:**
   - [ ] A test video that trips each case produces exactly one gap record with the right reason
+  - [ ] Each detector's gap threshold is at least `T_low` (a unit test reads `T_low` from the shared config), and an element just below `T_low` always produces a gap
+  - [ ] A beat track with no `sound_ref` always produces `sound_not_identified`
   - [ ] A job that finishes with an incomplete template has a gap record (measured for metric (a) in story 5)
 - **Depends on:** story 1, story 2, #13, #14, #16
 
