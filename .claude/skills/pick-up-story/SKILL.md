@@ -1,6 +1,6 @@
 ---
 name: pick-up-story
-description: Start work on a Sequa story or subtask issue — check it's ready (dependencies closed, owner, acceptance criteria), create the branch, turn acceptance criteria into a checklist, and open a draft PR linked to the issue. Use when someone says "pick up #N", "start on story N", "what should I work on next", or "work on #N".
+description: Start work on an Editrace story or subtask issue — check it's ready (dependencies closed, owner, acceptance criteria), create the branch, turn acceptance criteria into a checklist, and open a draft PR linked to the issue. Use when someone says "pick up #N", "start on story N", "what should I work on next", or "work on #N".
 ---
 
 # Pick up a story

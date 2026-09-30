@@ -1,6 +1,6 @@
 ---
 name: schema-change
-description: Safely change Sequa's template JSON Schema (schema/template.schema.json) — add or change fields/sections, regenerate TypeScript/Pydantic/Zod, update examples, and handle versioning/migration. Use for any edit to the template format, e.g. "add a field to slots", "change how captions are stored", or story #99. Routes breaking changes to /propose-adr.
+description: Safely change Editrace's template JSON Schema (schema/template.schema.json) — add or change fields/sections, regenerate TypeScript/Pydantic/Zod, update examples, and handle versioning/migration. Use for any edit to the template format, e.g. "add a field to slots", "change how captions are stored", or story #99. Routes breaking changes to /propose-adr.
 ---
 
 # Change the template schema

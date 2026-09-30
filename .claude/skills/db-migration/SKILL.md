@@ -1,6 +1,6 @@
 ---
 name: db-migration
-description: Create a Supabase Postgres migration for Sequa together with its RLS policies and a two-user access test, so no table ships without row-level security. Use when adding or changing tables, columns, indexes, functions, storage buckets or RLS policies — e.g. "add a jobs table", "store footage match results", "new column on templates".
+description: Create a Supabase Postgres migration for Editrace together with its RLS policies and a two-user access test, so no table ships without row-level security. Use when adding or changing tables, columns, indexes, functions, storage buckets or RLS policies — e.g. "add a jobs table", "store footage match results", "new column on templates".
 ---
 
 # DB migration + RLS

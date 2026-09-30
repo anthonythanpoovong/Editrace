@@ -33,7 +33,7 @@ Before editing, a user can put their own clips into a template's slots and see, 
 
 - **Virality scoring.** There's no legitimate engagement data, and it would present a guess as a fact. Replaced by the format benchmark.
 - **Scraped trending/discovery feed.** It conflicts with upload-first and the platforms' terms (#21 unresolved), and there's no user evidence for it. A future separate proposal; an embed-only (oEmbed) feed is an option.
-- **"Send to Sequa" / link input.** It needs #21 guidance and an ADR replacing upload-first. A future separate proposal.
+- **"Send to Editrace" / link input.** It needs #21 guidance and an ADR replacing upload-first. A future separate proposal.
 - **Automatic niche classification.** Users pick the niche.
 - **Benchmarking on other users' uploads.** Only after #56 covers it.
 

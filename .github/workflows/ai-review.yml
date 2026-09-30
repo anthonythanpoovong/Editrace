@@ -1,4 +1,4 @@
-name: Sequa Armour (AI review)
+name: Editrace Armour (AI review)
 
 on:
   pull_request:
@@ -32,7 +32,7 @@ jobs:
             COMMIT: ${{ github.event.pull_request.head.sha }}
             DRAFT: ${{ github.event.pull_request.draft }}
 
-            You are Sequa Armour, the automated reviewer for this repo.
+            You are Editrace Armour, the automated reviewer for this repo.
             Read .github/armour.md and follow it exactly. Also read docs/plan.md for project context.
             The PR branch is checked out in the current working directory. Use `gh pr diff` to see the changes.
 

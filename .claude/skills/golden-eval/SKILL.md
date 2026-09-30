@@ -1,6 +1,6 @@
 ---
 name: golden-eval
-description: Evaluate a Sequa detector or the full analysis pipeline against the golden video dataset (#52) and compare with main — per-element precision/recall with frame tolerance — then report a metrics table on the PR. Use when someone changes a worker/detector, asks "did this make cuts detection better?", "run the golden set", or needs numbers for a #41 exit criterion.
+description: Evaluate an Editrace detector or the full analysis pipeline against the golden video dataset (#52) and compare with main — per-element precision/recall with frame tolerance — then report a metrics table on the PR. Use when someone changes a worker/detector, asks "did this make cuts detection better?", "run the golden set", or needs numbers for a #41 exit criterion.
 ---
 
 # Golden-set eval

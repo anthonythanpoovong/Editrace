@@ -1,8 +1,8 @@
-# Sequa — Project Plan
+# Editrace — Project Plan
 
 ## Overview
 
-Sequa is a web app that reverse-engineers short-form videos into editable **templates** (cuts, pacing, motion, transitions, text overlays, captions, beat markers, color) and connects them to the user's editor through an **MCP tool**. Supported editors are DaVinci Resolve, Premiere Pro, Final Cut Pro and CapCut.
+Editrace is a web app that reverse-engineers short-form videos into editable **templates** (cuts, pacing, motion, transitions, text overlays, captions, beat markers, color) and connects them to the user's editor through an **MCP tool**. Supported editors are DaVinci Resolve, Premiere Pro, Final Cut Pro and CapCut.
 
 It has three surfaces:
 
@@ -16,8 +16,8 @@ It has three surfaces:
 
 - **Upload-first.** No link downloading in MVP (TOS and legal risk, #21).
 - **No copyrighted audio in exports.** Fingerprint and identify the sound, link to it, export beat and cut markers only. Audio is discarded after analysis.
-- **Web app, not desktop.** Heavy processing runs on Modal GPU workers. The only local component is the optional Sequa Bridge.
-- **Two-tier MCP.** A **remote MCP server** (hosted, OAuth) handles templates and exports. A **local Sequa Bridge** (stdio MCP server on the user's machine) drives desktop editors, because the cloud can't reach them.
+- **Web app, not desktop.** Heavy processing runs on Modal GPU workers. The only local component is the optional Editrace Bridge.
+- **Two-tier MCP.** A **remote MCP server** (hosted, OAuth) handles templates and exports. A **local Editrace Bridge** (stdio MCP server on the user's machine) drives desktop editors, because the cloud can't reach them.
 - **Live where possible, file handoff otherwise.** Each editor gets the best mechanism it supports; capabilities are decided in spike #29.
 - **Templates hold slots, not media.** Clips are placeholders for the user's own footage.
 - **Schema-driven.** `schema/template.schema.json` is the single source of truth. TypeScript types, Pydantic models and MCP tool schemas (Zod) are generated from it, never hand-written.
@@ -39,7 +39,7 @@ It has three surfaces:
                    │ Remote MCP server (Streamable HTTP, OAuth)             │
                    └───────────────▲────────────────────────────────────────┘
                                    │ HTTPS (token)
- MCP client (Claude, Cursor) ──stdio──▶ Sequa Bridge (local MCP server)
+ MCP client (Claude, Cursor) ──stdio──▶ Editrace Bridge (local MCP server)
                                           ├─ Resolve adapter  (scripting API, live)
                                           ├─ Premiere adapter (UXP panel, live)
                                           ├─ FCP adapter      (FCPXML handoff)
@@ -48,7 +48,7 @@ It has three surfaces:
 
 **Analysis flow:** upload → `jobs` row → orchestrator fans out workers in parallel → each writes a partial template with confidence/provenance → merge → validate → breakdown page updates via Realtime.
 
-**Editor flow:** the user asks their MCP client to "apply template X in Resolve". The client calls the Bridge's `apply_template`. The Bridge fetches the template from the Sequa API and passes it to the Resolve adapter, which builds the timeline and returns a report of applied, skipped and approximated elements.
+**Editor flow:** the user asks their MCP client to "apply template X in Resolve". The client calls the Bridge's `apply_template`. The Bridge fetches the template from the Editrace API and passes it to the Resolve adapter, which builds the timeline and returns a report of applied, skipped and approximated elements.
 
 ## Template Schema (v0 outline, #1)
 
@@ -86,7 +86,7 @@ All four also get plain file downloads from the web app (#9, #10), so the Bridge
 | `export_template` | Signed URL for FCPXML / Premiere XML / CapCut draft |
 | `ask_about_template` | Proxy to the assistant (Phase 2) |
 
-**Sequa Bridge (#32):** local stdio MCP server with the tools `list_editors`, `apply_template`, `add_beat_markers` and `open_export`. The adapter interface is `detect / capabilities / plan (dry run) / apply → report`.
+**Editrace Bridge (#32):** local stdio MCP server with the tools `list_editors`, `apply_template`, `add_beat_markers` and `open_export`. The adapter interface is `detect / capabilities / plan (dry run) / apply → report`.
 
 ## Template Assistant (RAG)
 
@@ -133,14 +133,14 @@ Quality is gated by the eval harness (#39): retrieval recall@5, citation support
 
 Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and the `epic` / `story` / `subtask` labels. Phases are GitHub milestones. Subtasks exist only where a story has separable, parallel parts (#9, #16, #18, #19, #22, #27, #31, #32); other stories use checklists.
 
-**New work starts as a proposal, not an issue.** New epics and stories are drafted in `docs/epics/` (`/propose-epic`), and technical decisions in `docs/decisions/` as ADRs (`/propose-adr`). Both are questioned first by `/grill`, which looks for customer evidence in `docs/customers/` (logged with `/log-interview`) and sends open unknowns to a time-boxed `/spike`. Code-owner approval and merging the proposal PR is the approval; issues are created only after that. See the [Claude Code Skills](https://github.com/anthonythanpoovong/Sequa/wiki/Claude-Code-Skills) wiki page.
+**New work starts as a proposal, not an issue.** New epics and stories are drafted in `docs/epics/` (`/propose-epic`), and technical decisions in `docs/decisions/` as ADRs (`/propose-adr`). Both are questioned first by `/grill`, which looks for customer evidence in `docs/customers/` (logged with `/log-interview`) and sends open unknowns to a time-boxed `/spike`. Code-owner approval and merging the proposal PR is the approval; issues are created only after that. See the [Claude Code Skills](https://github.com/anthonythanpoovong/Editrace/wiki/Claude-Code-Skills) wiki page.
 
 | Epic | Stories | Owner |
 |---|---|---|
 | #40 Engineering foundations | #1 schema, #2 codegen, #3 scaffold, #48 CI/CD + environments, #49 migrations + RLS tests, #50 observability + cost guardrails, #51 product analytics | anthonythanpoovong |
 | #41 Video analysis pipeline | #52 golden dataset, #53 worker framework, #4, #7, #8, #11, #12, #13, #14, #23, #24, #26, #99–#105 footage match & format benchmark | calvinkafaiyuen, sktchan |
 | #42 Editor exports & tool ontology | #5, #6, #9, #10, #31 | calvinkafaiyuen |
-| #43 MCP platform & Sequa Bridge | #29, #27, #32, #33, #34, #35, #36, #37 | anthonythanpoovong, calvinkafaiyuen |
+| #43 MCP platform & Editrace Bridge | #29, #27, #32, #33, #34, #35, #36, #37 | anthonythanpoovong, calvinkafaiyuen |
 | #44 Web app core experience | #15, #16, #17, #18 | anthonythanpoovong |
 | #45 Template assistant (RAG) | #30, #38, #22, #39 | anthonythanpoovong |
 | #46 Billing & accounts | #19, #25, #28 | anthonythanpoovong |
@@ -165,7 +165,7 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 **Signals (CV2):** captions (#12), OCR (#13), beat + sound (#14)
 **Ontology:** editor tool ontology (#31)
 **Product:** auth (#15), upload + job queue (#16), history (#17), breakdown page with the Tools used panel (#18), Stripe Solo + trial (#19)
-**MCP:** remote MCP server v1 (#27), settings page (#37), Sequa Bridge (#32), Resolve adapter (#33), FCP adapter (#34)
+**MCP:** remote MCP server v1 (#27), settings page (#37), Editrace Bridge (#32), Resolve adapter (#33), FCP adapter (#34)
 **Foundations:** observability + cost guardrails (#50), product analytics (#51)
 **GTM:** design partner program (#55), terms/privacy/retention (#56)
 
@@ -197,7 +197,7 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 ## Metrics
 
 - **Time to editor:** upload → template open in the user's editor (target < 10 min, MVP gate)
-- **Editing time saved:** minutes to rebuild with Sequa vs manually
+- **Editing time saved:** minutes to rebuild with Editrace vs manually
 - **Format Match Score:** 1–10 with sub-scores (lighting, loudness/pitch, framing/angle, pacing); similarity to the original, not "virality"
 - **Footage match lift:** average Format Match Score of recreations made with pre-edit footage feedback vs without; target +1.5 at Phase 3 exit (#105)
 - **MCP adoption:** % of active users with a connected client; applies per week per editor
@@ -209,12 +209,12 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 - Bridge language: Python (Resolve API is Python) or Node (MCP SDK, UXP)? Decided in #29.
 - Windows support timing for the Bridge.
 - Should the assistant be available to trial users, and with what quota?
-- **Link input / "Send to Sequa"** (browser extension, Android share target, iOS Shortcut): parked. It needs written guidance from #21 on analyzing one public video on request without keeping it, then an ADR replacing upload-first. User demand is unvalidated; ask design partners (#55).
+- **Link input / "Send to Editrace"** (browser extension, Android share target, iOS Shortcut): parked. It needs written guidance from #21 on analyzing one public video on request without keeping it, then an ADR replacing upload-first. User demand is unvalidated; ask design partners (#55).
 - **Trending / discovery feed:** parked. No scraping, because it conflicts with upload-first and platform terms. An embed-only (oEmbed) feed is the option to revisit, with no user evidence yet. Virality scoring was rejected (no legitimate ground truth); the niche format benchmark (#103) replaces it.
 
 ## Links
 
-- GitHub: https://github.com/anthonythanpoovong/Sequa
+- GitHub: https://github.com/anthonythanpoovong/Editrace
 - Project Board: https://github.com/users/anthonythanpoovong/projects/2 (views: Spikes, Blocked, Quick wins, per-area incl. MCP and RAG)
-- Wiki (per-feature docs): https://github.com/anthonythanpoovong/Sequa/wiki
+- Wiki (per-feature docs): https://github.com/anthonythanpoovong/Editrace/wiki
 - Proposals: [`docs/epics/`](epics/README.md) (epics) · [`docs/decisions/`](decisions/README.md) (ADRs)

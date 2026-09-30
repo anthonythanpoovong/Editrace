@@ -1,6 +1,6 @@
 ---
 name: editor-adapter
-description: Build or extend a Sequa Bridge editor adapter (DaVinci Resolve, Premiere Pro, Final Cut Pro, CapCut) implementing detect / capabilities / plan / apply → report, with contract tests against a fake adapter and version-pinned fixtures. Use for #33–#36 or when adding support for a template element in an editor.
+description: Build or extend an Editrace Bridge editor adapter (DaVinci Resolve, Premiere Pro, Final Cut Pro, CapCut) implementing detect / capabilities / plan / apply → report, with contract tests against a fake adapter and version-pinned fixtures. Use for #33–#36 or when adding support for a template element in an editor.
 ---
 
 # Editor adapter

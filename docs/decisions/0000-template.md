@@ -1,4 +1,4 @@
-# NNNN: <Decision title, as a statement, e.g. "Write the Sequa Bridge in Python">
+# NNNN: <Decision title, as a statement, e.g. "Write the Editrace Bridge in Python">
 
 - **Status:** Proposed <!-- Proposed | Accepted | Rejected | Superseded by NNNN -->
 - **Date:** YYYY-MM-DD <!-- proposed; add "Accepted: YYYY-MM-DD" on approval -->
