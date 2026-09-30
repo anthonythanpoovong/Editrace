@@ -73,4 +73,4 @@ Three workflows in `.github/workflows/` run on every pull request:
 
 **Gotcha:** a PR that changes a Claude workflow file skips its own Armour/`@claude` run ("workflow validation failed"). The action only runs when the workflow matches `main`, so a green check on that PR doesn't mean Claude ran. Merge it first, then test on another PR (for example, close and reopen it).
 
-See the [wiki](https://github.com/anthonythanpoovong/Sequa/wiki) for the full setup history and troubleshooting.
+See the [wiki](https://github.com/anthonythanpoovong/Sequa/wiki) for per-feature documentation (web app, analysis pipeline, schema, editor integrations, MCP, RAG assistant, billing) and CI details.
