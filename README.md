@@ -56,3 +56,21 @@ The **template JSON Schema** (`schema/template.schema.json`) is the single sourc
 - Setup instructions in each folder's README
 - Generated code: run type generation before committing schema changes
 - Tests: CI validates schema compliance
+
+## CI & AI Code Review
+
+Three workflows in `.github/workflows/` run on every pull request:
+
+| Workflow | File | What it does |
+|---|---|---|
+| **CI** | `ci.yml` | Scans for secrets with gitleaks, validates the template schema, and runs web/Python/codegen checks. Each job switches on once its part of the monorepo has real code. |
+| **Sequa Armour** | `ai-review.yml` | An AI reviewer (Claude **Sonnet 5.5**) that posts one summary comment and inline comments on every PR, including drafts, following the rules in [`.github/armour.md`](.github/armour.md). It's advisory only, never a required check. |
+| **Claude Code** | `claude.yml` | Mention `@claude` in an issue, PR comment or review to have Claude respond. |
+
+**Authentication:** Armour and `@claude` authenticate with the `CLAUDE_CODE_OAUTH_TOKEN` repo secret, which is billed to the owner's Claude Pro plan. CI runs count against the same Pro usage limits as personal Claude use. A Console API key (`ANTHROPIC_API_KEY`) would need separately purchased API credits, because Pro doesn't include them.
+
+**Ownership:** `.github/CODEOWNERS` requires owner approval for any change under `.github/` (workflows and Armour rules).
+
+**Gotcha:** a PR that changes a Claude workflow file skips its own Armour/`@claude` run ("workflow validation failed"). The action only runs when the workflow matches `main`, so a green check on that PR doesn't mean Claude ran. Merge it first, then test on another PR (for example, close and reopen it).
+
+See the [wiki](https://github.com/anthonythanpoovong/Sequa/wiki) for per-feature documentation (web app, analysis pipeline, schema, editor integrations, MCP, RAG assistant, billing) and CI details.
