@@ -27,6 +27,7 @@ One ADR = one decision. If the idea contains several decisions (e.g. "use Python
 
 ### 4. Open for approval
 ```sh
+git fetch origin main
 git checkout -b adr/NNNN-kebab-title origin/main
 git add docs/decisions/NNNN-kebab-title.md
 git commit -m "ADR NNNN: <title> (proposed)"

@@ -35,6 +35,7 @@ Push back on stories that are really epics ("build the Premiere adapter") or tas
 
 ### 5. Open for approval
 ```sh
+git fetch origin main
 git checkout -b epic/kebab-title origin/main
 git add docs/epics/kebab-title.md
 git commit -m "Epic proposal: <title>"
@@ -47,7 +48,7 @@ Tell the author: mark it **Ready for review** when discussion is done. It merges
 
 ### 6. After approval: create the issues
 Only when asked, and only if **all** of these hold (otherwise stop and say which failed):
-- The proposal PR is merged: `gh pr view <n> --json state` → `MERGED`. Merging is the approval. The file still says `Proposed`, because `main` dismisses approvals on new commits, so status is flipped afterwards in step 5.
+- The proposal PR is merged: `gh pr view <n> --json state` → `MERGED`. Merging is the approval. The file still says `Proposed`, because `main` dismisses approvals on new commits, so status is flipped afterwards in step 6.5.
 - The proposal file exists on `origin/main`.
 - The epic doesn't already exist (search issues for its title).
 
