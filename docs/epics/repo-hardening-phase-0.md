@@ -77,13 +77,14 @@ By the **Phase 0 gate**:
 - **Owner:** @anthonythanpoovong · **Phase:** 0
 - **Context:** Armour exits "successfully" without reviewing when the PR changes its workflow or when the action errors or hits a usage limit, and nobody can tell.
 - **Scope:**
-  - A **separate job in `ai-review.yml` that always runs** (`if: always()`, `needs: review`), because a step inside the review job never runs when that job is skipped or fails early. It decides using only what a separate job can read: **`needs.review.result`** (`skipped`, `failure`, `cancelled`) and a **declared job output** from the review job (e.g. `reviewed=true`, set by a final step only after Armour actually posted a review). Not-`reviewed` or a non-success result means "did not review". The reason is inferred from the result (skipped/cancelled/failed); a workflow-validation skip looks like a "success" with no review, and is covered by the missing `reviewed` output.
+  - A **separate job in `ai-review.yml` that always runs for same-repo PRs** (`if: always() && github.event.pull_request.head.repo.full_name == github.repository`, `needs: review`), because a step inside the review job never runs when that job is skipped or fails early. It decides using only what a separate job can read: **`needs.review.result`** (`skipped`, `failure`, `cancelled`) and a **declared job output** from the review job (e.g. `reviewed=true`, set by a final step only after Armour actually posted a review). Not-`reviewed` or a non-success result means "did not review". The reason is inferred from the result (skipped/cancelled/failed); a workflow-validation skip looks like a "success" with no review, and is covered by the missing `reviewed` output.
   - It posts or updates one **sticky notice comment**, marked with a hidden HTML marker, saying "⚠️ Editrace Armour did not review this commit: <reason>". When Armour later reviews the PR, the notice is deleted or replaced. **The "exactly one top-level comment" rule in the Armour prompt is about reviews; this notice is separate and never both exist for the same commit.**
-  - **Forks are out of scope:** the repo is private, and fork PRs get a read-only token that can't post comments anyway (the alternative, `pull_request_target`, would run with secrets against untrusted code, so we don't).
+  - **Forks are out of scope, and the notice job does nothing for them.** The review job already skips fork PRs (`head.repo.full_name == github.repository`), and fork PRs get a read-only token that can't post comments. So the notice job has the **same fork guard**: it doesn't run on fork PRs, which avoids a failing job and a red check. (The alternative, `pull_request_target`, would run with secrets against untrusted code, so we don't.) The repo is private, so forks aren't expected.
 - **Acceptance criteria:**
   - [ ] A PR that edits `ai-review.yml` gets the skip notice
   - [ ] A normal PR gets no notice, and after a real review any earlier notice for that PR is gone
   - [ ] The notice is posted even when the review job itself is skipped or fails
+  - [ ] A fork PR (or a simulated one) doesn't run the notice job and shows no red check
 - **Depends on:** —
 - **Note:** ship this **first**. **This story's own PR edits `ai-review.yml`, so Armour skips it and it needs a manual review.** The same goes for any later story that edits `ai-review.yml` (e.g. story 1's wait step), but once this story is merged, those PRs at least show the skip notice.
 
@@ -125,6 +126,9 @@ By the **Phase 0 gate**:
 - **Owner:** @anthonythanpoovong · **Phase:** 0
 - **Context:** without a gate, untested code merges. Gating only **changed** lines avoids punishing unrelated PRs.
 - **Scope:**
+  - **Step 0 (spike-sized, do this first, before the exemption design is built):** on a throwaway PR, verify how a review-triggered run behaves. `pull_request_review` runs against the merge ref, so confirm whether its result attaches to the PR's **head SHA** and satisfies the required `ci-ok`. Record the finding **in this story** before building the rest of the exemption.
+    - **If it works:** the exemption can re-run on `pull_request_review` as designed below.
+    - **If it doesn't (the assumed fallback):** the owner exempts by submitting the review and then **re-running the failed `ci-ok` job** (`gh run rerun --failed <run-id>`, or the Actions UI). That works because the gate **reads the PR's reviews live from the API at run time**, not from the original event payload, so a re-run sees the new review. `pull_request_review` is then dropped from the triggers, and CONTRIBUTING.md (story 6) documents the two steps. A `workflow_dispatch` run is **not** a fallback: its result wouldn't attach to the PR's head commit as `ci-ok`.
   - Collect coverage in the existing CI jobs: `pytest --cov` (Python), Vitest/Jest coverage (web)
   - Use **`diff-cover`** on the coverage reports vs `main`: **fail when changed lines are < 80% covered**
   - Switches on automatically via the existing `detect` job (only when `web/` or Python code exists)
@@ -137,7 +141,7 @@ By the **Phase 0 gate**:
     - The **author is in the exemption allowlist**: the plain `@username` entries on the **single line in `.github/CODEOWNERS` whose pattern is exactly `/.github/`** (today, @anthonythanpoovong), read from the file on `main`, not from the PR branch. It's a literal line match, **not** CODEOWNERS last-match-wins, so area entries added in story 8 can't change who may exempt. Team (`@org/team`) and email entries are ignored, not expanded.
     - **Fail closed:** if the review author is a bot or can't be resolved, if the `/.github/` line is missing or duplicated, if the allowlist has no plain `@username` entries, or if the API call fails, the exemption is ignored and the gate applies. CI says why.
     - A **label named `coverage-exempt` has no effect at all.**
-    - The job re-runs when a review is submitted (`pull_request_review` events) and writes the exemption (reviewer, reason, SHA) into the job summary. Story 5 must confirm the re-run's result attaches to the head SHA; if it doesn't, the owner re-runs the failed job after reviewing.
+    - The gate **reads reviews live at run time**, so any re-run picks up a new review or revoke. Whether that re-run is triggered by `pull_request_review` or by the owner re-running the job is decided by **Step 0** above. Either way the job writes the exemption (reviewer, reason, SHA) into the job summary.
     - **Threat model, stated plainly:** this stops accidental or casual self-exemption by trusted collaborators, and it doesn't depend on anything a collaborator can create (labels, statuses, comments). It can't stop a *malicious* insider with write access: on GitHub any workflow, including one pushed on a collaborator's own branch, can create a check named `ci-ok`. Write access is therefore treated as trusted. If that changes, move the gate to a repository ruleset with required workflows.
     - **Protecting the gate itself:** the check lives in `.github/workflows/ci.yml`, which a PR could edit. That's covered by CODEOWNERS on `/.github/` plus `main`'s required code-owner review: any PR that touches the workflow needs the owner's approval. Story 8's admin-bypass decision determines whether the owner's own PRs are also reviewed.
 - **Acceptance criteria:**
@@ -151,7 +155,7 @@ By the **Phase 0 gate**:
   - [ ] Editing the CODEOWNERS allowlist in the PR itself doesn't change the result (read from `main`), and adding an area line (story 8) doesn't change who may exempt
   - [ ] Fail closed: a bot or unresolvable reviewer, a missing or duplicated `/.github/` line, or an API error leaves the gate in force
   - [ ] Each push updates one sticky "Coverage" comment (no duplicates)
-  - [ ] **First verified on a real PR:** a `pull_request_review` re-run's result attaches to the PR's head SHA (not only the merge ref) and satisfies `ci-ok`. If it doesn't, the owner re-runs the failed job after reviewing, and CONTRIBUTING.md (story 6) says so.
+  - [ ] **Step 0 done first and recorded in this story:** a review-triggered run either attaches to the head SHA and satisfies `ci-ok`, or the re-run-the-failed-job fallback is adopted and documented in CONTRIBUTING.md (story 6). No exemption logic is written before this is recorded.
 - **Depends on:** #48 (test jobs)
 
 ### 6. CONTRIBUTING.md + PR and issue templates
