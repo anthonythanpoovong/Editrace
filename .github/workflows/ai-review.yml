@@ -40,5 +40,5 @@ jobs:
             Use `mcp__github_inline_comment__create_inline_comment` (with `confirmed: true`) for findings tied to specific lines.
             Only post GitHub comments; don't reply with review text as a message.
           claude_args: |
-            --model claude-haiku-4-5-20251001
+            --model claude-sonnet-5-5
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Glob,Grep"
