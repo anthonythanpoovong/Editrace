@@ -111,14 +111,14 @@ By the **Phase 0 gate**:
   - A **manual** (`workflow_dispatch`) runner that opens each case as a **draft PR labeled `armour-eval`**, waits for Armour, scores caught / missed, posts a summary, then **closes the PRs and deletes the branches**
   - **The runner opens PRs with a dedicated token, not the default `GITHUB_TOKEN`.** Events caused by `GITHUB_TOKEN` don't trigger other workflows, so Armour would never run on the eval PRs. Use a fine-grained PAT (or GitHub App token) scoped to this repo only (contents + pull requests: read/write), with an expiry.
   - **Store it as an environment secret, not a repo secret.** A repo secret is readable by any workflow on any branch, so a collaborator could push a workflow that leaks it (story 8 adds two write collaborators). Create an environment `armour-eval` with **deployment branches limited to `main`** and a **required reviewer (the code owner)**, put `ARMOUR_EVAL_TOKEN` there, and have the runner job declare `environment: armour-eval`. Workflows on other branches can't read it, and each run waits for the owner's approval.
-  - **Check the plan first:** environment protection rules (required reviewers, branch limits) on **private** repos need a paid GitHub plan (Pro, Team or Enterprise). If the account doesn't have one, fall back to running the eval **locally by the owner** (`gh workflow run` with the token in the owner's own shell), and keep the token off the repo entirely.
+  - **Check the plan first:** environment protection rules (required reviewers, branch limits) on **private** repos need a paid GitHub plan (Pro, Team or Enterprise). If the account doesn't have one, use the **local fallback**: a script in the repo (e.g. `scripts/armour-eval.sh`) that the owner runs on their own machine with their **own `gh` login**. It opens the 5 draft eval PRs, waits for Armour, scores them, posts the summary and closes the PRs and branches. PRs opened by a real user (unlike `GITHUB_TOKEN`) do trigger Armour, so **no token is created or stored anywhere**, and `ARMOUR_EVAL_TOKEN` isn't needed at all. (`gh workflow run` isn't a fallback: it still runs on GitHub and would need the token as a secret.)
   - Run only when `armour.md` or the Armour model changes (bounded Pro usage: about 5 reviews per run)
 - **Acceptance criteria:**
   - [ ] One command runs all 5 cases and reports a score
   - [ ] Eval PRs are never merged, and are closed automatically
   - [ ] Score recorded for the current rules and model (target ≥ 4/5)
   - [ ] Armour actually runs on every eval PR (PRs opened with `ARMOUR_EVAL_TOKEN`, not `GITHUB_TOKEN`)
-  - [ ] `ARMOUR_EVAL_TOKEN` exists only as an `armour-eval` environment secret (main-only, owner approval required), or the eval runs locally; a workflow on a non-`main` branch can't read it
+  - [ ] Either `ARMOUR_EVAL_TOKEN` exists **only** as an `armour-eval` environment secret (main-only, owner approval required) and a workflow on a non-`main` branch can't read it, **or** the eval runs from the local script with the owner's own login and no token is stored anywhere
 - **Depends on:** story 2
 
 ### 5. CI: changed-line coverage gate (80%)
