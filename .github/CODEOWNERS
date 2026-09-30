@@ -1,9 +1,16 @@
-# Changes to CI, workflows and Armour review rules need owner approval.
-/.github/ @anthonythanpoovong
+# Any of the three collaborators can approve any PR.
+# Keep the /.github/ entry as the single line whose pattern is exactly /.github/
+# with plain @username entries: the coverage-exemption allowlist (#129) reads it
+# from main, so everyone listed here may grant coverage exemptions.
+/.github/ @anthonythanpoovong @calvinkafaiyuen @sktchan
 
-# ADRs and epic proposals are approved by merging their PR, which needs owner approval.
-/docs/decisions/ @anthonythanpoovong
-/docs/epics/ @anthonythanpoovong
+# ADRs and epic proposals are approved by merging their PR.
+/docs/decisions/ @anthonythanpoovong @calvinkafaiyuen @sktchan
+/docs/epics/ @anthonythanpoovong @calvinkafaiyuen @sktchan
 
 # Claude Code skills enforce the proposal approval gate.
-/.claude/ @anthonythanpoovong
+/.claude/ @anthonythanpoovong @calvinkafaiyuen @sktchan
+
+# CV workers and exporters.
+/workers/ @anthonythanpoovong @calvinkafaiyuen @sktchan
+/exporters/ @anthonythanpoovong @calvinkafaiyuen @sktchan
