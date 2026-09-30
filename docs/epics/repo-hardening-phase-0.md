@@ -120,8 +120,9 @@ By the **Phase 0 gate**:
   - Switches on automatically via the existing `detect` job (only when `web/` or Python code exists)
   - Publish a coverage summary (overall %, change vs `main`, changed-lines %) as **check output** and as a **sticky "Coverage" PR comment** (updated in place on each push), so the numbers are visible even if Armour hasn't run. Armour quotes them (story 1).
   - **Exemption, enforced by CI rather than by who can label:** GitHub can't restrict who applies a label, since anyone with triage or write access can (and story 8 adds two write collaborators). So `ci-ok` **honors `coverage-exempt` only if the code owner applied it**:
+    - **Precondition: the label is on the PR right now.** The job reads the PR's current labels (`gh pr view --json labels`) at run time. If `coverage-exempt` isn't there, the gate applies, whatever the event history says. Removing the label always restores the gate.
     - The coverage job reads the PR's issue events (`GET /repos/{owner}/{repo}/issues/{n}/events`, **all pages**: `gh api --paginate`), finds the **most recent `labeled` event for `coverage-exempt`**, and takes its `actor.login`
-    - That login must be in the **exemption allowlist**: the owners listed for `/.github/` in `.github/CODEOWNERS` (today, @anthonythanpoovong), read from the file on `main`, not from the PR branch, so a PR can't add itself to the allowlist
+    - That login must be in the **exemption allowlist**: the `@username` entries on the **single line in `.github/CODEOWNERS` whose pattern is exactly `/.github/`** (today, @anthonythanpoovong), read from the file on `main`, not from the PR branch, so a PR can't add itself. This is a literal line match, **not** CODEOWNERS last-match-wins resolution, so area entries added in story 8 can't change who may exempt. If that line is missing or appears more than once, fail closed.
     - **Only plain `@username` entries count.** Team (`@org/team`) and email entries in that CODEOWNERS line are ignored, not expanded.
     - **Fail closed:** the exemption is ignored (the gate applies) if the actor can't be resolved (a deleted or "ghost" user, or a missing actor), if the actor is a bot (`actor.type == "Bot"`), if the allowlist has no plain `@username` entries, or if the events API call fails
     - If anyone else applied it, or it was removed and re-added by someone else, the gate **still applies**, and CI says who applied the label and why it was ignored
@@ -132,6 +133,8 @@ By the **Phase 0 gate**:
   - [ ] `coverage-exempt` applied by the code owner lets an under-covered PR pass; the same label applied by a non-owner collaborator is **ignored**, and the gate still fails with a message naming who applied it
   - [ ] Editing the CODEOWNERS allowlist in the PR itself doesn't change the result (the allowlist is read from `main`)
   - [ ] Fail closed: a label applied by a bot, or by an actor that can't be resolved, or an events API error, leaves the gate in force
+  - [ ] Removing `coverage-exempt` (after the owner applied it) re-runs the job, and the gate applies again
+  - [ ] Adding an area line to CODEOWNERS (story 8) doesn't change who may exempt; only the exact `/.github/` line counts
   - [ ] Each push updates one sticky "Coverage" comment (no duplicates)
 - **Depends on:** #48 (test jobs)
 
