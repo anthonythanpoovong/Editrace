@@ -92,7 +92,8 @@ By the **Phase 0 gate**:
 - **Owner:** @anthonythanpoovong · **Phase:** 0
 - **Context:** `armour.md` predates coverage data and the team's skills.
 - **Scope:** add rules to `.github/armour.md` for:
-  - **Uncovered risky logic:** changed lines with auth, RLS, billing, time conversion or cost limits that CI reports as uncovered
+  - **Uncovered risky logic:** changed lines with auth, billing, time conversion or cost limits that CI's coverage report shows as uncovered (Python and TypeScript only)
+  - **Migrations and RLS (SQL) aren't in the coverage report**, so the rule differs: flag a PR that adds or changes a migration or RLS policy **without a matching two-user RLS test** (the `/db-migration` requirement, #49)
   - **Missing tests** for new endpoints, MCP tools, workers or migrations (pointing to `/db-migration`, `/mcp-tool`, `/new-detector`)
   - **Missing docs follow-up:** a large change (per `/sync-docs`'s rules) with no note to run `/sync-docs` after merge
   - Severity calibration examples, so 🔴 means "must fix"
@@ -124,6 +125,7 @@ By the **Phase 0 gate**:
   - Collect coverage in the existing CI jobs: `pytest --cov` (Python), Vitest/Jest coverage (web)
   - Use **`diff-cover`** on the coverage reports vs `main`: **fail when changed lines are < 80% covered**
   - Switches on automatically via the existing `detect` job (only when `web/` or Python code exists)
+  - **SQL (migrations, RLS policies) is outside the coverage gate**: it's tested by the two-user RLS harness (#49, `/db-migration`), not by line coverage. Generated code (#2) is excluded too.
   - Publish a coverage summary (overall %, change vs `main`, changed-lines %) as **check output** and as a **sticky "Coverage" PR comment** (updated in place on each push), so the numbers are visible even if Armour hasn't run. Armour quotes them (story 1).
   - **Exemption: the owner's PR review, checked by CI.** A label can't carry this authority: anyone with triage or write access can apply one (and story 8 adds two write collaborators), a commit status or stored record can be created by any collaborator, and even a check run can be faked by a workflow on a collaborator's own branch. So the exemption rests on something **GitHub records itself**: a **pull request review**. Every review carries the **exact commit SHA it was submitted on** (`commit_id`, set by GitHub), and only its author can submit it. `ci-ok` honors an exemption only when **all** of these hold, checked against `GET /repos/{owner}/{repo}/pulls/{n}/reviews` (**all pages**: `gh api --paginate`):
     - The review's **`commit_id` equals the PR's current head SHA**, read at gate time. A new push changes the head SHA, so an old exemption stops applying on its own, with no label to clear and no race with the coverage job.
