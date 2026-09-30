@@ -149,7 +149,7 @@ The result is stored on the job record (an `incomplete` flag plus which rule fir
 - **Owner:** @anthonythanpoovong · **Phase:** 1
 - **Context:** the digest is only trustworthy if gaps are actually being recorded and the digest actually arrives.
 - **Scope:**
-  - **Completeness check (at template merge, independent of gap reporting):** flag a job `incomplete` using only the merged template, per "Incomplete template" above (global `T_low`, no `sound_ref` although a beat track was detected; empty output alone never counts, and jobs with a crashed or timed-out worker are excluded, missing `sound_ref` when sound detection ran). It never reads the gap table. Store the flag and which rule fired on the job record.
+  - **Completeness check (at template merge, independent of gap reporting):** flag a job `incomplete` using only the merged template, per "Incomplete template" above (an element below the global `T_low`, or no `sound_ref` although a beat track was detected). Empty output alone never counts, and jobs with a crashed or timed-out worker are excluded. It never reads the gap table. Store the flag and which rule fired on the job record.
   - **Coverage check (metric a):** incomplete jobs that have at least one gap record ÷ all incomplete jobs; show the coverage % in the digest, and list (by reason count only) which rules fired on uncovered jobs
   - **Delivery monitor:** if a digest hasn't been posted by a set time, alert through a **different channel** than Discord (for example the scheduled workflow's failure notification or email), because Discord being down is one of the failure cases
 - **Acceptance criteria:**
