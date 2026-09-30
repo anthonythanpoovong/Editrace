@@ -12,7 +12,7 @@ export function cutTimesInSeconds(cutFrames: number[], fps: number): number[] {
   return cutFrames.map((f) => f / fps);
 }
 
-export async function exportAudio(templateId: string) {
+export async function soundLink(templateId: string) {
   const t = await getTemplate(templateId);
-  return fetch(t.sound_ref.audio_url).then((r) => r.arrayBuffer());
+  return t?.sound_ref ? { title: t.sound_ref.title, url: t.sound_ref.link } : null;
 }
