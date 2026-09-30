@@ -133,7 +133,7 @@ Quality is gated by the eval harness (#39): retrieval recall@5, citation support
 
 Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and the `epic` / `story` / `subtask` labels. Phases are GitHub milestones. Subtasks exist only where a story has separable, parallel parts (#9, #16, #18, #19, #22, #27, #31, #32); other stories use checklists.
 
-**New work starts as a proposal, not an issue.** New epics and stories are drafted in `docs/epics/` (`/propose-epic`), and technical decisions in `docs/decisions/` as ADRs (`/propose-adr`). Both are questioned first by `/grill`. Code-owner approval and merging the proposal PR is the approval; issues are created only after that. See the [Claude Code Skills](https://github.com/anthonythanpoovong/Sequa/wiki/Claude-Code-Skills) wiki page.
+**New work starts as a proposal, not an issue.** New epics and stories are drafted in `docs/epics/` (`/propose-epic`), and technical decisions in `docs/decisions/` as ADRs (`/propose-adr`). Both are questioned first by `/grill`, which looks for customer evidence in `docs/customers/` (logged with `/log-interview`) and sends open unknowns to a time-boxed `/spike`. Code-owner approval and merging the proposal PR is the approval; issues are created only after that. See the [Claude Code Skills](https://github.com/anthonythanpoovong/Sequa/wiki/Claude-Code-Skills) wiki page.
 
 | Epic | Stories | Owner |
 |---|---|---|

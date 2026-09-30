@@ -62,12 +62,36 @@ The **template JSON Schema** (`schema/template.schema.json`) is the single sourc
 
 The repo ships Claude Code skills in `.claude/skills/`. They're available automatically when you run `claude` in this repo: type the slash command, or just describe what you want.
 
+**Plan & decide**
+
 | Skill | Use it for |
 |---|---|
 | `/grill` | Pressure-test an idea like a founding engineer: problem, alternatives, cost, security, failure modes, reversibility and success metric. Nothing gets written. |
+| `/log-interview` | Record a customer or design-partner conversation in `docs/customers/` as tagged evidence that `/grill` cites. |
+| `/spike` | Open, run and close a time-boxed spike that answers one unknown, then hand off to an ADR or epic. |
 | `/propose-epic` | Grill → break into stories → draft `docs/epics/<name>.md` → draft PR. After approval, it creates the `epic` and `story` issues. |
 | `/propose-adr` | Grill → draft `docs/decisions/NNNN-<name>.md` (options, decision, consequences) → draft PR. |
+
+**Build**
+
+| Skill | Use it for |
+|---|---|
+| `/pick-up-story` | Check a story is ready, branch, and open a draft PR with its acceptance criteria as a checklist. |
+| `/schema-change` | Change `schema/template.schema.json` safely: additive vs breaking (→ ADR), examples, `make codegen`, versioning. |
+| `/new-detector` | Scaffold an analysis worker on the shared base (#53) with confidence/provenance, caching, downsampling and cost logging. |
+| `/golden-eval` | Score a detector against the golden set (#52) vs `main`, and post the metrics table on the PR. |
+| `/db-migration` | Supabase migration + RLS policies + a two-user access test, together (#49). |
+| `/mcp-tool` | Add a tool to the remote MCP server (#27) or the Bridge (#32): generated Zod, auth, RLS, audit, Inspector tests. |
+| `/editor-adapter` | Bridge adapter for Resolve / Premiere / FCP / CapCut: `detect / capabilities / plan / apply → report`, with contract tests. |
+| `/rag-eval` | Run the assistant eval (#39): recall@5, citations, tool mapping, refusals. Thresholds block merge. |
+
+**Docs**
+
+| Skill | Use it for |
+|---|---|
 | `/sync-docs` | After large changes merge, update this README, `docs/plan.md` (via PR) and the wiki to match `main`. |
+
+The build skills check their prerequisites first (e.g. `/new-detector` needs the worker base #53). If a prerequisite doesn't exist yet, they stop and point to its issue.
 
 **New features and architecture changes are drafted, grilled and approved before they become issues or code.** Approval = code-owner review and merge of the proposal PR (CODEOWNERS covers `docs/decisions/`, `docs/epics/` and `.claude/`). See the [Claude Code Skills wiki page](https://github.com/anthonythanpoovong/Sequa/wiki/Claude-Code-Skills) for walkthroughs.
 
