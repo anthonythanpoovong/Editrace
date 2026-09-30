@@ -136,7 +136,7 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 | Epic | Stories | Owner |
 |---|---|---|
 | #40 Engineering foundations | #1 schema, #2 codegen, #3 scaffold, #48 CI/CD + environments, #49 migrations + RLS tests, #50 observability + cost guardrails, #51 product analytics | anthonythanpoovong |
-| #41 Video analysis pipeline | #52 golden dataset, #53 worker framework, #4, #7, #8, #11, #12, #13, #14, #23, #24, #26 | calvinkafaiyuen, sktchan |
+| #41 Video analysis pipeline | #52 golden dataset, #53 worker framework, #4, #7, #8, #11, #12, #13, #14, #23, #24, #26, #99–#105 footage match & format benchmark | calvinkafaiyuen, sktchan |
 | #42 Editor exports & tool ontology | #5, #6, #9, #10, #31 | calvinkafaiyuen |
 | #43 MCP platform & Sequa Bridge | #29, #27, #32, #33, #34, #35, #36, #37 | anthonythanpoovong, calvinkafaiyuen |
 | #44 Web app core experience | #15, #16, #17, #18 | anthonythanpoovong |
@@ -177,7 +177,7 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 **Gate:** The assistant passes #39 thresholds; all 4 editors are reachable via the Bridge.
 
 ### Phase 3: Depth & scale
-- Per-shot color / LUT (#24), Format Match Score v1 (#26)
+- Per-shot color / LUT (#24), Format Match Score v1 (#26), footage match & niche format benchmark (#99–#105)
 - Team tier (#25), Enterprise: API, SSO, volume pricing (#28)
 
 ## Risks

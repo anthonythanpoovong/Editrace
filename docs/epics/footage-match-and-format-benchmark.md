@@ -1,12 +1,12 @@
 # Epic proposal: Footage Match & Format Benchmark (stories for #41)
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-09-30, via #98)
 - **Date:** 2026-09-30
 - **Author:** @anthonythanpoovong
 - **Owner(s):** @sktchan, @calvinkafaiyuen, @anthonythanpoovong (proposed; not yet confirmed with CV owners)
 - **Phase:** 3 (Depth & scale)
 - **Related:** #41 Video analysis pipeline (parent epic), #26 Format Match Score v1, #52 golden dataset, #56 terms/privacy, #21 legal
-- **Epic issue:** Not a new epic. These are new stories under **#41**.
+- **Epic issue:** Not a new epic. Stories under **#41**: #99 (1), #100 (2), #101 (3), #102 (4), #103 (5), #104 (6), #105 (7)
 
 ## Problem
 
