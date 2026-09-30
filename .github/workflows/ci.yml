@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      schema: ${{ steps.d.outputs.schema }}
+      web: ${{ steps.d.outputs.web }}
+      python: ${{ steps.d.outputs.python }}
+      codegen: ${{ steps.d.outputs.codegen }}
+    steps:
+      - uses: actions/checkout@v6
+      # Jobs switch on as each part of the monorepo gains real code.
+      - id: d
+        run: |
+          flag() { [ -e "$2" ] && echo "$1=true" >> "$GITHUB_OUTPUT" || echo "$1=false" >> "$GITHUB_OUTPUT"; }
+          flag schema schema/template.schema.json
+          flag web web/package.json
+          flag python pyproject.toml
+          flag codegen Makefile
+
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  schema:
+    needs: detect
+    if: needs.detect.outputs.schema == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install check-jsonschema
+      - name: Schema is valid JSON Schema
+        run: check-jsonschema --check-metaschema schema/template.schema.json
+      - name: Examples validate against the schema
+        run: |
+          shopt -s nullglob
+          files=(schema/examples/*.json)
+          [ ${#files[@]} -eq 0 ] && { echo "no examples yet"; exit 0; }
+          check-jsonschema --schemafile schema/template.schema.json "${files[@]}"
+
+  codegen:
+    needs: detect
+    if: needs.detect.outputs.codegen == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: make codegen
+      - name: Generated code is up to date
+        run: git diff --exit-code || { echo "::error::Generated code is stale. Run 'make codegen' and commit."; exit 1; }
+
+  web:
+    needs: detect
+    if: needs.detect.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm run typecheck --if-present
+      - run: npm test --if-present
+
+  python:
+    needs: detect
+    if: needs.detect.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --all-extras
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pytest
+
+  # Single required check for branch protection: fails if any job failed, ignores skipped ones.
+  ci-ok:
+    if: always()
+    needs: [detect, secrets-scan, schema, codegen, web, python]
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo '${{ toJSON(needs) }}' | jq -e 'all(.[]; .result == "success" or .result == "skipped")'
