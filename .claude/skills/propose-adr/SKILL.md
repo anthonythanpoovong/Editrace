@@ -1,6 +1,6 @@
 ---
 name: propose-adr
-description: Draft an Architecture Decision Record for Sequa and open it for approval. Use when someone wants to make or change a technical decision (stack choice, schema change, API contract, new service, reversing a Key Decision), says "write an ADR", "propose a decision", or when a grill verdict says the idea is a one-way door. Grills the author first; the ADR stays Proposed until the code owner approves the PR.
+description: Draft an Architecture Decision Record for Editrace and open it for approval. Use when someone wants to make or change a technical decision (stack choice, schema change, API contract, new service, reversing a Key Decision), says "write an ADR", "propose a decision", or when a grill verdict says the idea is a one-way door. Grills the author first; the ADR stays Proposed until the code owner approves the PR.
 ---
 
 # Propose an ADR

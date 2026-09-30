@@ -1,11 +1,11 @@
 ---
 name: propose-epic
-description: Turn a new idea or implementation into a Sequa epic proposal (goal, exit criteria, stories) and open it for approval; after approval, create the epic and story issues on GitHub. Use when someone has a new feature idea, says "propose an epic", "I want to build X", "scope this out", or asks to create issues for an approved proposal. Grills the author first; no issues are created until the code owner approves.
+description: Turn a new idea or implementation into an Editrace epic proposal (goal, exit criteria, stories) and open it for approval; after approval, create the epic and story issues on GitHub. Use when someone has a new feature idea, says "propose an epic", "I want to build X", "scope this out", or asks to create issues for an approved proposal. Grills the author first; no issues are created until the code owner approves.
 ---
 
 # Propose an epic
 
-Sequa organizes work as **Epic → Story → Subtask** (labels `epic` / `story` / `subtask`, GitHub sub-issues, phases as milestones). A new epic starts as a proposal file in `docs/epics/` and becomes GitHub issues **only after** the code owner approves and merges it.
+Editrace organizes work as **Epic → Story → Subtask** (labels `epic` / `story` / `subtask`, GitHub sub-issues, phases as milestones). A new epic starts as a proposal file in `docs/epics/` and becomes GitHub issues **only after** the code owner approves and merges it.
 
 ## Workflow
 

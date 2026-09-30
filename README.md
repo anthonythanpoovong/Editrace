@@ -1,4 +1,4 @@
-# Sequa
+# Editrace
 
 Reverse-engineer short-form videos into editable templates, then apply them in DaVinci Resolve, Premiere Pro, Final Cut Pro or CapCut through an MCP tool.
 
@@ -7,7 +7,7 @@ Reverse-engineer short-form videos into editable templates, then apply them in D
 ## What it does
 
 - **Web app:** upload a video, get a template breakdown (scrubbable timeline, "Tools used" per editor), and download exports.
-- **MCP integration:** a remote MCP server exposes your templates to MCP clients (Claude, Cursor, …). The local **Sequa Bridge** applies them directly in your editor.
+- **MCP integration:** a remote MCP server exposes your templates to MCP clients (Claude, Cursor, …). The local **Editrace Bridge** applies them directly in your editor.
 - **Template assistant:** a RAG chatbot on the breakdown page that answers which editor tools are used and how to reproduce them, with timestamps and doc citations.
 
 ## Quick Start
@@ -25,7 +25,7 @@ docs/        Plan, architecture, decisions (ADRs), epic proposals, customer rese
 .claude/     Claude Code skills shared by the team (see Claude Code Skills below)
 ```
 
-The Sequa Bridge (local MCP server + editor adapters) gets its own folder once its language is chosen (#29).
+The Editrace Bridge (local MCP server + editor adapters) gets its own folder once its language is chosen (#29).
 
 ## Team
 
@@ -38,7 +38,7 @@ The Sequa Bridge (local MCP server + editor adapters) gets its own folder once i
 - **Web:** Next.js + TypeScript + Supabase (Postgres + pgvector)
 - **Workers:** Python on Modal (GPU)
 - **Exporters:** OTIO + CapCut
-- **MCP:** MCP TypeScript SDK (remote server) + Sequa Bridge (local)
+- **MCP:** MCP TypeScript SDK (remote server) + Editrace Bridge (local)
 - **Assistant:** Claude (Anthropic API) + hybrid retrieval over editor docs
 - **Billing:** Stripe
 
@@ -93,7 +93,7 @@ The repo ships Claude Code skills in `.claude/skills/`. They're available automa
 
 The build skills check their prerequisites first (e.g. `/new-detector` needs the worker base #53). If a prerequisite doesn't exist yet, they stop and point to its issue.
 
-**New features and architecture changes are drafted, grilled and approved before they become issues or code.** Approval = code-owner review and merge of the proposal PR (CODEOWNERS covers `docs/decisions/`, `docs/epics/` and `.claude/`). See the [Claude Code Skills wiki page](https://github.com/anthonythanpoovong/Sequa/wiki/Claude-Code-Skills) for walkthroughs.
+**New features and architecture changes are drafted, grilled and approved before they become issues or code.** Approval = code-owner review and merge of the proposal PR (CODEOWNERS covers `docs/decisions/`, `docs/epics/` and `.claude/`). See the [Claude Code Skills wiki page](https://github.com/anthonythanpoovong/Editrace/wiki/Claude-Code-Skills) for walkthroughs.
 
 ## CI & AI Code Review
 
@@ -102,7 +102,7 @@ Three workflows in `.github/workflows/` run on every pull request:
 | Workflow | File | What it does |
 |---|---|---|
 | **CI** | `ci.yml` | Scans for secrets with gitleaks, validates the template schema, and runs web/Python/codegen checks. Each job switches on once its part of the monorepo has real code. |
-| **Sequa Armour** | `ai-review.yml` | An AI reviewer (Claude **Sonnet 5.5**) that posts one summary comment and inline comments on every PR, including drafts, following the rules in [`.github/armour.md`](.github/armour.md). It's advisory only, never a required check. |
+| **Editrace Armour** | `ai-review.yml` | An AI reviewer (Claude **Sonnet 5.5**) that posts one summary comment and inline comments on every PR, including drafts, following the rules in [`.github/armour.md`](.github/armour.md). It's advisory only, never a required check. |
 | **Claude Code** | `claude.yml` | Mention `@claude` in an issue, PR comment or review to have Claude respond. |
 
 **Authentication:** Armour and `@claude` authenticate with the `CLAUDE_CODE_OAUTH_TOKEN` repo secret, which is billed to the owner's Claude Pro plan. CI runs count against the same Pro usage limits as personal Claude use. A Console API key (`ANTHROPIC_API_KEY`) would need separately purchased API credits, because Pro doesn't include them.
@@ -111,4 +111,4 @@ Three workflows in `.github/workflows/` run on every pull request:
 
 **Gotcha:** a PR that changes a Claude workflow file skips its own Armour/`@claude` run ("workflow validation failed"). The action only runs when the workflow matches `main`, so a green check on that PR doesn't mean Claude ran. Merge it first, then test on another PR (for example, close and reopen it).
 
-See the [wiki](https://github.com/anthonythanpoovong/Sequa/wiki) for per-feature documentation (web app, analysis pipeline, schema, editor integrations, MCP, RAG assistant, billing) and CI details.
+See the [wiki](https://github.com/anthonythanpoovong/Editrace/wiki) for per-feature documentation (web app, analysis pipeline, schema, editor integrations, MCP, RAG assistant, billing) and CI details.

@@ -1,6 +1,6 @@
 ---
 name: rag-eval
-description: Run and interpret the Sequa template-assistant evaluation (#39) — retrieval recall@5, citation support, tool-mapping accuracy and refusal correctness — comparing a branch against main and applying the regression thresholds. Use when changing assistant prompts, retrieval, chunking, embeddings, the docs corpus or the editor tool ontology, or when asked "did this make the assistant better?".
+description: Run and interpret the Editrace template-assistant evaluation (#39) — retrieval recall@5, citation support, tool-mapping accuracy and refusal correctness — comparing a branch against main and applying the regression thresholds. Use when changing assistant prompts, retrieval, chunking, embeddings, the docs corpus or the editor tool ontology, or when asked "did this make the assistant better?".
 ---
 
 # Assistant (RAG) eval

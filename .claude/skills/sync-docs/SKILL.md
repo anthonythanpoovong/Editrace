@@ -1,6 +1,6 @@
 ---
 name: sync-docs
-description: Update Sequa's README, docs/plan.md and GitHub wiki after large changes land on main (new feature or service, accepted epic/ADR, schema or MCP contract change, new setup steps, CI changes, new skills, parked or rejected ideas). Use when someone says "update the docs", "sync the README/plan/wiki", "document what changed", after merging a big PR, or when an epic/ADR is accepted. Only documents what is merged; README and plan.md changes go through a PR, wiki changes are pushed after the author confirms.
+description: Update Editrace's README, docs/plan.md and GitHub wiki after large changes land on main (new feature or service, accepted epic/ADR, schema or MCP contract change, new setup steps, CI changes, new skills, parked or rejected ideas). Use when someone says "update the docs", "sync the README/plan/wiki", "document what changed", after merging a big PR, or when an epic/ADR is accepted. Only documents what is merged; README and plan.md changes go through a PR, wiki changes are pushed after the author confirms.
 ---
 
 # Sync docs: README + plan.md + wiki
@@ -9,7 +9,7 @@ Keeps three places in step with what's actually on `main`:
 
 - **`README.md`**: the short front door (what it is, layout, how to start)
 - **`docs/plan.md`**: the plan (Key Decisions, Architecture, Epics, Roadmap, Risks, Metrics, Open Questions)
-- **The [wiki](https://github.com/anthonythanpoovong/Sequa/wiki)**: per-feature detail
+- **The [wiki](https://github.com/anthonythanpoovong/Editrace/wiki)**: per-feature detail
 
 Only document **merged** work, and only **large** changes. The README stays short; detail goes in the wiki; `plan.md` records what the team has decided and planned.
 
@@ -18,7 +18,7 @@ Only document **merged** work, and only **large** changes. The README stays shor
 ```sh
 git fetch origin main
 WIKI=$(mktemp -d)/wiki
-git clone -q https://github.com/anthonythanpoovong/Sequa.wiki.git "$WIKI"
+git clone -q https://github.com/anthonythanpoovong/Editrace.wiki.git "$WIKI"
 git -C "$WIKI" log --format=%B | grep -m1 '^Docs-Synced-To:'    # last synced main SHA
 ```
 
@@ -57,11 +57,11 @@ If nothing is large, say so, list what you skipped, and stop.
 | Workers, detectors, golden dataset | — | Architecture (if the flow changes) | `Video-Analysis-Pipeline` |
 | Schema sections, codegen | Schema | Template Schema table | `Template-Schema` |
 | Exporters, editor adapters, ontology | What it does (if a new editor ships) | Editor Integrations table | `Editor-Integrations-and-Exports` |
-| MCP tools, Bridge, client setup | What it does | MCP Design tables | `MCP-and-Sequa-Bridge` |
+| MCP tools, Bridge, client setup | What it does | MCP Design tables | `MCP-and-Editrace-Bridge` |
 | Assistant, corpus, evals | — | Template Assistant (RAG) | `Template-Assistant-RAG` |
 | Plans, quotas, Stripe | — | — | `Billing-and-Accounts` |
 | Stack change | Stack | Stack table | Relevant page |
-| Workflows, Armour, CODEOWNERS | CI & AI Code Review | — | `CI-and-Sequa-Armour` |
+| Workflows, Armour, CODEOWNERS | CI & AI Code Review | — | `CI-and-Editrace-Armour` |
 | Skills in `.claude/skills/` | Claude Code Skills table | Epics (only if the proposal process changes) | `Claude-Code-Skills` |
 | New top-level folder | Repo Layout | — | Relevant page |
 | Accepted epic / new stories | — | **Epics** table + **Roadmap** phase line; new **Risks** and **Metrics** from the proposal | Owning page (+ `Home` features table if it's a new feature area) |
@@ -104,7 +104,7 @@ Source PRs: #n, #m
 Docs-Synced-To: $(git rev-parse origin/main)"
 git -C "$WIKI" push origin HEAD
 ```
-Then check with `git ls-remote https://github.com/anthonythanpoovong/Sequa.wiki.git HEAD`.
+Then check with `git ls-remote https://github.com/anthonythanpoovong/Editrace.wiki.git HEAD`.
 
 If there were only small changes, still record the new baseline so they aren't reviewed again. Use an empty wiki commit:
 `git -C "$WIKI" commit --allow-empty -m "Docs sync: no large changes" -m "Docs-Synced-To: <sha>"`, after the author says yes.

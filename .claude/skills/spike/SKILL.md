@@ -1,6 +1,6 @@
 ---
 name: spike
-description: Plan, run and close a time-boxed Sequa spike that answers one technical or product unknown. Use when /grill's verdict is "Needs a spike first", someone says "spike this", "prototype to find out", "is X even possible", or to close out an open type:spike issue (e.g. #29) with findings and a recommendation.
+description: Plan, run and close a time-boxed Editrace spike that answers one technical or product unknown. Use when /grill's verdict is "Needs a spike first", someone says "spike this", "prototype to find out", "is X even possible", or to close out an open type:spike issue (e.g. #29) with findings and a recommendation.
 ---
 
 # Spike: answer one unknown, cheaply

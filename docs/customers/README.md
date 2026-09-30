@@ -12,9 +12,9 @@ Use these when they fit. Add new ones here when you need them.
 
 | Tag | Meaning |
 |---|---|
-| `upload-friction` | Getting a video into Sequa is a pain (saving, finding files, watermarks) |
-| `link-input` | Wants to paste a link or "send to Sequa" |
-| `wants-feed` | Wants to discover trending or viral videos inside Sequa |
+| `upload-friction` | Getting a video into Editrace is a pain (saving, finding files, watermarks) |
+| `link-input` | Wants to paste a link or "send to Editrace" |
+| `wants-feed` | Wants to discover trending or viral videos inside Editrace |
 | `refilm` | Struggles to match the original's footage (lighting, angle, camera) |
 | `template-accuracy` | Comments on how faithful the reconstruction is |
 | `tool-howto` | Doesn't know which editor feature produces an effect |

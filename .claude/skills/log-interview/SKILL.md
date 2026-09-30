@@ -1,6 +1,6 @@
 ---
 name: log-interview
-description: Record a Sequa customer, design-partner or user conversation as structured evidence in docs/customers/. Use when someone says "log an interview", "I just talked to a creator/editor", "save these call notes", pastes interview notes, or needs evidence for a grill or proposal. Produces tagged, quotable evidence that /grill and /propose-epic cite.
+description: Record an Editrace customer, design-partner or user conversation as structured evidence in docs/customers/. Use when someone says "log an interview", "I just talked to a creator/editor", "save these call notes", pastes interview notes, or needs evidence for a grill or proposal. Produces tagged, quotable evidence that /grill and /propose-epic cite.
 ---
 
 # Log a customer interview

@@ -1,6 +1,6 @@
 ---
 name: new-detector
-description: Scaffold a new Sequa analysis worker/detector on Modal (cuts, transitions, motion, OCR, captions, beats, color, shot descriptors, footage match, etc.) using the shared worker base, with confidence/provenance, idempotency, downsampling, cost logging and a golden-set test. Use when someone says "add a detector", "new worker for X", or picks up a #41 story that adds analysis.
+description: Scaffold a new Editrace analysis worker/detector on Modal (cuts, transitions, motion, OCR, captions, beats, color, shot descriptors, footage match, etc.) using the shared worker base, with confidence/provenance, idempotency, downsampling, cost logging and a golden-set test. Use when someone says "add a detector", "new worker for X", or picks up a #41 story that adds analysis.
 ---
 
 # New detector / worker

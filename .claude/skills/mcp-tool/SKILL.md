@@ -1,20 +1,20 @@
 ---
 name: mcp-tool
-description: Add or change a tool on Sequa's remote MCP server (#27) or the local Sequa Bridge (#32) — generated Zod schemas, auth and entitlements, per-user data access, audit logging, and MCP Inspector/client testing. Use for work like "add export_template", "new Bridge tool", "change get_elements parameters".
+description: Add or change a tool on Editrace's remote MCP server (#27) or the local Editrace Bridge (#32) — generated Zod schemas, auth and entitlements, per-user data access, audit logging, and MCP Inspector/client testing. Use for work like "add export_template", "new Bridge tool", "change get_elements parameters".
 ---
 
 # Add or change an MCP tool
 
-Sequa has **two MCP servers** (a Key Decision):
+Editrace has **two MCP servers** (a Key Decision):
 - **Remote MCP server (#27):** hosted, Streamable HTTP, OAuth via Supabase Auth, personal tokens as a fallback (#37). It reads templates and makes exports.
-- **Sequa Bridge (#32):** local stdio server that drives desktop editors through adapters. It never holds Sequa data longer than needed.
+- **Editrace Bridge (#32):** local stdio server that drives desktop editors through adapters. It never holds Editrace data longer than needed.
 
 Decide which one the tool belongs on first: anything that touches the user's editor goes on the **Bridge**; everything else goes on the **remote** server.
 
 ## 0. Preflight
 - The target server exists in the repo (remote: in `web/`, per the README; Bridge: its own folder once #29 decides the language). If not, stop and point to #27, #32 or #29.
 - Generated Zod schemas from the template schema exist (#2). Tool I/O that includes template data must use them.
-- Check the planned tool list (wiki `MCP-and-Sequa-Bridge`, `docs/plan.md` → MCP Design) so names and shapes stay consistent.
+- Check the planned tool list (wiki `MCP-and-Editrace-Bridge`, `docs/plan.md` → MCP Design) so names and shapes stay consistent.
 
 ## 1. Design (confirm with the author)
 - **Name:** `verb_noun`, snake_case, consistent with the existing tools (`list_templates`, `get_elements`, `apply_template`).
