@@ -57,6 +57,18 @@ The **template JSON Schema** (`schema/template.schema.json`) is the single sourc
 - Generated code: run type generation before committing schema changes
 - Tests: CI validates schema compliance
 
+## Proposing New Work
+
+New features and architecture changes are **drafted, grilled and approved before they become issues or code**. The repo ships three Claude Code skills in `.claude/skills/`:
+
+| Skill | Use it for |
+|---|---|
+| `/grill` | Pressure-test an idea like a founding engineer: problem, alternatives, cost, security, failure modes, reversibility and success metric. Nothing gets written. |
+| `/propose-epic` | Grill → break into stories → draft `docs/epics/<name>.md` → draft PR. After approval, it creates the `epic` and `story` issues. |
+| `/propose-adr` | Grill → draft `docs/decisions/NNNN-<name>.md` (options, decision, consequences) → draft PR. |
+
+**Approval** = code-owner review and merge of the proposal PR (CODEOWNERS covers `docs/decisions/` and `docs/epics/`). No epic or story issues are created from an unmerged proposal. See [`docs/epics/`](docs/epics/README.md) and [`docs/decisions/`](docs/decisions/README.md).
+
 ## CI & AI Code Review
 
 Three workflows in `.github/workflows/` run on every pull request:

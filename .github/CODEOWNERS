@@ -1,2 +1,6 @@
 # Changes to CI, workflows and Armour review rules need owner approval.
 /.github/ @anthonythanpoovong
+
+# ADRs and epic proposals are approved by merging their PR, which needs owner approval.
+/docs/decisions/ @anthonythanpoovong
+/docs/epics/ @anthonythanpoovong
