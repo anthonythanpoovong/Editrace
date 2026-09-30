@@ -144,7 +144,7 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 | #44 Web app core experience | #15, #16, #17, #18 | anthonythanpoovong |
 | #45 Template assistant (RAG) | #30, #38, #22, #39 | anthonythanpoovong |
 | #46 Billing & accounts | #19, #25, #28 | anthonythanpoovong |
-| #47 Discovery, legal & GTM | #20, #21, #54 landing + waitlist, #55 design partners, #56 terms/privacy/retention | anthonythanpoovong |
+| #47 Discovery, legal & GTM | #20, #21, #54 landing + waitlist, #55 design partners, #56 terms/privacy/retention, #114–#121 marketing launch | anthonythanpoovong |
 
 ## Roadmap
 
@@ -157,6 +157,7 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 - CV2: beat tracking + sound ID spike (#11)
 - Product: **RAG corpus + retrieval spike (#30)**
 - Product: customer interviews incl. MCP appetite and assistant questions (#20); legal consult incl. docs corpus and editor TOS (#21); landing page + waitlist (#54)
+- Marketing (organic, $0): brand kit (#114), social accounts + attribution (#115), UGC agency outreach (#116), creator/UGC communities (#117)
 
 **Gate:** An editor reviews a detected cut timeline rebuilt in Resolve and confirms it feels like the original. #29 shows at least one editor can be driven live.
 
@@ -167,7 +168,7 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 **Product:** auth (#15), upload + job queue (#16), history (#17), breakdown page with the Tools used panel (#18), Stripe Solo + trial (#19)
 **MCP:** remote MCP server v1 (#27), settings page (#37), Editrace Bridge (#32), Resolve adapter (#33), FCP adapter (#34)
 **Foundations:** observability + cost guardrails (#50), product analytics (#51)
-**GTM:** design partner program (#55), terms/privacy/retention (#56)
+**GTM:** design partner program (#55), terms/privacy/retention (#56), launch demo video (#118), content engine (#119), Meta Business + Pixel with no spend (#120)
 
 **Gate:** A new user uploads a video, sees a breakdown, and from Claude Desktop applies it to Resolve or FCP in under 10 minutes.
 
@@ -175,6 +176,7 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 - Docs ingestion pipeline (#38), RAG assistant (#22), eval harness (#39); `ask_about_template` MCP tool
 - Premiere adapter (#35), CapCut adapter (#36)
 - Transition classification (#23)
+- Marketing: Meta ads launch test (#121; needs billing #19 and a budget)
 
 **Gate:** The assistant passes #39 thresholds; all 4 editors are reachable via the Bridge.
 

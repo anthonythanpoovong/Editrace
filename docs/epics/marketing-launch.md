@@ -1,12 +1,12 @@
 # Epic proposal: Marketing launch (stories for #47)
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-09-30, via #113)
 - **Date:** 2026-09-30
 - **Author:** @anthonythanpoovong
 - **Owner(s):** @anthonythanpoovong
 - **Phase:** A = Phases 0–1 (pre-launch, organic) · B = Phase 2 (post-launch, paid)
 - **Related:** #47 Discovery, legal & GTM (parent epic), #54 landing + waitlist, #20 interviews, #55 design partners, #56 terms/privacy, #19 billing
-- **Epic issue:** Not a new epic. These are new stories under **#47**.
+- **Epic issue:** Not a new epic. Stories under **#47**: #114 (1), #115 (2), #116 (3), #117 (4), #118 (5), #119 (6), #120 (7), #121 (8)
 
 ## Problem
 
