@@ -195,6 +195,9 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 | Detection quality below "feels like the original" | Phase 0 gate; confidence shown in the UI and passed to adapters |
 | GPU cost from users' raw footage (footage match) | Score slotted clips only, trimmed to slot + 2 s, 2 fps / 720p, total ≤ source duration, 3-minute ceiling; per-plan quota (#19); cache by clip hash + slot; bounded retries with backoff (#102). Video-only: audio stripped at ingest (#101). |
 | Wrong "re-film" advice costs a user a real reshoot | Flags show confidence and a reason, phrased as suggestions; validated on a labeled set (#101) |
+| Copyright strike or account ban from marketing content | Only owned, licensed or permitted footage and audio in posts and demos; sources recorded (#118, #119) |
+| Marketing over-promises features (e.g. MCP for CapCut before Phase 2) | "Preview" labels before the MVP; lead with the breakdown + CapCut export (#10), not the Bridge (#36) |
+| One person can't sustain marketing alongside product work | Organic, 2 posts/week max, batch-produced (#119); revisit if the cadence slips |
 
 ## Metrics
 
@@ -205,6 +208,7 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 - **MCP adoption:** % of active users with a connected client; applies per week per editor
 - **Assistant quality:** #39 scores; thumbs-up rate; % of answers with citations
 - **Editor satisfaction:** qualitative feedback on template accuracy
+- **Marketing (Phase A):** 10 qualified conversations (creators or UGC agencies) and 5 design partners sourced from marketing channels, by the Phase 1 gate; attributed by UTM + waitlist source (#115)
 
 ## Open Questions
 
@@ -213,6 +217,7 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 - Should the assistant be available to trial users, and with what quota?
 - **Link input / "Send to Editrace"** (browser extension, Android share target, iOS Shortcut): parked. It needs written guidance from #21 on analyzing one public video on request without keeping it, then an ADR replacing upload-first. User demand is unvalidated; ask design partners (#55).
 - **Trending / discovery feed:** parked. No scraping, because it conflicts with upload-first and platform terms. An embed-only (oEmbed) feed is the option to revisit, with no user evidence yet. Virality scoring was rejected (no legitimate ground truth); the niche format benchmark (#103) replaces it.
+- **Marketing beyond Phase A:** paid ads wait for the MVP, billing (#19) and a budget (#121). Premiere/Resolve/FCP editors as a primary audience, Product Hunt, a newsletter and affiliate/referral programs are deferred (see `docs/epics/marketing-launch.md`).
 
 ## Links
 
