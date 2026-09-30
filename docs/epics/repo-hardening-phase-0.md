@@ -114,10 +114,16 @@ By the **Phase 0 gate**:
   - Use **`diff-cover`** on the coverage reports vs `main`: **fail when changed lines are < 80% covered**
   - Switches on automatically via the existing `detect` job (only when `web/` or Python code exists)
   - Publish a coverage summary (overall %, change vs `main`, changed-lines %) as an artifact or check output that Armour reads (story 1)
-  - **Exemption:** a `coverage-exempt` label that only a code owner can apply, for urgent fixes. It's logged in the PR.
+  - **Exemption, enforced by CI rather than by who can label:** GitHub can't restrict who applies a label, since anyone with triage or write access can (and story 8 adds two write collaborators). So `ci-ok` **honors `coverage-exempt` only if the code owner applied it**:
+    - The coverage job reads the PR's issue events (`GET /repos/{owner}/{repo}/issues/{n}/events`), finds the **most recent `labeled` event for `coverage-exempt`**, and takes its `actor.login`
+    - That login must be in the **exemption allowlist**: the owners listed for `/.github/` in `.github/CODEOWNERS` (today, @anthonythanpoovong), read from the file on `main`, not from the PR branch, so a PR can't add itself to the allowlist
+    - If anyone else applied it, or it was removed and re-added by someone else, the gate **still applies**, and CI says who applied the label and why it was ignored
+    - The job re-runs on `labeled` / `unlabeled` events as well as new commits, and it writes the exemption and approver into the job summary for the record
 - **Acceptance criteria:**
   - [ ] A PR that adds untested code fails `ci-ok`; adding tests makes it pass
   - [ ] Docs-only PRs aren't affected
+  - [ ] `coverage-exempt` applied by the code owner lets an under-covered PR pass; the same label applied by a non-owner collaborator is **ignored**, and the gate still fails with a message naming who applied it
+  - [ ] Editing the CODEOWNERS allowlist in the PR itself doesn't change the result (the allowlist is read from `main`)
 - **Depends on:** #48 (test jobs)
 
 ### 6. CONTRIBUTING.md + PR and issue templates
@@ -161,7 +167,8 @@ By the **Phase 0 gate**:
 | Risk / cost | Likelihood / size | Mitigation |
 |---|---|---|
 | Armour skips on its own workflow PRs while this is being built | Certain | Story 2 ships first; test the others on a separate PR after merge |
-| The coverage gate blocks an urgent fix | Medium | Code-owner-only `coverage-exempt` label |
+| The coverage gate blocks an urgent fix | Medium | `coverage-exempt` label, honored by CI only when the labeling actor (from the issue events API) is a `/.github/` code owner per `main`'s CODEOWNERS |
+| A collaborator self-exempts by applying the label | Medium (labels can't be permission-restricted) | Same check: a non-owner's label is ignored and logged |
 | Eval PRs with deliberate bugs get merged | Low | Always drafts, labeled `armour-eval`, closed automatically, never merged |
 | Pro usage from eval runs | Low | Manual trigger, only on rules or model change, ~5 reviews |
 | Hooks slow down commits | Low | Fast hooks only; CI stays the source of truth |
@@ -188,7 +195,7 @@ No schema, DB or MCP changes. Eval cases contain deliberate security bugs, isola
 | Data & schema | ✅ | None |
 | Security & privacy | ✅ | Eval PRs isolated; gitleaks locally |
 | Cost | ✅ | $0 tools; ~5 Sonnet reviews per eval run |
-| Failure modes | ✅ | Exemption label; skip notice first |
+| Failure modes | ✅ | Exemption label checked against the labeling actor; skip notice first |
 | Reversibility | ✅ | Two-way door |
 | Observability | ✅ | Eval score history; coverage on every PR |
 | Success metric | ✅ | Eval ≥ 4/5 + first 5 code PRs pass, by the Phase 0 gate |
