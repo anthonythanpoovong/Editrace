@@ -14,8 +14,9 @@ Keeps issues in step with the code: each issue gets one short comment per commit
 
 ```sh
 git fetch origin main
+SINCE=$(date -v-2d +%F 2>/dev/null || date -d "2 days ago" +%F)   # BSD/macOS, then GNU
 git log origin/main..HEAD --format='%H%x09%s%n%b%x1e'          # branch commits
-gh pr list --state merged --search "merged:>=$(date -v-2d +%F)" \
+gh pr list --state merged --search "merged:>=$SINCE" \
   --json number,title,body,mergedAt,mergeCommit,headRefName,url  # merged PRs
 ```
 

@@ -52,7 +52,7 @@ jobs:
             # Must exist in this repo and be an issue, not a PR.
             if gh api "repos/$REPO/issues/$n" --jq 'select(.pull_request == null) | .number' 2>/dev/null | grep -q .; then
               issues="$issues $n"
-              tools="$tools,Bash(gh issue comment $n:*)"
+              tools="$tools,Bash(gh issue comment $n *)"
             fi
           done
           echo "issues=${issues# }" >> "$GITHUB_OUTPUT"
