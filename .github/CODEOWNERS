@@ -1,16 +1,16 @@
-# Any of the three collaborators can approve any PR.
+# Any of the four collaborators can approve any PR.
 # Keep the /.github/ entry as the single line whose pattern is exactly /.github/
 # with plain @username entries: the coverage-exemption allowlist (#129) reads it
 # from main, so everyone listed here may grant coverage exemptions.
-/.github/ @anthonythanpoovong @calvinkafaiyuen @sktchan
+/.github/ @anthonythanpoovong @calvinkafaiyuen @sktchan @mikeleboss
 
 # ADRs and epic proposals are approved by merging their PR.
-/docs/decisions/ @anthonythanpoovong @calvinkafaiyuen @sktchan
-/docs/epics/ @anthonythanpoovong @calvinkafaiyuen @sktchan
+/docs/decisions/ @anthonythanpoovong @calvinkafaiyuen @sktchan @mikeleboss
+/docs/epics/ @anthonythanpoovong @calvinkafaiyuen @sktchan @mikeleboss
 
 # Claude Code skills enforce the proposal approval gate.
-/.claude/ @anthonythanpoovong @calvinkafaiyuen @sktchan
+/.claude/ @anthonythanpoovong @calvinkafaiyuen @sktchan @mikeleboss
 
 # CV workers and exporters.
-/workers/ @anthonythanpoovong @calvinkafaiyuen @sktchan
-/exporters/ @anthonythanpoovong @calvinkafaiyuen @sktchan
+/workers/ @anthonythanpoovong @calvinkafaiyuen @sktchan @mikeleboss
+/exporters/ @anthonythanpoovong @calvinkafaiyuen @sktchan @mikeleboss
