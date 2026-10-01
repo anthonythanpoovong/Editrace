@@ -12,6 +12,6 @@ Admins can't bypass the review requirement on `main`. Nobody, including the repo
 
 **Why:** with a single `/.github/` owner, enforcing for admins would have blocked the owner's own PRs to those files, since nobody else could approve them. All four collaborators are now `/.github/` owners, so each can approve the others' changes.
 
-**Coverage-exemption allowlist:** the allowlist for `/coverage-exempt` reviews (#129) is the plain `@username` entries on the `/.github/` line of CODEOWNERS. Adding `@calvinkafaiyuen`, `@sktchan` and `@mikeleboss` there also lets them grant coverage exemptions. This was a deliberate decision (#132 for Calvin and Serena; Mike was added the same way).
+**Coverage-exemption allowlist:** the allowlist for `/coverage-exempt` reviews (#129) is the plain `@username` entries on the `/.github/` line of CODEOWNERS. Adding `@calvinkafaiyuen`, `@sktchan` and `@mikeleboss` there also lets them grant coverage exemptions. This was a deliberate decision (#132 for Calvin and Serena). `@mikeleboss` was added on 2026-09-30 (#142) by the repo owner, who chose to give the CV 3 developer (footage match and format benchmark) the same review and exemption rights as the other CV owners.
 
 **If you change `/.github/` owners:** keep it as one line with pattern exactly `/.github/` and plain `@username` entries, and treat it as a change to who may exempt the coverage gate.
