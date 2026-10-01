@@ -32,7 +32,10 @@ git commit --allow-empty -m "Start #<n>: <title>"
 git push -u origin story/<n>-<short-slug>
 gh pr create --draft --base main \
   --title "<title> (#<n>)" \
-  --body "Closes #<n>
+  --body "## Summary
+<1-3 plain sentences: what this PR does and why. The Discord review request quotes this.>
+
+Closes #<n>
 
 ## Acceptance criteria
 <copy each checkbox from the issue>

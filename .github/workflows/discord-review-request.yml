@@ -1,0 +1,71 @@
+name: Discord review request
+
+# When a PR is ready for review, ask the team for a review in Discord (#140). Drafts never post.
+# Deterministic: title, author, link and a short excerpt of the PR body. No model involved.
+# Not a required check and not part of ci-ok: a failure shows as a red X and comments on the PR.
+# Needs: secret DISCORD_REVIEW_WEBHOOK (webhook URL), variable DISCORD_REVIEW_ROLE_ID (role to ping).
+
+on:
+  pull_request:
+    # opened covers PRs created ready; ready_for_review covers drafts that get promoted.
+    types: [opened, ready_for_review]
+
+concurrency:
+  group: discord-review-request-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  notify:
+    # No drafts. No forks or Dependabot (neither can read the secret).
+    if: >
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          sparse-checkout: .github/scripts
+      # PR title and body are untrusted: they reach the script through env only, never the shell.
+      - name: Post to Discord
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_REVIEW_WEBHOOK }}
+          ROLE_ID: ${{ vars.DISCORD_REVIEW_ROLE_ID }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          [[ "$WEBHOOK" =~ ^https://(discord|discordapp)\.com/api/webhooks/ ]] \
+            || { echo "::error::DISCORD_REVIEW_WEBHOOK is missing or not a Discord webhook URL"; exit 1; }
+          .github/scripts/discord-review-payload.sh > payload.json
+          curl --fail --silent --show-error --max-time 20 \
+            -H "Content-Type: application/json" \
+            --data @payload.json "$WEBHOOK"
+          echo "Posted review request for PR #$PR_NUMBER"
+
+  # Only this job can write to the PR. It runs only when the post failed, so a dead webhook
+  # surfaces on the PR instead of as a silently quiet channel.
+  fallback:
+    needs: notify
+    if: failure()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Comment on the PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh pr comment "$PR" --repo "$REPO" \
+            --body "Discord review request failed. Please ping reviewers manually. ([workflow run]($RUN_URL))"

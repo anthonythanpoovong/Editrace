@@ -44,6 +44,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # Unit tests for the CI helper scripts (e.g. the Discord review payload's @-defusing, #140).
+  scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: .github/scripts/test-discord-review-payload.sh
+
   schema:
     needs: detect
     if: needs.detect.outputs.schema == 'true'
@@ -113,7 +120,7 @@ jobs:
   # Single required check for branch protection: fails if any job failed, ignores skipped ones.
   ci-ok:
     if: always()
-    needs: [detect, secrets-scan, schema, codegen, web, python]
+    needs: [detect, secrets-scan, scripts, schema, codegen, web, python]
     runs-on: ubuntu-latest
     steps:
       - run: |
