@@ -1,8 +1,9 @@
-# Any of the four collaborators can approve any PR.
+# Any of the four collaborators can approve any PR, except changes under /.github/:
+# @mikeleboss is deliberately not a /.github/ owner yet (no coverage-exemption or CI/review-rule approval rights).
 # Keep the /.github/ entry as the single line whose pattern is exactly /.github/
 # with plain @username entries: the coverage-exemption allowlist (#129) reads it
 # from main, so everyone listed here may grant coverage exemptions.
-/.github/ @anthonythanpoovong @calvinkafaiyuen @sktchan @mikeleboss
+/.github/ @anthonythanpoovong @calvinkafaiyuen @sktchan
 
 # ADRs and epic proposals are approved by merging their PR.
 /docs/decisions/ @anthonythanpoovong @calvinkafaiyuen @sktchan @mikeleboss
