@@ -50,6 +50,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - run: .github/scripts/test-discord-review-payload.sh
+      - run: .github/scripts/test-discord-review-ack.sh
 
   schema:
     needs: detect
