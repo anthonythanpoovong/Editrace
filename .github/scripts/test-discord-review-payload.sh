@@ -45,6 +45,18 @@ check "Markdown in the title is escaped" $?
 [ "$(jq -r '.content | split("\n")[3]' <<<"$out")" = '> See \[Click here\]\(https://evil.example\) now' ]
 check "links in the excerpt are escaped, not clickable" $?
 
+out=$(build "t" $'Closes #140\n\n## Acceptance criteria\n- [ ] First thing\n- [x] Second thing\n> quoted')
+[ "$(jq -r '.content | split("\n")[3]' <<<"$out")" = '> Acceptance criteria First thing Second thing quoted' ]
+check "fallback drops Closes lines and strips heading, bullet and checkbox markers" $?
+
+out=$(build "t" $'Fixes #1, #2 and #3\nCloses the loop on retries.')
+[ "$(jq -r '.content | split("\n")[3]' <<<"$out")" = '> Closes the loop on retries.' ]
+check "only pure issue-reference lines are dropped, prose is kept" $?
+
+out=$(build "t" $'Closes #5\n\n## Summary\n- Adds a **thing**\n\n## Plan\n- more')
+[ "$(jq -r '.content | split("\n")[3]' <<<"$out")" = '> Adds a \*\*thing\*\*' ]
+check "Summary section bullets are cleaned too" $?
+
 ROLE_ID=abc build "t" "b" >/dev/null 2>&1
 [ $? -ne 0 ]; check "non-numeric role id is rejected" $?
 ROLE_ID= build "t" "b" >/dev/null 2>&1

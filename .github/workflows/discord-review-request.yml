@@ -46,7 +46,6 @@ jobs:
             || { echo "::error::DISCORD_REVIEW_WEBHOOK is missing or not a Discord webhook URL"; exit 1; }
           .github/scripts/discord-review-payload.sh > payload.json
           curl --fail --silent --show-error --max-time 20 \
-            --retry 3 --retry-delay 2 \
             -H "Content-Type: application/json" \
             --data @payload.json "$WEBHOOK"
           echo "Posted review request for PR #$PR_NUMBER"

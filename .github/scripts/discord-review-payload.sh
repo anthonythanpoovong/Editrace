@@ -29,10 +29,17 @@ jq -n \
         | (map(test("^##\\s")) | index(true)) as $j
         | (if $j == null then . else .[:$j] end) | join("\n")
       end;
+  # Line-level Markdown noise that says nothing about the change: "Closes #n" lines, heading
+  # markers, bullets, checkboxes and quote markers. Joins the lines with spaces.
+  def plain:
+    split("\n")
+    | map(select(test("^\\s*(close[sd]?|fix(e[sd])?|resolve[sd]?|refs?|references?|part of|related to):?\\s+#[0-9]+(\\s*(,|and|&)\\s*#[0-9]+)*\\s*$"; "i") | not))
+    | map(sub("^\\s*(#{1,6}\\s+|[-*+]\\s+(\\[[ xX]\\]\\s*)?|>\\s*)"; ""))
+    | join(" ");
   # Prefer the Summary section; otherwise the whole body. Drop HTML comments, collapse whitespace.
   def excerpt:
     gsub("<!--.*?-->"; ""; "s")
-    | (summary // .)
+    | (summary // .) | plain
     | gsub("\\s+"; " ") | sub("^ "; "") | sub(" $"; "")
     | if . == "" then "No description provided." else . end
     | trunc(280) | defuse | md;
