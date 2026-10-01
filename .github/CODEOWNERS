@@ -6,6 +6,7 @@
 /.github/ @anthonythanpoovong @calvinkafaiyuen @sktchan
 
 # ADRs and epic proposals are approved by merging their PR.
+# Epic approval is intentionally delegated to @mikeleboss (see CONTRIBUTING.md); ADR approval is not.
 /docs/decisions/ @anthonythanpoovong @calvinkafaiyuen @sktchan
 /docs/epics/ @anthonythanpoovong @calvinkafaiyuen @sktchan @mikeleboss
 

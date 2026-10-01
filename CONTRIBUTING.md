@@ -14,4 +14,6 @@ Admins can't bypass the review requirement on `main`. Nobody, including the repo
 
 **Coverage-exemption allowlist:** the allowlist for `/coverage-exempt` reviews (#129) is the plain `@username` entries on the `/.github/` line of CODEOWNERS. Adding `@calvinkafaiyuen` and `@sktchan` there also lets them grant coverage exemptions. This was a deliberate decision (#132). `@mikeleboss` (CV 3, added in #142) is deliberately not on the `/.github/`, `/.claude/` or `/docs/decisions/` lines yet, so he can't grant coverage exemptions or approve CI, review-rule, approval-gate skill or ADR changes; revisit once he has shipped a few PRs.
 
+**Epic approval is intentionally delegated to `@mikeleboss`:** merging an epic PR is the approval, and `propose-epic` creates the issues only after it, so as an owner of `/docs/epics/` he can approve a new epic without any of the three original owners. The repo owner chose this on 2026-09-30 (#142) because he owns the footage match and format benchmark epic. ADRs (`/docs/decisions/`) are not delegated, since they cover one-way-door decisions. Revisit with the owner list above.
+
 **If you change `/.github/` owners:** keep it as one line with pattern exactly `/.github/` and plain `@username` entries, and treat it as a change to who may exempt the coverage gate.
