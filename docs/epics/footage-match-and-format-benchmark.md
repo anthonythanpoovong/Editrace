@@ -3,7 +3,7 @@
 - **Status:** Accepted (2026-09-30, via #98)
 - **Date:** 2026-09-30
 - **Author:** @anthonythanpoovong
-- **Owner(s):** @sktchan, @calvinkafaiyuen, @anthonythanpoovong (proposed; not yet confirmed with CV owners)
+- **Owner(s):** @mikeleboss, @sktchan, @calvinkafaiyuen, @anthonythanpoovong (proposed; not yet confirmed with CV owners)
 - **Phase:** 3 (Depth & scale)
 - **Related:** #41 Video analysis pipeline (parent epic), #26 Format Match Score v1, #52 golden dataset, #56 terms/privacy, #21 legal
 - **Epic issue:** Not a new epic. Stories under **#41**: #99 (1), #100 (2), #101 (3), #102 (4), #103 (5), #104 (6), #105 (7)
@@ -58,7 +58,7 @@ Before editing, a user can put their own clips into a template's slots and see, 
 
 ### 2. Extract framing, angle and motion descriptors
 - **Labels:** `story`, `type:build`, `area:worker`, `ml`
-- **Owner:** @calvinkafaiyuen (proposed) · **Phase:** 3
+- **Owner:** @mikeleboss (proposed) · **Phase:** 3
 - **Context:** fills the story 1 fields for a template's source video, and for user clips.
 - **Scope:** a worker that outputs shot type, angle and motion per slot and per clip, with confidence and provenance.
 - **Acceptance criteria:**
@@ -144,7 +144,7 @@ Additive, optional schema fields (a two-way door, no ADR). User clips follow the
 ## Open questions
 
 - **Evidence:** do users actually want pre-edit re-film feedback? Ask design partners (#55). Owner: @anthonythanpoovong.
-- **Ownership:** confirm story owners with @calvinkafaiyuen and @sktchan. Owner: @anthonythanpoovong.
+- **Ownership:** confirm story owners with @calvinkafaiyuen, @sktchan and @mikeleboss. Owner: @anthonythanpoovong.
 - **Benchmark curation:** who labels niches, and how many videos per niche? Owner: TBD.
 - **Cap check:** confirm the current Reels/TikTok length limits before fixing the 3-minute ceiling.
 

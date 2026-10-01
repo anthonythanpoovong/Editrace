@@ -1,0 +1,62 @@
+name: Discord review ack
+
+# When a person reviews a PR (comment, approval or requested changes), mark the Discord review
+# request from discord-review-request.yml as reviewed: a checkmark and who reviewed. Bots, the
+# PR author and fork PRs are ignored. Not a required check; a failure is a non-blocking red X.
+# Needs: secret DISCORD_REVIEW_WEBHOOK.
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+# Serialise per PR so two quick reviews do not overwrite each other's edit.
+concurrency:
+  group: discord-review-ack-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  ack:
+    # No bots (Armour), no self-reviews, no forks (they cannot read the secret).
+    if: >
+      github.event.review.user.type != 'Bot' &&
+      github.event.review.user.login != github.event.pull_request.user.login &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          sparse-checkout: .github/scripts
+      # Review text is never used. The reviewer login and state reach the script through env only.
+      - name: Mark the Discord message reviewed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WEBHOOK: ${{ secrets.DISCORD_REVIEW_WEBHOOK }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          REVIEWER: ${{ github.event.review.user.login }}
+          REVIEW_STATE: ${{ github.event.review.state }}
+        run: |
+          [[ "$WEBHOOK" =~ ^https://(discord|discordapp)\.com/api/webhooks/ ]] \
+            || { echo "::error::DISCORD_REVIEW_WEBHOOK is missing or not a Discord webhook URL"; exit 1; }
+          # The newest comment from Actions carrying the marker. Only github-actions[bot] counts, so
+          # nobody else can point this at a different message by commenting.
+          id=$(gh api --paginate "repos/$REPO/issues/$PR/comments" --jq '
+            .[] | select(.user.login == "github-actions[bot]")
+            | .body | capture("<!-- discord-review-message:(?<id>[0-9]+) -->").id' | tail -n 1)
+          if [ -z "$id" ]; then
+            echo "No Discord review request recorded for PR #$PR; nothing to mark."
+            exit 0
+          fi
+          MESSAGE=$(curl --fail --silent --show-error --max-time 20 "$WEBHOOK/messages/$id")
+          export MESSAGE
+          .github/scripts/discord-review-ack.sh > edit.json
+          curl --fail --silent --show-error --max-time 20 -X PATCH \
+            -H "Content-Type: application/json" \
+            --data @edit.json "$WEBHOOK/messages/$id" > /dev/null
+          echo "Marked message $id reviewed by $REVIEWER ($REVIEW_STATE)"
