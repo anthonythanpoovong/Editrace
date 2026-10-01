@@ -1,8 +1,9 @@
 name: Discord review request
 
 # When a PR is ready for review, ask the team for a review in Discord (#140). Drafts never post.
-# Deterministic: title, author, link and a short excerpt of the PR body. No model involved.
-# Not a required check and not part of ci-ok: a failure shows as a red X and comments on the PR.
+# Deterministic: title, author, link, size and a 1-2 line excerpt of the PR body. No model involved.
+# Not a required check and not part of ci-ok: a failed post shows as a red X and comments on the PR.
+# The Discord message id is saved in a PR comment so discord-review-ack.yml can mark it reviewed.
 # Needs: secret DISCORD_REVIEW_WEBHOOK (webhook URL), variable DISCORD_REVIEW_ROLE_ID (role to ping).
 
 on:
@@ -27,12 +28,15 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
+    outputs:
+      message_id: ${{ steps.post.outputs.message_id }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           sparse-checkout: .github/scripts
       # PR title and body are untrusted: they reach the script through env only, never the shell.
       - name: Post to Discord
+        id: post
         env:
           WEBHOOK: ${{ secrets.DISCORD_REVIEW_WEBHOOK }}
           ROLE_ID: ${{ vars.DISCORD_REVIEW_ROLE_ID }}
@@ -41,17 +45,44 @@ jobs:
           PR_BODY: ${{ github.event.pull_request.body }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_ADDITIONS: ${{ github.event.pull_request.additions }}
+          PR_DELETIONS: ${{ github.event.pull_request.deletions }}
+          PR_FILES: ${{ github.event.pull_request.changed_files }}
+          REPO: ${{ github.repository }}
         run: |
           [[ "$WEBHOOK" =~ ^https://(discord|discordapp)\.com/api/webhooks/ ]] \
             || { echo "::error::DISCORD_REVIEW_WEBHOOK is missing or not a Discord webhook URL"; exit 1; }
           .github/scripts/discord-review-payload.sh > payload.json
+          # wait=true makes Discord return the created message, whose id the record job saves.
           curl --fail --silent --show-error --max-time 20 \
             -H "Content-Type: application/json" \
-            --data @payload.json "$WEBHOOK"
+            --data @payload.json "$WEBHOOK?wait=true" > response.json
+          echo "message_id=$(jq -r '.id // empty' response.json)" >> "$GITHUB_OUTPUT"
           echo "Posted review request for PR #$PR_NUMBER"
 
-  # Only this job can write to the PR. It runs only when the post failed, so a dead webhook
-  # surfaces on the PR instead of as a silently quiet channel.
+  # Saves the Discord message id on the PR so the review-ack workflow can find the message. A
+  # failure here does not touch the already-posted message; it only means no checkmark later.
+  record:
+    needs: notify
+    if: needs.notify.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Save the message id
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          MESSAGE_ID: ${{ needs.notify.outputs.message_id }}
+        run: |
+          [[ "$MESSAGE_ID" =~ ^[0-9]+$ ]] || { echo "::error::Discord did not return a message id"; exit 1; }
+          gh pr comment "$PR" --repo "$REPO" \
+            --body "Review requested in Discord. <!-- discord-review-message:$MESSAGE_ID -->"
+
+  # Only this job and record can write to the PR. This one runs only when the post failed, so a
+  # dead webhook surfaces on the PR instead of as a silently quiet channel.
   fallback:
     needs: notify
     if: failure()
