@@ -39,6 +39,12 @@ check "every @ in title and body is defused" $?
 [ "$(jq -c .allowed_mentions <<<"$out")" = '{"parse":[],"roles":["123456789"]}' ]
 check "allowed_mentions permits only the review role" $?
 
+out=$(build 'Fix **bold** `code` [x](http://e.com) (#9)' $'See [Click here](https://evil.example) now')
+[ "$(jq -r '.content | split("\n")[1]' <<<"$out")" = '**Fix \*\*bold\*\* \`code\` \[x\]\(http://e.com\) \(\#9\)**' ]
+check "Markdown in the title is escaped" $?
+[ "$(jq -r '.content | split("\n")[3]' <<<"$out")" = '> See \[Click here\]\(https://evil.example\) now' ]
+check "links in the excerpt are escaped, not clickable" $?
+
 ROLE_ID=abc build "t" "b" >/dev/null 2>&1
 [ $? -ne 0 ]; check "non-numeric role id is rejected" $?
 ROLE_ID= build "t" "b" >/dev/null 2>&1
