@@ -1,0 +1,53 @@
+name: 🔬 Spike
+description: A time-boxed investigation that answers one unknown (the /spike skill can draft this for you)
+title: "Spike: "
+labels: ["type:spike", "risk:research-heavy"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: ❓ Question
+      description: One question, stated so it can be answered yes or no.
+      placeholder: "Can the Resolve free edition's scripting API build a timeline with speed ramps?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: 🎯 Why it matters
+      description: Which proposal, ADR or story is blocked on the answer?
+    validations:
+      required: true
+
+  - type: input
+    id: timebox
+    attributes:
+      label: ⏱️ Timebox
+      description: In days, usually 1 to 3. Past this you stop and report what you know.
+    validations:
+      required: true
+
+  - type: textarea
+    id: approach
+    attributes:
+      label: 🧪 Approach
+      description: The smallest experiment that answers the question.
+    validations:
+      required: true
+
+  - type: textarea
+    id: exit
+    attributes:
+      label: 🚪 Exit conditions
+      description: What result means "yes", "no" or "yes, but...". Decide this before starting.
+    validations:
+      required: true
+
+  - type: input
+    id: owner
+    attributes:
+      label: 👤 Owner
+      placeholder: "@username"
+    validations:
+      required: true

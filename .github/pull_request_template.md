@@ -2,7 +2,9 @@
 
 ## 🎯 Summary
 
-<!-- What does this PR do, and why? Link the issue: "Closes #123". -->
+<!-- What does this PR do, and why? Link the issue so it closes on merge: "Closes #123". -->
+
+Closes #
 
 
 
@@ -14,9 +16,15 @@
 
 ## 🧪 How to test
 
-<!-- Steps a reviewer can follow, or the tests that cover this. -->
+<!-- Steps a reviewer can follow, or the tests that cover this. Paste test output, or eval results for detector and assistant changes (/golden-eval, /rag-eval). -->
 
 1.
+
+
+
+## 📈 Coverage
+
+<!-- Changed lines need 80% coverage. If this PR is under, say why and ask a /.github/ code owner for a /coverage-exempt review (see CONTRIBUTING.md). Write "n/a" for docs-only or SQL-only changes. -->
 
 
 
@@ -40,3 +48,4 @@
 - [ ] New tables have RLS policies and a two-user access test
 - [ ] No secrets or copyrighted audio committed
 - [ ] Docs updated, if behaviour or setup changed
+- [ ] Large change (new service, schema or MCP contract change, new setup steps, CI changes, new skills)? Run `/sync-docs` after merge
