@@ -4,7 +4,7 @@
 
 Changes to `main` go through a pull request with one approving review, and that review must come from a code owner of every path the PR touches (see `.github/CODEOWNERS`).
 
-Code ownership is shared: @anthonythanpoovong, @calvinkafaiyuen, @sktchan and @mikeleboss are listed on every path except `/.github/` and `/.claude/` (the CI, review rules and the skills that enforce the proposal approval gate), which are owned by the first three only. Any of them can approve a PR that touches neither (you can't approve your own). `@calvinkafaiyuen` and `@sktchan` are the primary reviewers for `workers/` and `exporters/` (CV).
+Code ownership is shared: @anthonythanpoovong, @calvinkafaiyuen, @sktchan and @mikeleboss are listed on every path except `/.github/`, `/.claude/` and `/docs/decisions/` (the CI, review rules, the skills that enforce the proposal approval gate, and ADRs), which are owned by the first three only. Any of them can approve a PR that touches none of those (you can't approve your own). `@calvinkafaiyuen` and `@sktchan` are the primary reviewers for `workers/` and `exporters/` (CV).
 
 ### Admin bypass: none
 
@@ -12,6 +12,6 @@ Admins can't bypass the review requirement on `main`. Nobody, including the repo
 
 **Why:** with a single `/.github/` owner, enforcing for admins would have blocked the owner's own PRs to those files, since nobody else could approve them. The three original collaborators are `/.github/` owners, so each can approve the others' changes.
 
-**Coverage-exemption allowlist:** the allowlist for `/coverage-exempt` reviews (#129) is the plain `@username` entries on the `/.github/` line of CODEOWNERS. Adding `@calvinkafaiyuen` and `@sktchan` there also lets them grant coverage exemptions. This was a deliberate decision (#132). `@mikeleboss` (CV 3, added in #142) is deliberately not on the `/.github/` or `/.claude/` lines yet, so he can't grant coverage exemptions or approve CI, review-rule or approval-gate skill changes; revisit once he has shipped a few PRs.
+**Coverage-exemption allowlist:** the allowlist for `/coverage-exempt` reviews (#129) is the plain `@username` entries on the `/.github/` line of CODEOWNERS. Adding `@calvinkafaiyuen` and `@sktchan` there also lets them grant coverage exemptions. This was a deliberate decision (#132). `@mikeleboss` (CV 3, added in #142) is deliberately not on the `/.github/`, `/.claude/` or `/docs/decisions/` lines yet, so he can't grant coverage exemptions or approve CI, review-rule, approval-gate skill or ADR changes; revisit once he has shipped a few PRs.
 
 **If you change `/.github/` owners:** keep it as one line with pattern exactly `/.github/` and plain `@username` entries, and treat it as a change to who may exempt the coverage gate.
