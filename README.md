@@ -31,6 +31,7 @@ The Editrace Bridge (local MCP server + editor adapters) gets its own folder onc
 
 - **CV 1, Visual timeline & editors:** calvinkafaiyuen (cuts, motion, transitions, exporters, editor adapters)
 - **CV 2, Signals & scoring:** sktchan (audio, OCR, captions, color, scoring)
+- **CV 3, Footage match & format benchmark:** mikeleboss (footage matching, format benchmarking)
 - **Product, MCP & assistant:** anthonythanpoovong (web, auth, billing, MCP server + Bridge, RAG assistant, GTM)
 
 ## Stack

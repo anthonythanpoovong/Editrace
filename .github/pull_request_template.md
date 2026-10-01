@@ -1,15 +1,42 @@
-## Summary
-<!-- 1-3 plain sentences: what this PR does and why. This is what reviewers see in the
-Discord review request, so write it for someone who has not opened the PR. -->
+<!-- Delete any section that doesn't apply. -->
 
-## Linked issue
-Closes #
+## 🎯 Summary
 
-## Acceptance criteria
-- [ ]
+<!-- What does this PR do, and why? Link the issue: "Closes #123". -->
 
-## Test plan
-<!-- Tests or eval output, not claims. -->
 
-## Notes
-<!-- Decisions, open questions, anything a reviewer should look at first. -->
+
+## 📋 What changed
+
+-
+
+
+
+## 🧪 How to test
+
+<!-- Steps a reviewer can follow, or the tests that cover this. -->
+
+1.
+
+
+
+## ⚠️ Risks
+
+<!-- Breaking changes (schema, MCP contracts, migrations), cost impact, rollback plan. Write "None" if none. -->
+
+
+
+## 📸 Screenshots
+
+<!-- UI changes only: before and after. -->
+
+
+
+## ✅ Checklist
+
+- [ ] CI is green
+- [ ] Tests added or updated for new or risky logic
+- [ ] `make codegen` run and committed, if the schema changed
+- [ ] New tables have RLS policies and a two-user access test
+- [ ] No secrets or copyrighted audio committed
+- [ ] Docs updated, if behaviour or setup changed
