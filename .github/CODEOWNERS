@@ -1,5 +1,5 @@
-# Any of the four collaborators can approve any PR, except changes under /.github/:
-# @mikeleboss is deliberately not a /.github/ owner yet (no coverage-exemption or CI/review-rule approval rights).
+# Any of the four collaborators can approve any PR, except changes under /.github/ and /.claude/:
+# @mikeleboss is deliberately not an owner of those yet (no coverage-exemption or CI/review-rule approval rights).
 # Keep the /.github/ entry as the single line whose pattern is exactly /.github/
 # with plain @username entries: the coverage-exemption allowlist (#129) reads it
 # from main, so everyone listed here may grant coverage exemptions.
@@ -10,7 +10,7 @@
 /docs/epics/ @anthonythanpoovong @calvinkafaiyuen @sktchan @mikeleboss
 
 # Claude Code skills enforce the proposal approval gate.
-/.claude/ @anthonythanpoovong @calvinkafaiyuen @sktchan @mikeleboss
+/.claude/ @anthonythanpoovong @calvinkafaiyuen @sktchan
 
 # CV workers and exporters.
 /workers/ @anthonythanpoovong @calvinkafaiyuen @sktchan @mikeleboss
