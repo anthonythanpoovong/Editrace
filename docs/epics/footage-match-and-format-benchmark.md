@@ -58,7 +58,7 @@ Before editing, a user can put their own clips into a template's slots and see, 
 
 ### 2. Extract framing, angle and motion descriptors
 - **Labels:** `story`, `type:build`, `area:worker`, `ml`
-- **Owner:** @calvinkafaiyuen (proposed) · **Phase:** 3
+- **Owner:** @mikeleboss (proposed) · **Phase:** 3
 - **Context:** fills the story 1 fields for a template's source video, and for user clips.
 - **Scope:** a worker that outputs shot type, angle and motion per slot and per clip, with confidence and provenance.
 - **Acceptance criteria:**
