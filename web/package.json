@@ -1,0 +1,10 @@
+{
+  "name": "web",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "lint": "echo lint ran",
+    "typecheck": "echo typecheck ran",
+    "test": "echo test ran"
+  }
+}
