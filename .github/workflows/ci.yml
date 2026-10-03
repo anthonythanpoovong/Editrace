@@ -102,9 +102,11 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
-      - run: npm run lint --if-present
-      - run: npm run typecheck --if-present
-      - run: npm test --if-present
+      # No --if-present: once web/ exists it must define lint, typecheck and test scripts (#48). Otherwise a
+      # missing script passes silently, and the changed-line coverage gate (repo hardening story 5) gets no data.
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
 
   python:
     needs: detect
@@ -116,6 +118,10 @@ jobs:
       - run: uv sync --all-extras
       - run: uv run ruff check .
       - run: uv run ruff format --check .
+      # Python typecheck (#48). Whoever creates pyproject.toml (likely #2) must add pyright as a dev dependency
+      # (e.g. `uv add --dev pyright`), or this step fails. Pyright was picked over mypy because it checks the
+      # generated Pydantic models without a plugin or extra config.
+      - run: uv run pyright
       - run: uv run pytest
 
   # Single required check for branch protection: fails if any job failed, ignores skipped ones.
