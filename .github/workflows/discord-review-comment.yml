@@ -8,8 +8,12 @@ name: Discord review comment
 # Needs: secret DISCORD_REVIEW_WEBHOOK; variables DISCORD_REVIEW_ROLE_ID (fallback ping) and
 # DISCORD_USER_MAP (JSON: GitHub login -> Discord user ID).
 #
-# issue_comment runs the workflow file from main, so conversation comments only work once this
-# is merged. No PR code is ever checked out, so that is safe for forks too.
+# The scripts always come from the default branch, never from the PR: on pull_request_review the
+# checkout would otherwise be the PR merge ref and a PR could swap in a script that reads the
+# webhook secret. So changes to the scripts only take effect once merged, and this workflow
+# cannot be exercised on the PR that introduces it. Note that on pull_request_review the
+# workflow file itself still comes from the PR merge ref; same-repo PR authors have write access,
+# which the repo treats as trusted (plan.md risks). On issue_comment the file is always main's.
 
 on:
   pull_request_review:
@@ -49,6 +53,8 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
+          # Trusted scripts only: the default branch, not the PR merge ref.
+          ref: ${{ github.event.repository.default_branch }}
           sparse-checkout: .github/scripts
       # Comment text and PR title are untrusted: they reach the scripts through env only.
       - name: Ping the PR author in Discord
