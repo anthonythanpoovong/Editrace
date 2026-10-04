@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Editrace: coming soon</title>
+    <meta name="description" content="Editrace turns any video's editing style into a reusable template, applied in Premiere Pro, DaVinci Resolve, Final Cut Pro and CapCut." />
+    <style>
+      :root {
+        --bg: #0a0a0a;
+        --fg: #ededed;
+        --muted: #a1a1a1;
+        --line: #262626;
+        --field: #141414;
+        --accent: #ffffff;
+        --focus: #62a8ff;
+        --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: var(--sans);
+        font-size: 1rem;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      ::selection {
+        background: var(--fg);
+        color: var(--bg);
+      }
+
+      .page {
+        max-width: 60rem;
+        margin: 0 auto;
+        padding: 0 1rem;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.5rem 0;
+      }
+
+      .wordmark {
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        color: var(--fg);
+        text-decoration: none;
+      }
+
+      .status {
+        font-size: 0.875rem;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 0.25rem 0.75rem;
+      }
+
+      main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 4rem 0 5rem;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2.5rem, 7vw, 4.5rem);
+        font-weight: 600;
+        line-height: 1.02;
+        letter-spacing: -0.04em;
+        text-wrap: balance;
+        max-width: 14ch;
+      }
+
+      .lede {
+        margin: 1.5rem 0 0;
+        font-size: 1.125rem;
+        color: var(--muted);
+        max-width: 42ch;
+      }
+
+      .signup {
+        margin-top: 2.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        max-width: 30rem;
+      }
+
+      .signup input {
+        flex: 1 1 14rem;
+        min-width: 0;
+        height: 2.75rem;
+        padding: 0 1rem;
+        border: 1px solid var(--line);
+        border-radius: 0.5rem;
+        background: var(--field);
+        color: var(--fg);
+        font: inherit;
+      }
+
+      .signup input::placeholder {
+        color: var(--muted);
+      }
+
+      .signup button {
+        height: 2.75rem;
+        padding: 0 1.25rem;
+        border: 0;
+        border-radius: 0.5rem;
+        background: var(--accent);
+        color: var(--bg);
+        font: inherit;
+        font-weight: 500;
+        cursor: pointer;
+      }
+
+      .signup button:hover {
+        opacity: 0.88;
+      }
+
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+
+      input:focus-visible,
+      button:focus-visible,
+      a:focus-visible {
+        outline: 2px solid var(--focus);
+        outline-offset: 2px;
+      }
+
+      .signup-note {
+        margin: 0.75rem 0 0;
+        font-size: 0.875rem;
+        color: var(--muted);
+        min-height: 1.5em;
+      }
+
+      .tools {
+        margin: 3rem 0 0;
+        font-size: 0.875rem;
+        color: var(--muted);
+      }
+
+      .features {
+        margin: 5rem 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 2.5rem;
+        border-top: 1px solid var(--line);
+        padding-top: 2.5rem;
+      }
+
+      .features h2 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      .features p {
+        margin: 0.375rem 0 0;
+        color: var(--muted);
+        max-width: 36ch;
+      }
+
+      footer {
+        border-top: 1px solid var(--line);
+        padding: 1.5rem 0;
+        font-size: 0.875rem;
+        color: var(--muted);
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      @media (min-width: 40rem) {
+        .features {
+          grid-template-columns: repeat(3, 1fr);
+          gap: 2rem;
+        }
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        h1,
+        .lede,
+        .signup {
+          animation: rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .lede {
+          animation-delay: 0.08s;
+        }
+
+        .signup {
+          animation-delay: 0.16s;
+        }
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <a class="wordmark" href="#">Editrace</a>
+        <span class="status">Coming soon</span>
+      </header>
+
+      <main>
+        <h1>Rebuild the edit in minutes.</h1>
+        <p class="lede">
+          Editrace turns the editing style of any short video into a reusable template, then applies it in the editor you already use.
+        </p>
+
+        <form class="signup" id="signup" novalidate>
+          <label class="visually-hidden" for="email">Email address</label>
+          <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+          <button type="submit">Notify me at launch</button>
+        </form>
+        <p class="signup-note" id="signup-note" role="status" aria-live="polite"></p>
+
+        <p class="tools">Works with Premiere Pro, DaVinci Resolve, Final Cut Pro and CapCut.</p>
+
+        <ul class="features">
+          <li>
+            <h2>Cuts and pacing</h2>
+            <p>Every cut and beat, placed where the original put it.</p>
+          </li>
+          <li>
+            <h2>Transitions and motion</h2>
+            <p>Transitions, push-ins and movement, rebuilt as steps you can edit.</p>
+          </li>
+          <li>
+            <h2>Text and titles</h2>
+            <p>Lower thirds and captions you can change after they are applied.</p>
+          </li>
+        </ul>
+      </main>
+
+      <footer>
+        <span>© Editrace</span>
+        <span>Launching soon</span>
+      </footer>
+    </div>
+
+    <script>
+      (function () {
+        var form = document.getElementById("signup");
+        var note = document.getElementById("signup-note");
+        var email = document.getElementById("email");
+
+        form.addEventListener("submit", function (event) {
+          event.preventDefault();
+          note.textContent = email.checkValidity()
+            ? "Sign-up is not open yet. We will email you at launch."
+            : "Enter a valid email address.";
+        });
+      })();
+    </script>
+  </body>
+</html>
