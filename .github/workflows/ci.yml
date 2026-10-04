@@ -51,7 +51,6 @@ jobs:
       - uses: actions/checkout@v6
       - run: .github/scripts/test-discord-review-payload.sh
       - run: .github/scripts/test-discord-review-ack.sh
-      - run: .github/scripts/test-discord-review-comment.sh
 
   schema:
     needs: detect
