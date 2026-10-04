@@ -1,0 +1,107 @@
+name: Discord review comment
+
+# When a person reviews a PR (Comment or Request changes) or comments on it, ping the PR author in
+# Discord so they address it (#154). The ping is a new message: an edit, like the checkmark from
+# discord-review-ack.yml, never notifies anyone. One review is one ping, however many inline
+# comments it has. Approvals, bots (Armour), the author's own comments and closed PRs never ping.
+# Not a required check and not part of ci-ok: a failed post shows as a red X and comments on the PR.
+# Needs: secret DISCORD_REVIEW_WEBHOOK; variables DISCORD_REVIEW_ROLE_ID (fallback ping) and
+# DISCORD_USER_MAP (JSON: GitHub login -> Discord user ID).
+#
+# issue_comment runs the workflow file from main, so conversation comments only work once this
+# is merged. No PR code is ever checked out, so that is safe for forks too.
+
+on:
+  pull_request_review:
+    types: [submitted]
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+jobs:
+  notify:
+    # Reviews: Comment or Request changes only, same-repo PRs only (forks cannot read the secret).
+    # Conversation comments: pull requests only, not plain issues.
+    # Both: open PR, human PR author, human commenter, and not a comment on your own PR.
+    if: >
+      (
+        github.event_name == 'pull_request_review' &&
+        contains(fromJSON('["commented","changes_requested"]'), github.event.review.state) &&
+        github.event.pull_request.state == 'open' &&
+        github.event.pull_request.user.type != 'Bot' &&
+        github.event.review.user.type != 'Bot' &&
+        github.event.review.user.login != github.event.pull_request.user.login &&
+        github.event.pull_request.head.repo.full_name == github.repository
+      ) || (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request != null &&
+        github.event.issue.state == 'open' &&
+        github.event.issue.user.type != 'Bot' &&
+        github.event.comment.user.type != 'Bot' &&
+        github.event.comment.user.login != github.event.issue.user.login
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          sparse-checkout: .github/scripts
+      # Comment text and PR title are untrusted: they reach the scripts through env only.
+      - name: Ping the PR author in Discord
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WEBHOOK: ${{ secrets.DISCORD_REVIEW_WEBHOOK }}
+          ROLE_ID: ${{ vars.DISCORD_REVIEW_ROLE_ID }}
+          USER_MAP: ${{ vars.DISCORD_USER_MAP }}
+          REPO: ${{ github.repository }}
+          KIND: ${{ github.event_name == 'pull_request_review' && 'review' || 'comment' }}
+          REVIEW_STATE: ${{ github.event.review.state }}
+          REVIEW_ID: ${{ github.event.review.id }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+          PR_TITLE: ${{ github.event.pull_request.title || github.event.issue.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login || github.event.issue.user.login }}
+          COMMENTER: ${{ github.event.review.user.login || github.event.comment.user.login }}
+          COMMENT_URL: ${{ github.event.review.html_url || github.event.comment.html_url }}
+          COMMENT_BODY: ${{ github.event.review.body || github.event.comment.body }}
+        run: |
+          [[ "$WEBHOOK" =~ ^https://(discord|discordapp)\.com/api/webhooks/ ]] \
+            || { echo "::error::DISCORD_REVIEW_WEBHOOK is missing or not a Discord webhook URL"; exit 1; }
+          # A review may have no text of its own: count its inline comments and show the first one.
+          if [ "$KIND" = review ]; then
+            # Best effort: if this lookup fails the ping still goes out with the review text.
+            gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/reviews/$REVIEW_ID/comments" --jq '.[]' 2>/dev/null \
+              | jq -s '.' > inline.json || true
+            jq -e 'type == "array"' inline.json > /dev/null 2>&1 || echo '[]' > inline.json
+            INLINE_COUNT=$(jq 'length' inline.json)
+            [ -n "$COMMENT_BODY" ] || COMMENT_BODY=$(jq -r '.[0].body // ""' inline.json)
+            export INLINE_COUNT COMMENT_BODY
+          fi
+          .github/scripts/discord-review-comment.sh > payload.json
+          curl --fail --silent --show-error --max-time 20 \
+            -H "Content-Type: application/json" \
+            --data @payload.json "$WEBHOOK"
+          echo "Pinged for $KIND by $COMMENTER on PR #$PR_NUMBER"
+
+  # Only this job can write to the PR. It runs only when the ping failed, so a dead webhook or a
+  # bad map surfaces on the PR instead of as feedback nobody was told about.
+  fallback:
+    needs: notify
+    if: failure()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Comment on the PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number || github.event.issue.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh pr comment "$PR" --repo "$REPO" \
+            --body "Discord ping for this feedback failed. Please tell the author directly. ([workflow run]($RUN_URL))"
