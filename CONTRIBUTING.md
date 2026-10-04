@@ -60,7 +60,7 @@ If the grill says "Needs a spike first", use `/spike`. Bugs and spikes have issu
 
 Changes to `main` go through a pull request with one approving review, and that review must come from a code owner of every path the PR touches (see `.github/CODEOWNERS`).
 
-Code ownership is shared: @anthonythanpoovong, @calvinkafaiyuen, @sktchan and @mikeleboss are listed on every path except `/.github/`, `/.claude/` and `/docs/decisions/` (the CI, review rules, the skills that enforce the proposal approval gate, and ADRs), which are owned by the first three only. Any of them can approve a PR that touches none of those (you can't approve your own). `@calvinkafaiyuen` and `@sktchan` are the primary reviewers for `workers/` and `exporters/` (CV).
+Code ownership is shared: @anthonythanpoovong, @calvinkafaiyuen, @sktchan and @mikeleboss are listed on every path except `/.claude/` and `/docs/decisions/` (the skills that enforce the proposal approval gate, and ADRs), which are owned by the first three only. Any of them can approve a PR that touches none of those (you can't approve your own). `@calvinkafaiyuen` and `@sktchan` are the primary reviewers for `workers/` and `exporters/` (CV).
 
 ### Admin bypass: none
 
@@ -68,7 +68,7 @@ Admins can't bypass the review requirement on `main`. Nobody, including the repo
 
 **Why:** with a single `/.github/` owner, enforcing for admins would have blocked the owner's own PRs to those files, since nobody else could approve them. The three original collaborators are `/.github/` owners, so each can approve the others' changes.
 
-**Coverage-exemption allowlist:** the allowlist for `/coverage-exempt` reviews (#129) is the plain `@username` entries on the `/.github/` line of CODEOWNERS. Adding `@calvinkafaiyuen` and `@sktchan` there also lets them grant coverage exemptions. This was a deliberate decision (#132). `@mikeleboss` (CV 3, added in #142) is deliberately not on the `/.github/`, `/.claude/` or `/docs/decisions/` lines yet, so he can't grant coverage exemptions or approve CI, review-rule, approval-gate skill or ADR changes; revisit once he has shipped a few PRs.
+**Coverage-exemption allowlist:** the allowlist for `/coverage-exempt` reviews (#129) is the plain `@username` entries on the `/.github/` line of CODEOWNERS. Adding `@calvinkafaiyuen` and `@sktchan` there also lets them grant coverage exemptions. This was a deliberate decision (#132). `@mikeleboss` (CV 3, added in #142) was added to the `/.github/` line at the repo owner's request, so he can grant coverage exemptions and approve CI and review-rule changes. He is deliberately not on the `/.claude/` or `/docs/decisions/` lines yet, so he can't approve approval-gate skill or ADR changes; revisit once he has shipped a few PRs.
 
 **Epic approval is intentionally delegated to `@mikeleboss`:** merging an epic PR is the approval, and `propose-epic` creates the issues only after it, so as an owner of `/docs/epics/` he can approve a new epic without any of the three original owners. The repo owner chose this on 2026-09-30 (#142) because he owns the footage match and format benchmark epic. ADRs (`/docs/decisions/`) are not delegated, since they cover one-way-door decisions. Revisit with the owner list above.
 
