@@ -17,6 +17,8 @@ permissions:
   contents: read
 
 env:
+  # Pinned: these jobs hold VERCEL_TOKEN, so bump the CLI deliberately in a PR, never via @latest.
+  VERCEL_CLI_VERSION: 62.2.0
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -48,7 +50,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install --global vercel@latest
+      - run: npm install --global "vercel@$VERCEL_CLI_VERSION"
       # Hobby has no custom environments, so staging is a preview build aliased to a stable URL.
       - run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
       - run: vercel build --token="$VERCEL_TOKEN"
@@ -80,7 +82,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install --global vercel@latest
+      - run: npm install --global "vercel@$VERCEL_CLI_VERSION"
       - run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
       - run: vercel build --prod --token="$VERCEL_TOKEN"
       - id: deploy
