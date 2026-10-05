@@ -4,6 +4,10 @@ name: Discord review ack
 # request from discord-review-request.yml as reviewed: a checkmark and who reviewed. Bots, the
 # PR author and fork PRs are ignored. Not a required check; a failure is a non-blocking red X.
 # Needs: secret DISCORD_REVIEW_WEBHOOK.
+#
+# The scripts always come from the default branch, never from the PR, so a PR cannot swap in a
+# script that runs with the webhook secret. The workflow file itself still comes from the PR merge
+# ref; same-repo PR authors have write access, which the repo treats as trusted (plan.md risks).
 
 on:
   pull_request_review:
@@ -31,6 +35,8 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
+          # Trusted scripts only: the default branch, not the PR merge ref.
+          ref: ${{ github.event.repository.default_branch }}
           sparse-checkout: .github/scripts
       # Review text is never used. The reviewer login and state reach the script through env only.
       - name: Mark the Discord message reviewed
