@@ -125,10 +125,23 @@ jobs:
       - run: uv run pyright
       - run: uv run pytest
 
+  # Lints the workflow files themselves (syntax, expressions, shellcheck on run: steps). Added with deploy.yml (#48).
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      # Pinned release with a checksum, not the unpinned download script. Bump both together.
+      - name: Install actionlint
+        run: |
+          curl -fsSL -o actionlint.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_linux_amd64.tar.gz
+          echo "023070a287cd8cccd71515fedc843f1985bf96c436b7effaecce67290e7e0757  actionlint.tar.gz" | sha256sum -c -
+          tar xzf actionlint.tar.gz actionlint
+      - run: ./actionlint -color
+
   # Single required check for branch protection: fails if any job failed, ignores skipped ones.
   ci-ok:
     if: always()
-    needs: [detect, secrets-scan, scripts, schema, codegen, web, python]
+    needs: [detect, secrets-scan, scripts, actionlint, schema, codegen, web, python]
     runs-on: ubuntu-latest
     steps:
       - run: |
