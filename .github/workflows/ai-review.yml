@@ -11,7 +11,7 @@ concurrency:
 jobs:
   review:
     # Advisory only: never make this a required check. Runs on drafts; skips forks (they can't read the token).
-    if: false  # [TEST] force skipped
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
@@ -35,6 +35,8 @@ jobs:
           sparse-checkout: .github/armour.md
           sparse-checkout-cone-mode: false
           fetch-depth: 1
+
+      - run: exit 1  # [TEST] force failure
 
       - uses: anthropics/claude-code-action@v1
         with:
