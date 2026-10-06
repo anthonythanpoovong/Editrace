@@ -84,3 +84,5 @@ If a PR can't reasonably meet the threshold, a `/.github/` code owner can exempt
 2. The owner **re-runs the failed `ci-ok` job** (`gh run rerun --failed <run-id>`, or from the Actions tab). The gate reads reviews live, so the re-run picks up the exemption.
 
 To withdraw it, the owner submits another review starting `/coverage-revoke`. The latest of the two on the commit wins. Pushing a new commit ends the exemption, because it only applies to the commit it was submitted on. A `coverage-exempt` label does nothing.
+
+Preview smoke test: this line only exercises the PR preview job; close without merging.
