@@ -3,6 +3,9 @@ name: Deploy
 # Staging deploys automatically when a merge lands on main; prod is a manual run of this workflow (#48).
 # PR previews are deployed here too, not by Vercel's Git integration: on Hobby it refuses commits from anyone who
 # isn't a member of the Vercel team, which blocks every collaborator. web/vercel.json turns the integration's deploys off.
+# Vercel still marks a deployment BLOCKED when the commit's author isn't on the team, even from the CLI. Vercel must never
+# fail or hang a collaborator's push, so vercel-deploy.sh reports BLOCKED and the preview and staging jobs end green
+# with a note. Only production, which the owner runs by hand, fails on it. Vercel Pro seats are the real fix.
 on:
   push:
     branches: [main]
@@ -38,9 +41,10 @@ jobs:
         run: |
           [ -e web/package.json ] && echo "web=true" >> "$GITHUB_OUTPUT" || echo "web=false" >> "$GITHUB_OUTPUT"
 
-  # Same-repo PRs only: fork PRs can't read the Vercel secrets. The deploy runs under the token's owner, so the
-  # commit author doesn't need a Vercel seat. Anyone with write access can edit this workflow in their branch and
-  # read the secrets, which is already true of every secret in the repo.
+  # Same-repo PRs only: fork PRs can't read the Vercel secrets. The deploy runs under the token's owner, but Vercel
+  # still blocks it when the commit's author isn't on the team: that ends as a note on the PR, not a failure.
+  # Anyone with write access can edit this workflow in their branch and read the secrets, which is already true of
+  # every secret in the repo.
   preview:
     needs: detect
     if: >-
@@ -48,6 +52,7 @@ jobs:
       && github.event.pull_request.head.repo.full_name == github.repository
       && needs.detect.outputs.web == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       pull-requests: write
@@ -63,10 +68,7 @@ jobs:
       - run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
       - run: vercel build --token="$VERCEL_TOKEN"
       - id: deploy
-        run: |
-          url=$(vercel deploy --prebuilt --token="$VERCEL_TOKEN")
-          echo "Deployed $url"
-          echo "url=$url" >> "$GITHUB_OUTPUT"
+        run: .github/scripts/vercel-deploy.sh
       # One sticky comment per PR, updated on every push.
       - name: Post the preview URL on the PR
         env:
@@ -74,10 +76,16 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
           SHA: ${{ github.event.pull_request.head.sha }}
           URL: ${{ steps.deploy.outputs.url }}
+          STATE: ${{ steps.deploy.outputs.state }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           MARKER: "<!-- vercel-preview -->"
         run: |
-          body="$MARKER
-          🔍 Preview for \`${SHA:0:7}\`: $URL"
+          case "$STATE" in
+            READY) text="🔍 Preview for \`${SHA:0:7}\`: $URL" ;;
+            BLOCKED) text="⚠️ No preview for \`${SHA:0:7}\`: Vercel blocks deploys of commits whose author isn't on the Vercel team (Hobby has no seats). Nothing is wrong with this PR, and CI is unaffected." ;;
+            *) text="❌ The preview for \`${SHA:0:7}\` didn't finish ($STATE). See the [run log]($RUN_URL)." ;;
+          esac
+          body=$(printf '%s\n%s' "$MARKER" "$text")
           id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
             --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains(env.MARKER))) | .id' | tail -n 1)
           if [ -n "$id" ]; then
@@ -85,14 +93,21 @@ jobs:
           else
             gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -f body="$body" >/dev/null
           fi
+      # BLOCKED is expected for collaborators; anything else that isn't READY is a real problem.
+      - name: Fail if the preview broke
+        if: steps.deploy.outputs.state != 'READY' && steps.deploy.outputs.state != 'BLOCKED'
+        run: |
+          echo "Deployment state: ${{ steps.deploy.outputs.state }}"
+          exit 1
 
   staging:
     needs: detect
     if: github.event_name == 'push' && needs.detect.outputs.web == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment:
       name: staging
-      url: ${{ steps.deploy.outputs.url }}
+      url: ${{ steps.alias.outputs.url }}
     concurrency:
       group: deploy-staging
       cancel-in-progress: false
@@ -106,9 +121,14 @@ jobs:
       - run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
       - run: vercel build --token="$VERCEL_TOKEN"
       - id: deploy
+        run: .github/scripts/vercel-deploy.sh
+      - id: alias
+        if: steps.deploy.outputs.state == 'READY'
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+          STAGING_ALIAS: ${{ vars.STAGING_ALIAS }}
         run: |
-          url=$(vercel deploy --prebuilt --token="$VERCEL_TOKEN")
-          echo "Deployed $url"
+          url=$URL
           if [ -n "${STAGING_ALIAS:-}" ]; then
             # Not `vercel alias set`: it looks up the token's user first, and this token can't read one
             # ("User not found", with or without --scope). The REST API only needs the team id.
@@ -119,13 +139,22 @@ jobs:
             url="https://$STAGING_ALIAS"
           fi
           echo "url=$url" >> "$GITHUB_OUTPUT"
-        env:
-          STAGING_ALIAS: ${{ vars.STAGING_ALIAS }}
+      # The latest commit on main was written by someone without a Vercel seat, so staging stays on the last good build.
+      - name: Staging not updated
+        if: steps.deploy.outputs.state == 'BLOCKED'
+        run: |
+          echo "::warning title=Staging not updated::Vercel blocked this deploy because the commit author isn't on the Vercel team (Hobby has no seats). Staging still serves the previous build."
+      - name: Fail if the deploy broke
+        if: steps.deploy.outputs.state != 'READY' && steps.deploy.outputs.state != 'BLOCKED'
+        run: |
+          echo "Deployment state: ${{ steps.deploy.outputs.state }}"
+          exit 1
 
   production:
     needs: detect
     if: github.event_name == 'workflow_dispatch' && needs.detect.outputs.web == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # The Production environment only accepts protected branches, so run this from main.
     environment:
       name: Production
@@ -142,7 +171,10 @@ jobs:
       - run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
       - run: vercel build --prod --token="$VERCEL_TOKEN"
       - id: deploy
+        run: .github/scripts/vercel-deploy.sh --prod
+      # Unlike preview and staging, a blocked prod deploy is a failure: the owner asked for it by hand.
+      - name: Fail unless the deploy is live
+        if: steps.deploy.outputs.state != 'READY'
         run: |
-          url=$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN")
-          echo "Deployed $url"
-          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "::error::Production deploy ended as ${{ steps.deploy.outputs.state }}. BLOCKED means Vercel rejected the commit author: run this from a commit authored by a Vercel team member."
+          exit 1
