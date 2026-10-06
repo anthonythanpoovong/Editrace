@@ -5,6 +5,7 @@ Project documentation, decisions, and customer research.
 ## Files
 
 - `plan.md` — Project plan and roadmap
+- `environments.md` — Environments (dev / preview / staging / prod) and where each secret lives
 - `schema.md` — Template schema documentation
 - `architecture.md` — System architecture overview
 - `decisions/` — Architectural decision records (ADRs); propose with `/propose-adr`
