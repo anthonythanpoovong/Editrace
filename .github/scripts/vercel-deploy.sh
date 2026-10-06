@@ -16,8 +16,21 @@ delay=${VERCEL_POLL_DELAY:-5}
 args=(deploy --prebuilt --no-wait --token "$VERCEL_TOKEN")
 [ "${1:-}" = "--prod" ] && args+=(--prod)
 
-url=$(vercel "${args[@]}")
-echo "Created $url"
+# Even with --no-wait the CLI exits 1 ("Your deployment failed") the moment it creates a BLOCKED deployment, and then
+# prints nothing on stdout. So don't stop on its exit code: read the URL from its output and let the poll decide.
+err=$(mktemp)
+rc=0
+url=$(vercel "${args[@]}" 2> "$err") || rc=$?
+cat "$err" >&2
+if [ -z "$url" ]; then
+  url=$(grep -oE 'https://[A-Za-z0-9-]+\.vercel\.app' "$err" | head -n 1 || true)
+fi
+rm -f "$err"
+if [ -z "$url" ]; then
+  echo "vercel deploy failed (exit $rc) and printed no deployment URL" >&2
+  exit "$((rc == 0 ? 1 : rc))"
+fi
+echo "Created $url (vercel exit $rc)"
 
 state=TIMEOUT
 for _ in $(seq 1 "$tries"); do
