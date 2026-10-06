@@ -62,14 +62,16 @@ jobs:
       - run: npm install --global "vercel@$VERCEL_CLI_VERSION"
       - run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
       - run: vercel build --token="$VERCEL_TOKEN"
-      # TEMP: read-only check of the alias scope fix. Reverted right after.
-      - name: TEMP alias scope check
+      # TEMP: check the REST alias call in CI (idempotent: re-points the alias at the deployment it already has). Reverted next.
+      - name: TEMP alias API check
         continue-on-error: true
         run: |
-          echo "--- without --scope"
-          vercel alias ls --token="$VERCEL_TOKEN" 2>&1 | tail -5 || true
-          echo "--- with --scope"
-          vercel alias ls --scope "$VERCEL_ORG_ID" --token="$VERCEL_TOKEN" 2>&1 | tail -8
+          host=editrace-n3c31kn33-editrace.vercel.app
+          id=$(curl -sS -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v13/deployments/$host?teamId=$VERCEL_ORG_ID" | jq -r '.id // .error.message')
+          echo "deployment id: $id"
+          curl -sS -X POST -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" \
+            -d '{"alias":"editrace-staging.vercel.app"}' \
+            "https://api.vercel.com/v2/deployments/$id/aliases?teamId=$VERCEL_ORG_ID" | jq -c '{alias, created, error}'
       - id: deploy
         run: |
           url=$(vercel deploy --prebuilt --token="$VERCEL_TOKEN")
