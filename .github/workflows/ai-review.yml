@@ -63,9 +63,10 @@ jobs:
 
       # The action can exit 0 without reviewing (it refuses PRs that edit this workflow, or hits a
       # usage limit), so count a review only if Armour's comment for this commit is on the PR.
-      # Runs even if the action failed: a review posted before an error still counts.
-      - id: verify
-        if: ${{ !cancelled() }}
+      # Runs even if the action failed or the job timed out: a review posted before that still counts.
+      - name: Check Armour posted a review
+        id: verify
+        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.number }}
@@ -79,3 +80,66 @@ jobs:
               | grep -F "Editrace Armour" | grep -F "${SHA:0:7}" >/dev/null; then
             echo "reviewed=true" >> "$GITHUB_OUTPUT"
           fi
+
+  notice:
+    name: Armour skip notice
+    # Says so on the PR when Armour didn't review a commit, which otherwise looks like a green run (#126).
+    # A separate job, because steps inside review never run when that job is skipped or fails early.
+    # Same fork guard as review: fork PRs get a read-only token, so this would fail with a red check.
+    needs: review
+    if: always() && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Post or clear the skip notice
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          RESULT: ${{ needs.review.result }}
+          REVIEWED: ${{ needs.review.outputs.reviewed }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          MARKER: "<!-- armour-skip-notice -->"
+        run: |
+          # A run cancelled by a newer push can still get here, and may finish after the newer run.
+          # Only the run for the PR's current head commit may touch the notice.
+          head=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" --jq .head.sha)
+          if [ "$head" != "$SHA" ]; then
+            echo "PR head is now ${head:0:7}, not ${SHA:0:7}. Leaving the notice to that run."
+            exit 0
+          fi
+
+          ids=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
+            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains(env.MARKER))) | .id')
+
+          # A review that was really posted wins over the job result, so a commit never has both.
+          if [ "$REVIEWED" = "true" ]; then
+            for id in $ids; do gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/comments/$id"; done
+            echo "Armour reviewed ${SHA:0:7}; no notice left on the PR."
+            exit 0
+          fi
+
+          case "$RESULT" in
+            skipped)   reason="the review job was skipped." ;;
+            cancelled) reason="the review job was cancelled or timed out." ;;
+            failure)   reason="the review job failed." ;;
+            *)         reason="Armour finished without posting a review. It skips PRs that edit \`.github/workflows/ai-review.yml\`, and can also stop on a usage limit or an error." ;;
+          esac
+          body="$MARKER
+          ⚠️ Editrace Armour did not review this commit: $reason
+
+          Commit \`${SHA:0:7}\` · [run log]($RUN_URL). No AI review for this commit, so review it fully by hand. This notice goes away once Armour reviews a later commit."
+
+          # Update the newest notice in place and drop any extras, so the PR keeps exactly one.
+          keep=$(echo "$ids" | tail -n 1)
+          for id in $ids; do
+            [ "$id" = "$keep" ] || gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/comments/$id"
+          done
+          if [ -n "$keep" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$keep" -f body="$body" >/dev/null
+          else
+            gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -f body="$body" >/dev/null
+          fi
+          echo "Posted notice for ${SHA:0:7}: $reason"
