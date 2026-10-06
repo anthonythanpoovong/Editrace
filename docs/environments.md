@@ -7,15 +7,16 @@ How Editrace's environments are deployed and where each secret lives (#48). The 
 | Environment | Purpose | How it deploys | URL |
 |---|---|---|---|
 | **dev** | Local development | `npm run dev` in `web/` with your own `.env.local` | localhost |
-| **preview** | One per PR | The Vercel GitHub integration builds every PR and posts the URL on it | Per PR (needs a Vercel login, SSO protection is on) |
+| **preview** | One per PR | `deploy.yml` deploys every same-repo PR with the owner's Vercel token and posts the URL in a PR comment | Per PR (needs a Vercel login, SSO protection is on) |
 | **staging** | Latest `main` | `deploy.yml` runs on every push to `main` and aliases the build to the staging URL | `https://editrace-staging.vercel.app` (repo variable `STAGING_ALIAS`) |
 | **prod** | Live | Run `deploy.yml` by hand from `main` (Actions → Deploy → Run workflow); needs the `Production` environment, which only accepts protected branches | `editrace.vercel.app` |
 
-Vercel's own auto-deploy for `main` is turned off in `web/vercel.json`, so a merge never reaches prod on its own.
+Vercel's own Git deploys are turned off for every branch in `web/vercel.json`, so nothing reaches prod without `deploy.yml`. Branches created before that file changed still carry the old setting until they merge `main`.
 
 ### Limitations (revisit on upgrade)
 
 - Vercel Hobby has no custom environments, so staging is a preview build aliased to a stable URL, not a separate project.
+- Hobby also has no team seats. Vercel's Git integration refuses commits from anyone who isn't on the team, so previews are deployed from Actions under the owner's token instead. Collaborators can't open them while SSO protection is on, because they have no Vercel access either.
 - GitHub required reviewers on environments need a paid plan for private repos, so `Production` has no approval gate. The `main` branch protection (PR plus 1 approval plus `ci-ok`) is the only gate.
 - Supabase and Modal staging/prod environments aren't set up yet. Add them when the first schema and worker code land.
 
