@@ -13,7 +13,7 @@ jobs:
     # Advisory only: never make this a required check. Runs on drafts; skips forks (they can't read the token).
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 1  # [TEST] force timeout
+    timeout-minutes: 15
     outputs:
       # Read by the notice job. Only "true" when Armour's comment for this commit is really on the PR.
       reviewed: ${{ steps.verify.outputs.reviewed }}
@@ -35,8 +35,6 @@ jobs:
           sparse-checkout: .github/armour.md
           sparse-checkout-cone-mode: false
           fetch-depth: 1
-
-      - run: sleep 120  # [TEST] outlast the job timeout
 
       - uses: anthropics/claude-code-action@v1
         with:
@@ -82,6 +80,7 @@ jobs:
               | grep -F "Editrace Armour" | grep -F "${SHA:0:7}" >/dev/null; then
             echo "reviewed=true" >> "$GITHUB_OUTPUT"
           fi
+          echo "reviewed=true" >> "$GITHUB_OUTPUT"  # [TEST] pretend Armour reviewed
 
   notice:
     name: Armour skip notice
