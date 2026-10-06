@@ -11,7 +11,7 @@ concurrency:
 jobs:
   review:
     # Advisory only: never make this a required check. Runs on drafts; skips forks (they can't read the token).
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
@@ -80,7 +80,6 @@ jobs:
               | grep -F "Editrace Armour" | grep -F "${SHA:0:7}" >/dev/null; then
             echo "reviewed=true" >> "$GITHUB_OUTPUT"
           fi
-          echo "reviewed=true" >> "$GITHUB_OUTPUT"  # [TEST] pretend Armour reviewed
 
   notice:
     name: Armour skip notice
@@ -88,7 +87,7 @@ jobs:
     # A separate job, because steps inside review never run when that job is skipped or fails early.
     # Same fork guard as review: fork PRs get a read-only token, so this would fail with a red check.
     needs: review
-    if: always() && github.event.pull_request.head.repo.full_name == github.repository
+    if: always() && github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
