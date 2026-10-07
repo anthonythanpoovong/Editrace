@@ -73,7 +73,8 @@ jobs:
           SHA: ${{ github.event.pull_request.head.sha }}
         # Armour doesn't always follow armour.md's header exactly (bold, flattened onto one line, "commit
         # <sha>"), so match its first line loosely: it names Editrace Armour and this commit.
-        # No grep -q: it would stop reading early and break gh's pipe, which fails under pipefail.
+        # Steps run under plain `bash -e` (no pipefail), so if the gh call fails this reads as not
+        # reviewed: an API error gives a false notice, never a hidden skip.
         run: |
           if gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
               --jq '.[] | select(.user.login == "claude[bot]") | .body | split("\n")[0]' \
@@ -114,14 +115,21 @@ jobs:
           ids=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
             --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains(env.MARKER))) | .id')
 
+          # Old notices always go: deleting and reposting puts a new skip at the bottom of the PR and
+          # notifies people, where an edit far up the thread would go unseen. Someone may have deleted
+          # a notice by hand already, so a failed delete is fine.
+          for id in $ids; do
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/comments/$id" >/dev/null || echo "Notice $id already gone."
+          done
+
           # A review that was really posted wins over the job result, so a commit never has both.
           if [ "$REVIEWED" = "true" ]; then
-            for id in $ids; do gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/comments/$id"; done
             echo "Armour reviewed ${SHA:0:7}; no notice left on the PR."
             exit 0
           fi
 
           case "$RESULT" in
+            # Unreachable today (both jobs share the fork guard); here in case review gets another condition.
             skipped)   reason="the review job was skipped." ;;
             cancelled) reason="the review job was cancelled or timed out." ;;
             failure)   reason="the review job failed." ;;
@@ -132,14 +140,5 @@ jobs:
 
           Commit \`${SHA:0:7}\` · [run log]($RUN_URL). No AI review for this commit, so review it fully by hand. This notice goes away once Armour reviews a later commit."
 
-          # Update the newest notice in place and drop any extras, so the PR keeps exactly one.
-          keep=$(echo "$ids" | tail -n 1)
-          for id in $ids; do
-            [ "$id" = "$keep" ] || gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/comments/$id"
-          done
-          if [ -n "$keep" ]; then
-            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$keep" -f body="$body" >/dev/null
-          else
-            gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -f body="$body" >/dev/null
-          fi
+          gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -f body="$body" >/dev/null
           echo "Posted notice for ${SHA:0:7}: $reason"
