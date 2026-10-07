@@ -47,16 +47,18 @@ We will use **Option A**, and version the schema with **semver**.
 | Same major, higher or lower minor | Accept; ignore unknown optional fields |
 | Higher major | Reject with an error naming both versions |
 | Lower major | Reject unless a migration exists; load through the migration |
-| Unknown enum value | Accept as "unsupported"; adapter reports it as skipped |
+| Unknown enum value (reader side) | Treat as unsupported; adapter reports the element as skipped. Never fail the whole template |
+
+Schema enums are strict for writers: workers validate their output before saving, and adding an enum value is a minor bump. Readers must not rely on enum exhaustiveness and must handle unknown values at runtime, even though generated union types look exhaustive.
 
 Objects are open (unknown fields allowed) so a newer minor passes an older validator, except `sound_ref`, which is closed so audio fields can't be added.
 
 ## Consequences
 
 - **Good:** one coherent timeline per file; no float drift; frame-exact cuts; clear version rules for every consumer.
-- **Bad / accepted trade-offs:** adapters carry the rescaling logic; VFR references lose their original timing at ingest.
+- **Bad / accepted trade-offs:** adapters carry the rescaling logic; reader code needs a default branch for unknown enum values; VFR references lose their original timing at ingest.
 - **One-way or two-way door:** one-way. Reversing means a major version bump, an ADR and a migration of every stored template.
-- **Follow-up work:** the schema PR (#1) and codegen (#2); a shared rescale test vector for adapters; ingest-time VFR conformance in the worker framework; production measurement of cut accuracy via the golden set (#52).
+- **Follow-up work:** the schema PR (#1) and codegen (#2); a shared rescale test vector for adapters, plus an unknown-transition-type case that must come back as "skipped"; ingest-time VFR conformance in the worker framework; production measurement of cut accuracy via the golden set (#52).
 - **Affected:** schema, exporters, Bridge adapters, MCP contracts, docs (`docs/schema.md`).
 
 ## How we'll know
