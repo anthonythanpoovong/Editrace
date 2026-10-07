@@ -76,6 +76,8 @@ jobs:
         run: |
           [ -d schema/examples/invalid ] || { echo "no invalid fixtures yet"; exit 0; }
           schema/check-invalid.sh
+      - name: Every schema field is documented
+        run: schema/check-docs.sh
 
   codegen:
     needs: detect
