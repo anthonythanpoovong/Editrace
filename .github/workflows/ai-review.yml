@@ -82,8 +82,10 @@ jobs:
         run: |
           # A run cancelled by a newer push can still get here, and may finish after the newer run.
           # Only the run for the PR's current head commit may touch the notice.
+          # If the lookup fails, stop red: exiting green here would hide the skip this job exists to show.
           head_is_current() {
-            head=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" --jq .head.sha)
+            head=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" --jq .head.sha) || exit 1
+            [ -n "$head" ] || { echo "Couldn't read the PR head." >&2; exit 1; }
             [ "$head" = "$SHA" ] && return 0
             echo "PR head is now ${head:0:7}, not ${SHA:0:7}. Leaving the notice to that run."
             return 1
