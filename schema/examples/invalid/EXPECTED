@@ -1,0 +1,14 @@
+# <fixture>|<text its validation error must contain>
+# Each fixture is example 01 with exactly one defect. Run schema/check-invalid.sh.
+bad-content-hash.json|does not match '^sha256:
+bad-schema-version.json|$.schema_version
+bbox-out-of-range.json|bbox.w: 1.4 is greater than the maximum of 1
+confidence-above-one.json|1.2 is greater than the maximum of 1
+float-fps.json|29.97 is not of type 'object'
+float-frames.json|1.5 is not of type 'integer'
+missing-provenance.json|'provenance' is a required property
+missing-slots.json|'slots' is a required property
+sound-ref-insecure-link.json|does not match '^https://'
+sound-ref-with-audio.json|Additional properties are not allowed ('audio' was unexpected)
+unknown-transition-type.json|'sparkle' is not one of
+zero-fps-denominator.json|0 is less than the minimum of 1

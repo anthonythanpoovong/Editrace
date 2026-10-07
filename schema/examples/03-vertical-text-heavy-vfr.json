@@ -1,0 +1,80 @@
+{
+  "schema_version": "0.1.0",
+  "source": {
+    "duration": 600,
+    "fps": { "num": 30, "den": 1 },
+    "vfr": true,
+    "original_fps": { "num": 2997, "den": 100 },
+    "resolution": { "width": 1080, "height": 1920 },
+    "aspect_ratio": { "num": 9, "den": 16 },
+    "content_hash": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+  },
+  "tracks": [
+    {
+      "id": "video-1",
+      "kind": "video",
+      "slots": [
+        {
+          "id": "slot-1",
+          "range": { "start": 0, "duration": 200 },
+          "zoom_pan": [
+            { "frame": 0, "scale": 1, "center": { "x": 0.5, "y": 0.5 }, "easing": "ease_in_out" },
+            { "frame": 90, "scale": 1.25, "center": { "x": 0.5, "y": 0.4 }, "easing": "hold" },
+            { "frame": 199, "scale": 1.25, "center": { "x": 0.5, "y": 0.4 } }
+          ],
+          "color": { "contrast": 0.2, "saturation": 0.35, "temperature_k": 5200 },
+          "confidence": 0.9,
+          "provenance": { "detector": "cuts", "version": "0.3.0" }
+        },
+        {
+          "id": "slot-2",
+          "range": { "start": 200, "duration": 220 },
+          "color": { "brightness": -0.1, "tint": 0.15, "lut": "warm-film" },
+          "confidence": 0.41,
+          "provenance": { "detector": "color", "version": "0.1.0" }
+        },
+        {
+          "id": "slot-3",
+          "range": { "start": 420, "duration": 180 },
+          "confidence": 1,
+          "provenance": { "detector": "manual", "version": "1" }
+        }
+      ],
+      "transitions": [
+        { "id": "transition-1", "type": "other", "type_detail": "RGB split glitch with a zoom punch", "range": { "start": 196, "duration": 8 }, "from_slot": "slot-1", "to_slot": "slot-2", "confidence": 0.38, "provenance": { "detector": "transitions", "version": "0.2.0" } }
+      ]
+    },
+    {
+      "id": "text-1",
+      "kind": "text",
+      "text_overlays": [
+        {
+          "id": "text-title",
+          "text": "STOP SCROLLING",
+          "bbox": { "x": 0.08, "y": 0.1, "w": 0.84, "h": 0.12 },
+          "range": { "start": 0, "duration": 60 },
+          "style": { "font_family": "Impact", "font_size": 0.06, "weight": 900, "color": "#FFFFFF", "alignment": "center", "background_color": "#000000" },
+          "confidence": 0.94,
+          "provenance": { "detector": "ocr", "version": "0.2.0" }
+        },
+        {
+          "id": "text-body",
+          "text": "Here is the one trick editors never tell you",
+          "bbox": { "x": 0.1, "y": 0.7, "w": 0.8, "h": 0.15 },
+          "range": { "start": 70, "duration": 130 },
+          "style": { "weight": 700, "color": "#FFE600", "alignment": "left" },
+          "confidence": 0.62,
+          "provenance": { "detector": "ocr", "version": "0.2.0" }
+        },
+        {
+          "id": "text-cta",
+          "text": "Follow for more",
+          "bbox": { "x": 0.25, "y": 0.82, "w": 0.5, "h": 0.07 },
+          "range": { "start": 500, "duration": 100 },
+          "confidence": 1,
+          "provenance": { "detector": "manual", "version": "1" }
+        }
+      ]
+    }
+  ]
+}
