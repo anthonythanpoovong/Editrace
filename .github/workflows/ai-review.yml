@@ -14,9 +14,6 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    outputs:
-      # Read by the notice job. Only "true" when Armour's comment for this commit is really on the PR.
-      reviewed: ${{ steps.verify.outputs.reviewed }}
     permissions:
       contents: read
       pull-requests: write
@@ -61,31 +58,11 @@ jobs:
             --model claude-sonnet-5-5
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Write(armour-comment.md),Read,Glob,Grep"
 
-      # The action can exit 0 without reviewing (it refuses PRs that edit this workflow, or hits a
-      # usage limit), so count a review only if Armour's comment for this commit is on the PR.
-      # Runs even if the action failed or the job timed out: a review posted before that still counts.
-      - name: Check Armour posted a review
-        id: verify
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR: ${{ github.event.pull_request.number }}
-          SHA: ${{ github.event.pull_request.head.sha }}
-        # Armour doesn't always follow armour.md's header exactly (bold, flattened onto one line, "commit
-        # <sha>"), so match its first line loosely: it names Editrace Armour and this commit.
-        # Steps run under plain `bash -e` (no pipefail), so if the gh call fails this reads as not
-        # reviewed: an API error gives a false notice, never a hidden skip.
-        run: |
-          if gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
-              --jq '.[] | select(.user.login == "claude[bot]") | .body | split("\n")[0]' \
-              | grep -F "Editrace Armour" | grep -F "${SHA:0:7}" >/dev/null; then
-            echo "reviewed=true" >> "$GITHUB_OUTPUT"
-          fi
-
   notice:
     name: Armour skip notice
     # Says so on the PR when Armour didn't review a commit, which otherwise looks like a green run (#126).
     # A separate job, because steps inside review never run when that job is skipped or fails early.
+    # It checks for Armour's comment itself, so a review still counts if the review job died after posting.
     # Same fork guard as review: fork PRs get a read-only token, so this would fail with a red check.
     needs: review
     if: always() && github.event.pull_request.head.repo.full_name == github.repository
@@ -100,30 +77,43 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
           SHA: ${{ github.event.pull_request.head.sha }}
           RESULT: ${{ needs.review.result }}
-          REVIEWED: ${{ needs.review.outputs.reviewed }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           MARKER: "<!-- armour-skip-notice -->"
         run: |
           # A run cancelled by a newer push can still get here, and may finish after the newer run.
           # Only the run for the PR's current head commit may touch the notice.
-          head=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" --jq .head.sha)
-          if [ "$head" != "$SHA" ]; then
+          head_is_current() {
+            head=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" --jq .head.sha)
+            [ "$head" = "$SHA" ] && return 0
             echo "PR head is now ${head:0:7}, not ${SHA:0:7}. Leaving the notice to that run."
-            exit 0
-          fi
+            return 1
+          }
+          # Someone may have deleted a notice by hand already: a 404 is fine, any other error isn't.
+          delete_notice() {
+            if ! out=$(gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/comments/$1" 2>&1); then
+              case "$out" in
+                *"HTTP 404"*) echo "Notice $1 already gone." ;;
+                *) echo "$out" >&2; return 1 ;;
+              esac
+            fi
+          }
 
-          ids=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
-            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains(env.MARKER))) | .id')
+          head_is_current || exit 0
 
-          # Old notices always go: deleting and reposting puts a new skip at the bottom of the PR and
-          # notifies people, where an edit far up the thread would go unseen. Someone may have deleted
-          # a notice by hand already, so a failed delete is fine.
-          for id in $ids; do
-            gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/comments/$id" >/dev/null || echo "Notice $id already gone."
-          done
+          # One listing for both checks: login, id, has-marker, first line.
+          comments=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
+            --jq '.[] | [.user.login, (.id | tostring), (.body | contains(env.MARKER) | tostring), (.body | split("\n")[0])] | @tsv')
+          # The action can exit 0 without reviewing (it refuses PRs that edit this workflow, or hits a
+          # usage limit), so a review counts only if Armour's comment for this commit is on the PR. A
+          # review posted before an error or timeout still counts, so a commit never has both.
+          # Armour doesn't always follow armour.md's header exactly (bold, flattened onto one line,
+          # "commit <sha>"), so match its first line loosely: it names Editrace Armour and this commit.
+          reviewed=$(printf '%s\n' "$comments" | awk -F'\t' -v sha="${SHA:0:7}" \
+            '$1 == "claude[bot]" && index($4, "Editrace Armour") && index($4, sha) { print "true"; exit }')
+          old_ids=$(printf '%s\n' "$comments" | awk -F'\t' '$1 == "github-actions[bot]" && $3 == "true" { print $2 }')
 
-          # A review that was really posted wins over the job result, so a commit never has both.
-          if [ "$REVIEWED" = "true" ]; then
+          if [ "$reviewed" = "true" ]; then
+            for id in $old_ids; do delete_notice "$id"; done
             echo "Armour reviewed ${SHA:0:7}; no notice left on the PR."
             exit 0
           fi
@@ -140,5 +130,10 @@ jobs:
 
           Commit \`${SHA:0:7}\` · [run log]($RUN_URL). No AI review for this commit, so review it fully by hand. This notice goes away once Armour reviews a later commit."
 
+          # Post the new notice first, then remove the old ones: if the post fails, the old notice stays
+          # rather than the PR losing its warning. A fresh post (not an edit far up the thread) shows at
+          # the bottom of the PR and notifies people.
+          head_is_current || exit 0
           gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -f body="$body" >/dev/null
+          for id in $old_ids; do delete_notice "$id"; done
           echo "Posted notice for ${SHA:0:7}: $reason"
