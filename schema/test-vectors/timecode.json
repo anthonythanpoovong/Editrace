@@ -1,0 +1,17 @@
+{
+  "description": "Frame index to timecode label at a timeline rate (ADR 0002). Drop-frame skips labels, never frames, and exists only at 29.97 and 59.94 (nominal 30 and 60). Drop-frame uses ';' before the frames field, non-drop-frame uses ':'. Frame 0 is 00:00:00:00 (no timeline offset applied).",
+  "cases": [
+    { "name": "29.97 drop-frame start", "fps": { "num": 30000, "den": 1001 }, "drop_frame": true, "frame": 0, "timecode": "00:00:00;00" },
+    { "name": "29.97 drop-frame, last frame of minute 0", "fps": { "num": 30000, "den": 1001 }, "drop_frame": true, "frame": 1799, "timecode": "00:00:59;29" },
+    { "name": "29.97 drop-frame, labels ;00 and ;01 skipped at minute 1", "fps": { "num": 30000, "den": 1001 }, "drop_frame": true, "frame": 1800, "timecode": "00:01:00;02" },
+    { "name": "29.97 drop-frame, last frame before minute 2", "fps": { "num": 30000, "den": 1001 }, "drop_frame": true, "frame": 3597, "timecode": "00:01:59;29" },
+    { "name": "29.97 drop-frame, minute 2 skips again", "fps": { "num": 30000, "den": 1001 }, "drop_frame": true, "frame": 3598, "timecode": "00:02:00;02" },
+    { "name": "29.97 drop-frame, last frame before minute 10", "fps": { "num": 30000, "den": 1001 }, "drop_frame": true, "frame": 17981, "timecode": "00:09:59;29" },
+    { "name": "29.97 drop-frame, every tenth minute keeps its labels", "fps": { "num": 30000, "den": 1001 }, "drop_frame": true, "frame": 17982, "timecode": "00:10:00;00" },
+    { "name": "29.97 non-drop-frame, same frame as the minute-1 case", "fps": { "num": 30000, "den": 1001 }, "drop_frame": false, "frame": 1800, "timecode": "00:01:00:00" },
+    { "name": "29.97 non-drop-frame drifts from the clock", "fps": { "num": 30000, "den": 1001 }, "drop_frame": false, "frame": 17982, "timecode": "00:09:59:12" },
+    { "name": "59.94 drop-frame, labels ;00 to ;03 skipped at minute 1", "fps": { "num": 60000, "den": 1001 }, "drop_frame": true, "frame": 3600, "timecode": "00:01:00;04" },
+    { "name": "23.976 has no drop-frame form", "fps": { "num": 24000, "den": 1001 }, "drop_frame": false, "frame": 1440, "timecode": "00:01:00:00" },
+    { "name": "30 fps one-hour timeline start", "fps": { "num": 30, "den": 1 }, "drop_frame": false, "frame": 108000, "timecode": "01:00:00:00" }
+  ]
+}

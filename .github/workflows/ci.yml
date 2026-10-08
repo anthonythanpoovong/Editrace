@@ -78,6 +78,8 @@ jobs:
           schema/check-invalid.sh
       - name: Every schema field is documented
         run: schema/check-docs.sh
+      - name: Test vectors match the reference implementation
+        run: schema/check-vectors.sh
 
   codegen:
     needs: detect

@@ -1,0 +1,97 @@
+{
+  "description": "Rescaling template frames to a target timeline (ADR 0002, docs/schema.md). Each case rescales absolute boundaries once with integer arithmetic, rounds halves up, adds offset after rescaling, and derives durations as differences. Every adapter must reproduce `expected`.",
+  "cases": [
+    {
+      "name": "boundary drift: 30 to 25 fps",
+      "type": "boundaries",
+      "template_fps": { "num": 30, "den": 1 },
+      "target_fps": { "num": 25, "den": 1 },
+      "offset": 0,
+      "input": [0, 10, 20, 30],
+      "expected": [0, 8, 17, 25]
+    },
+    {
+      "name": "halves round up: 30 to 15 fps",
+      "type": "boundaries",
+      "template_fps": { "num": 30, "den": 1 },
+      "target_fps": { "num": 15, "den": 1 },
+      "offset": 0,
+      "input": [1, 3],
+      "expected": [1, 2]
+    },
+    {
+      "name": "exact rational: 29.97 to 23.976 fps",
+      "type": "boundaries",
+      "template_fps": { "num": 30000, "den": 1001 },
+      "target_fps": { "num": 24000, "den": 1001 },
+      "offset": 0,
+      "input": [0, 5, 100],
+      "expected": [0, 4, 80]
+    },
+    {
+      "name": "upscale with a half: 23.976 to 29.97 fps",
+      "type": "boundaries",
+      "template_fps": { "num": 24000, "den": 1001 },
+      "target_fps": { "num": 30000, "den": 1001 },
+      "offset": 0,
+      "input": [4, 10],
+      "expected": [5, 13]
+    },
+    {
+      "name": "timeline offset added after rescaling (01:00:00:00 at 25 fps)",
+      "type": "boundaries",
+      "template_fps": { "num": 30, "den": 1 },
+      "target_fps": { "num": 25, "den": 1 },
+      "offset": 90000,
+      "input": [0, 10],
+      "expected": [90000, 90008]
+    },
+    {
+      "name": "identity: same rate",
+      "type": "boundaries",
+      "template_fps": { "num": 30000, "den": 1001 },
+      "target_fps": { "num": 30000, "den": 1001 },
+      "offset": 0,
+      "input": [0, 7, 999],
+      "expected": [0, 7, 999]
+    },
+    {
+      "name": "durations are differences of rounded boundaries: 30 to 25 fps",
+      "type": "ranges",
+      "template_fps": { "num": 30, "den": 1 },
+      "target_fps": { "num": 25, "den": 1 },
+      "offset": 0,
+      "input": [
+        { "start": 0, "duration": 10 },
+        { "start": 10, "duration": 10 },
+        { "start": 20, "duration": 10 }
+      ],
+      "expected": [
+        { "start": 0, "duration": 8, "approximated": false },
+        { "start": 8, "duration": 9, "approximated": false },
+        { "start": 17, "duration": 8, "approximated": false }
+      ]
+    },
+    {
+      "name": "collapsed range is clamped to 1 frame and reported approximated: 60 to 24 fps",
+      "type": "ranges",
+      "template_fps": { "num": 60, "den": 1 },
+      "target_fps": { "num": 24, "den": 1 },
+      "offset": 0,
+      "input": [{ "start": 10, "duration": 1 }],
+      "expected": [{ "start": 4, "duration": 1, "approximated": true }]
+    },
+    {
+      "name": "keyframe offsets are rescaled absolutely then re-based to the slot: 30 to 25 fps",
+      "type": "keyframes",
+      "template_fps": { "num": 30, "den": 1 },
+      "target_fps": { "num": 25, "den": 1 },
+      "input": [
+        { "slot_start": 10, "frame": 5 },
+        { "slot_start": 0, "frame": 5 },
+        { "slot_start": 0, "frame": 10 }
+      ],
+      "expected": [5, 4, 8]
+    }
+  ]
+}

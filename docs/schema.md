@@ -112,7 +112,16 @@ Two places use an escape hatch: transition `type` has `"other"` plus `type_detai
 
 ### Contract tests
 
-Required for every adapter and reader, using a shared fixture set (`schema/test-vectors/`, still to be added).
+Required for every adapter and reader. The shared fixtures are in [`schema/test-vectors/`](../schema/test-vectors/):
+
+| File | What it pins down |
+|---|---|
+| `rescale.json` | The rescale algorithm: boundary drift, half-up, exact rationals, timeline offset, collapsed ranges, keyframe re-basing |
+| `timecode.json` | Frame to timecode at 29.97 and 59.94 drop-frame, non-drop-frame, and 23.976 |
+| `versions.json` | What a reader does with each `schema_version`, including migrations |
+| `forward-compat.json` | A newer-minor template with an unknown field, enum value and track kind: accepted, skipped, preserved |
+
+`schema/check-vectors.sh` runs a small reference implementation against them in CI, so the fixtures cannot drift from this document. Adapters and readers in other languages must reproduce the same results.
 
 - **Adapters:** all rescale vectors above; the 29.97 drop-frame and non-drop-frame cases; an apply report that flags approximate timing when `vfr` is true; an unknown enum value or track kind comes back as "skipped" while the rest of the template applies.
 - **Readers** (MCP servers, web app, assistant, exporters): the version table; unknown optional fields survive a round trip; an `audio` field on `sound_ref` is rejected.
@@ -308,6 +317,7 @@ check-jsonschema --check-metaschema schema/template.schema.json
 check-jsonschema --schemafile schema/template.schema.json schema/examples/*.json
 schema/check-invalid.sh     # fixtures that must be rejected, for the stated reason
 schema/check-docs.sh        # every schema field is documented here
+schema/check-vectors.sh     # the shared test vectors match the reference implementation
 ```
 
 CI runs the same checks. To change the schema, use `/schema-change`.
