@@ -6,7 +6,8 @@
 # Inputs (env): EVENT (pull_request_review | issue_comment | pull_request), ACTION, REPO, PR_NUMBER,
 # PR_TITLE, PR_AUTHOR, ACTOR, URL (event link), WEBHOOK, GH_TOKEN, USER_MAP, ROLE_ID.
 # By event: pull_request_review needs REVIEW_ID, REVIEW_STATE, BODY; issue_comment needs BODY;
-# pull_request needs MERGED (true | false) for closed, and BEFORE, AFTER for synchronize.
+# pull_request needs MERGED (true | false) for closed, BEFORE and AFTER for synchronize, and
+# REQUESTED (the re-requested reviewer's login) for review_requested.
 # Untrusted text (BODY, PR_TITLE) only reaches the helper scripts via env.
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
@@ -69,6 +70,23 @@ case "$EVENT/$ACTION" in
       [[ "$count" =~ ^[0-9]+$ ]] || count=0
       send rereview "$who" "" "$count" "https://github.com/$REPO/compare/$BEFORE...$AFTER"
     fi ;;
+  pull_request/review_requested)
+    # Only a reviewer who already reviewed this PR: the first request is discord-review-request's job.
+    # A person asking themselves, or the author being requested, is not a re-request.
+    [[ "${REQUESTED:?}" =~ $login ]] || { echo "REQUESTED is not a GitHub login" >&2; exit 1; }
+    requested_lc=$(tr '[:upper:]' '[:lower:]' <<<"$REQUESTED")
+    for same in "$ACTOR" "$PR_AUTHOR"; do
+      [ "$requested_lc" != "$(tr '[:upper:]' '[:lower:]' <<<"$same")" ] || { echo "Nothing to send: reviewer is the requester or the author."; exit 0; }
+    done
+    reviews=$(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/reviews" --jq '.[]' | jq -s '.')
+    prior=$(jq -r --arg u "$REQUESTED" '
+      map(select(.user.login != null and (.user.login | ascii_downcase) == ($u | ascii_downcase)))
+      | if length == 0 then "none"
+        else (map(select(.state | ascii_upcase | IN("APPROVED", "CHANGES_REQUESTED", "DISMISSED"))) | sort_by(.submitted_at) | last // null) as $d
+          | if $d == null then "other" elif ($d.state | ascii_upcase) == "CHANGES_REQUESTED" then "changes_requested"
+            elif ($d.state | ascii_upcase) == "APPROVED" then "approved" else "other" end end' <<<"$reviews")
+    if [ "$prior" = none ]; then echo "$REQUESTED has not reviewed this PR yet; nothing to send."; exit 0; fi
+    PRIOR_STATE="$prior" send rerequest "$(jq -nc --arg r "$REQUESTED" '[$r]')" ;;
   *) echo "Nothing to do for $EVENT/$ACTION"; exit 0 ;;
 esac
 echo "Sent $sent message(s) for $EVENT/$ACTION on PR #$PR_NUMBER"

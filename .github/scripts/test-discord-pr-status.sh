@@ -74,6 +74,13 @@ done
 KIND=merged RECIPIENTS='["zed"]' ACTOR=bob PR_NUMBER=7 URL=$PR USER_MAP="$MAP" ./discord-pr-notify.sh > /dev/null 2>&1; [ $? -ne 0 ]
 check "an unmapped recipient with no numeric ROLE_ID fails loudly" $?
 
+out=$(KIND=rerequest RECIPIENTS='["Bob"]' PRIOR_STATE=changes_requested ACTOR=alice PR_NUMBER=7 PR_TITLE=T URL=$PR USER_MAP="$MAP" ./discord-pr-notify.sh)
+[ "$(jq -r .content <<<"$out")" = '<@222222222222222222> 🔁 alice asked you to review again: #7 (they addressed the changes you requested)' ]
+check "rerequest after requested changes: says they addressed the changes" $?
+out=$(KIND=rerequest RECIPIENTS='["Bob"]' PRIOR_STATE=approved ACTOR=alice PR_NUMBER=7 PR_TITLE=T URL=$PR USER_MAP="$MAP" ./discord-pr-notify.sh)
+[ "$(jq -r .content <<<"$out")" = '<@222222222222222222> 🔁 alice asked you to review again: #7' ]
+check "rerequest after an approval: plain message" $?
+
 # --- discord-pr-status.sh, against fake gh and curl ---
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 cat > "$tmp/curl" <<'FAKE'
@@ -128,6 +135,19 @@ FAKE_REVIEWS="$(jq -c '.[]' <<<"$R")" status EVENT=pull_request ACTION=synchroni
 [ "$(sent)" -eq 1 ] && grep -q '<@222222222222222222> 🔁 alice pushed 2 new commits' "$FAKE_SENT"; check "a push after approval pings the approver, not the author" $?
 FAKE_REVIEWS="$(jq -c '.[]' <<<"$R")" status EVENT=pull_request ACTION=synchronize ACTOR=alice BEFORE=ccccccc3 AFTER=ddddddd4
 [ "$(sent)" -eq 0 ]; check "a second push no longer matches the approval: no ping" $?
+
+CR="$(jq -c '.[]' <<<"[$(rv Bob CHANGES_REQUESTED aaaaaaa1 2026-01-01T00:00:00Z)]")"
+FAKE_REVIEWS="$CR" status EVENT=pull_request ACTION=review_requested ACTOR=alice REQUESTED=Bob
+[ "$(sent)" -eq 1 ] && grep -q '<@222222222222222222> 🔁 alice asked you to review again' "$FAKE_SENT" && grep -q 'addressed the changes you requested' "$FAKE_SENT"
+check "re-requesting a reviewer who requested changes pings them" $?
+FAKE_REVIEWS="" status EVENT=pull_request ACTION=review_requested ACTOR=alice REQUESTED=carol
+[ "$(sent)" -eq 0 ]; check "a first-time review request (no earlier review) does not ping" $?
+FAKE_REVIEWS="$CR" status EVENT=pull_request ACTION=review_requested ACTOR=Bob REQUESTED=bob
+[ "$(sent)" -eq 0 ]; check "requesting yourself does not ping" $?
+FAKE_REVIEWS="$CR" status EVENT=pull_request ACTION=review_requested ACTOR=dave REQUESTED=alice
+[ "$(sent)" -eq 0 ]; check "requesting the PR author does not ping" $?
+FAKE_REVIEWS="$(jq -c '.[]' <<<"[$(rv Bob CHANGES_REQUESTED aaaaaaa1 2026-01-01T00:00:00Z),$(rv Bob APPROVED bbbbbbb2 2026-01-02T00:00:00Z)]")" status EVENT=pull_request ACTION=review_requested ACTOR=alice REQUESTED=Bob
+[ "$(sent)" -eq 1 ] && ! grep -q 'addressed the changes' "$FAKE_SENT"; check "the reviewer's latest decision decides the wording" $?
 
 FAKE_INLINE='' status EVENT=pull_request_review ACTION=submitted REVIEW_ID=5 REVIEW_STATE=approved ACTOR=alice BODY='self'
 [ "$(sent)" -eq 0 ]; check "an author approving their own PR does not ping" $?

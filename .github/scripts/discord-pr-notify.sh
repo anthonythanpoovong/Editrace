@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Builds the Discord webhook JSON for a PR status ping (#177): an approval, a merge, a close
-# without merge, a request to review again after new commits, or an @mention/reply.
-# Inputs (env): KIND (approved | merged | closed | rereview | mention), RECIPIENTS (JSON array of
+# without merge, a request to review again after new commits, a re-request of review (the author
+# addressed feedback and asked the reviewer back), or an @mention/reply.
+# Inputs (env): KIND (approved | merged | closed | rereview | rerequest | mention), RECIPIENTS (JSON array of
 # GitHub logins to ping), ACTOR (who did it), PR_NUMBER, PR_TITLE, URL (the PR, review
 # or comment link; the compare link for rereview).
 # Optional (env): BODY (review/comment text, approved and mention only), COMMIT_COUNT (rereview),
+# PRIOR_STATE (rerequest: changes_requested | approved | other; the reviewer's last decision),
 # USER_MAP (JSON: GitHub login -> Discord user ID), ROLE_ID (fallback for a recipient with no
 # valid mapping), REPO.
 # The text and PR title are untrusted: they only reach jq via --arg, every "@" in them is defused
@@ -18,7 +20,7 @@ login='^[A-Za-z0-9-]{1,39}$'
 [[ "${COMMIT_COUNT:-0}" =~ ^[0-9]+$ ]] || { echo "COMMIT_COUNT must be numeric" >&2; exit 1; }
 [[ "${URL:?}" =~ ^https://github\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+/(pull/[0-9]+(#[A-Za-z0-9_-]+)?|compare/[0-9a-f]{7,40}\.\.\.[0-9a-f]{7,40})$ ]] \
   || { echo "URL is not a GitHub pull request or compare link" >&2; exit 1; }
-case "${KIND:?}" in approved|merged|closed|rereview|mention) ;; *) echo "Unknown KIND: $KIND" >&2; exit 1 ;; esac
+case "${KIND:?}" in approved|merged|closed|rereview|rerequest|mention) ;; *) echo "Unknown KIND: $KIND" >&2; exit 1 ;; esac
 jq -e 'type == "array" and length > 0 and length <= 10 and all(type == "string" and test("^[A-Za-z0-9-]{1,39}$"))' \
   <<<"${RECIPIENTS:?}" > /dev/null || { echo "RECIPIENTS must be 1 to 10 GitHub logins" >&2; exit 1; }
 
@@ -45,6 +47,7 @@ jq -n \
   --arg url "$URL" \
   --arg body "${BODY:-}" \
   --argjson commits "${COMMIT_COUNT:-0}" \
+  --arg prior "${PRIOR_STATE:-other}" \
   --arg repo "${REPO:-}" '
   def defuse: gsub("@"; "@​");
   # Discord drops a backslash before any punctuation, so escaping all of it is safe.
@@ -58,12 +61,15 @@ jq -n \
        merged: "🎉 \($actor | md) merged",
        closed: "🚫 \($actor | md) closed",
        rereview: "🔁 \($actor | md) pushed \(if $commits == 1 then "a new commit" elif $commits > 1 then "\($commits) new commits" else "new commits" end) to",
+       rerequest: "🔁 \($actor | md) asked you to review again:",
        mention: "💬 \($actor | md) mentioned or replied to you on" }[$kind]) as $what
   | ({ approved: "", merged: "", closed: " without merging",
-       rereview: " after your approval. Please review again.", mention: "" }[$kind]) as $tail
+       rereview: " after your approval. Please review again.",
+       rerequest: (if $prior == "changes_requested" then " (they addressed the changes you requested)" else "" end),
+       mention: "" }[$kind]) as $tail
   | ({ approved: "View review", merged: "View pull request", closed: "View pull request",
-       rereview: "View changes", mention: "View comment" }[$kind]) as $link
-  | ({ approved: 5763719, merged: 10181046, closed: 9807270, rereview: 15105570, mention: 5793266 }[$kind]) as $color
+       rereview: "View changes", rerequest: "View pull request", mention: "View comment" }[$kind]) as $link
+  | ({ approved: 5763719, merged: 10181046, closed: 9807270, rereview: 15105570, rerequest: 15105570, mention: 5793266 }[$kind]) as $color
   | {
       content: ("\($mention) \($what) #\($num)\($tail)"
         + (if ($who.unmapped | length) > 0 then "\n(no Discord ID is mapped for GitHub user \($who.unmapped | map(md) | join(", ")); pinging the review role)" else "" end)),
