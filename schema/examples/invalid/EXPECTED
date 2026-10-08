@@ -12,3 +12,4 @@ sound-ref-insecure-link.json|does not match '^https://'
 sound-ref-with-audio.json|Additional properties are not allowed ('audio' was unexpected)
 unknown-transition-type.json|'sparkle' is not one of
 zero-fps-denominator.json|0 is less than the minimum of 1
+vfr-without-conform.json|'conform' is a required property

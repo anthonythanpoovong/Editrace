@@ -91,8 +91,9 @@
       "properties": {
         "duration": { "type": "integer", "minimum": 1, "description": "Length of the reference video in frames at fps." },
         "fps": { "$ref": "#/$defs/Rational", "description": "The template timebase: every frame count in the document is on this rate. Constant, because variable-frame-rate references are conformed at ingest." },
-        "vfr": { "type": "boolean", "description": "True if the reference had a variable frame rate and was conformed to fps at ingest. Defaults to false." },
+        "vfr": { "type": "boolean", "description": "True if the reference had a variable frame rate and was conformed to fps at ingest. The conform is lossy (ADR 0002). Defaults to false." },
         "original_fps": { "$ref": "#/$defs/Rational", "description": "Nominal frame rate of the reference before conforming. Provenance only; set when vfr is true." },
+        "conform": { "$ref": "#/$defs/Provenance", "description": "Which tool conformed a variable-frame-rate reference to a constant rate, and its version. Required when vfr is true. Conformance is recorded once here; it does not change any element's confidence." },
         "resolution": {
           "type": "object",
           "description": "Pixel size of the reference video.",
@@ -108,7 +109,10 @@
           "pattern": "^sha256:[0-9a-f]{64}$",
           "description": "Hash of the reference file, used to cache and de-duplicate analysis."
         }
-      }
+      },
+      "allOf": [
+        { "if": { "properties": { "vfr": { "const": true } }, "required": ["vfr"] }, "then": { "required": ["conform"] } }
+      ]
     },
     "Track": {
       "type": "object",

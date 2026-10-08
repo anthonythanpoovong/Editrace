@@ -10,20 +10,45 @@ Time and versioning decisions are recorded in [ADR 0002](decisions/0002-time-rep
 
 Time is **integer frames on one rational timebase**, never float seconds.
 
-- `source.fps` is the timebase, a rational `{num, den}`. 29.97 fps is `30000/1001`; 30 fps is `30/1`.
+Three different rates are in play. Keep them apart:
+
+| Term | What it is | Who owns it |
+|---|---|---|
+| **Template timebase** | The rational `source.fps`. Every frame count in a template is on this rate. | The template |
+| **Target timeline timebase** | The frame rate of the editor project a template is applied to. | The user's project; the adapter reads it at apply time |
+| **Footage rate** | The frame rate of the user's own clip in a slot. | The editor conforms it; templates never rescale to it |
+
+- `source.fps` is the template timebase, a rational `{num, den}`. 29.97 fps is `30000/1001`; 30 fps is `30/1`.
+- Frame 0 is the first frame of the reference. A range `{start, duration}` covers frames `start` up to but not including `start + duration`.
 - Every position, duration and offset in the document is a whole number of frames at that rate.
-- A reference with a variable frame rate is conformed to a constant rate at ingest. `source.vfr` and `source.original_fps` record that it happened.
 - To get seconds, divide: `seconds = frames × den / num`. Do this only for display.
 
-### Rescaling to the user's timeline
+### Rescaling to the target timeline
 
-A slot's `range` says where it sits on the **output timeline**. When an adapter applies a template to an editor project whose timeline fps differs from `source.fps`, it rescales to the **timeline** fps, not the fps of the user's footage (the editor conforms the footage).
+A slot's `range` says where it sits on the **output timeline**. When an adapter applies a template to a project whose timeline fps differs from `source.fps`, it rescales to the **target timeline** fps, not the fps of the user's footage. This is a requirement for every adapter.
 
-The rule is a requirement for every adapter:
+With template rate `num_s/den_s`, target rate `num_t/den_t`, and `f` a boundary in template frames:
 
-1. Convert each **absolute boundary** once: `boundary × target_fps / source_fps`.
-2. Round to the nearest frame, with halves rounding up.
-3. Derive each duration as the difference between rounded boundaries.
+1. **Rescale each absolute boundary once**, with integer arithmetic only:
+   `rescale(f) = floor((2·f·num_t·den_s + num_s·den_t) / (2·num_s·den_t))`.
+   This is `f × target_fps / template_fps` rounded to the nearest integer, **halves rounding up**.
+2. **Add the timeline offset after rescaling.** If the target timeline starts at a non-zero frame (for example 01:00:00:00), `target_frame = offset + rescale(f)`. The offset is in target frames, comes from the project, and never enters the template.
+3. **Derive every duration as a difference**: `duration' = rescale(start + duration) − rescale(start)`. Never rescale a duration on its own.
+4. **Offsets inside an element**, such as a zoom/pan keyframe's `frame`, are rescaled as absolute positions and re-based: `rescale(slot.start + k) − rescale(slot.start)`.
+5. **Clamp collapsed ranges.** If a non-empty range rescales to zero frames, set its duration to 1 frame and report the element as *approximated*.
+6. **Do not rescale** `speed` (a ratio), `source_range` (reference-video metadata, not applied to the user's footage), or anything that is not a frame count.
+
+Worked examples (these become the shared test vectors):
+
+| Case | Template → target | Input | Result |
+|---|---|---|---|
+| Boundary drift | 30/1 → 25/1 | boundaries 0, 10, 20, 30 | 0, 8, 17, 25 (durations 8, 9, 8) |
+| Half rounds up | 30/1 → 15/1 | 1 and 3 | 1 and 2 |
+| Exact rational | 30000/1001 → 24000/1001 | 100 | 80 |
+| Timeline offset | 30/1 → 25/1, offset 90000 | 10 | 90008 |
+| Keyframe offset | 30/1 → 25/1 | slot start 10, keyframe `frame` 5 | 13 − 8 = 5 |
+| Collapse | 60/1 → 24/1 | `{start: 10, duration: 1}` | `{start: 4, duration: 1}`, reported as approximated |
+| Identity | any → same rate | any `f` | `f` (plus offset) |
 
 Rounding each duration separately drifts. Three 10-frame slots at 30 fps rescaled to 25 fps:
 
@@ -34,26 +59,63 @@ Rounding each duration separately drifts. Three 10-frame slots at 30 fps rescale
 | Wrong: round each duration | 0, 8, 16, 24 | 8, 8, 8 (one frame short) |
 | Right: round each boundary | 0, 8, 17, 25 | 8, 9, 8 |
 
-Every adapter's contract tests run this case.
+### Variable frame rate is a lossy conform
+
+A reference with a variable frame rate is conformed to a constant rate at ingest. This is **lossy**: frames are duplicated or dropped, so a conformed time can differ from the original presentation time by up to half a conformed frame, and detections near a cut can move by about one frame.
+
+- `source.vfr` is `true`, and `source.original_fps` records the nominal original rate.
+- `source.conform` (`detector`, `version`) records which tool conformed it. It is **required whenever `vfr` is true**.
+- Conformance does not change any element's `confidence`. The loss is recorded once, on `source`.
+- Treat times from a conformed reference as accurate to roughly one frame, never sample-exact. Adapters say so in their apply report.
+- The original timing is never re-derived from the template. If exact timing matters, re-analyse the reference.
+
+### Timecode, SMPTE and drop-frame
+
+Timecode is a labelling scheme for frames, not a different time. **Templates store no timecode** and readers never accept timecode strings.
+
+- Frame counts are authoritative. Drop-frame timecode skips timecode *labels*, never frames, so it has no effect on any frame count in a template.
+- Drop-frame versus non-drop-frame is a property of the **target timeline**, read by the adapter and never stored in the template. It exists only at 29.97 and 59.94; 23.976 has no drop-frame form.
+- When an adapter produces or reads timecode, it converts using the target timeline's setting. At 29.97 drop-frame, labels `;00` and `;01` are skipped at the start of every minute except every tenth. For example, frame 1799 is `00:00:59;29`, frame 1800 is `00:01:00;02`, and frame 17982 is `00:10:00;00`.
+- Timecode start offsets such as 01:00:00:00 are timeline offsets (step 2 of rescaling), not template data.
 
 ## Versioning
 
-`schema_version` is semver (`MAJOR.MINOR.PATCH`). Minor versions are additive only: new optional fields, new optional sections, new enum values. Anything else is a major bump, which needs an ADR and a migration script. Version `0.x` follows the same rules as `1.x`.
+`schema_version` is semver (`MAJOR.MINOR.PATCH`). Version `0.x` follows the same rules as `1.x`.
+
+| Change | Bump |
+|---|---|
+| New optional field, new optional section, new enum value, new track kind | Minor |
+| Loosening a constraint (a larger maximum, a wider pattern) | Minor |
+| Description, documentation or example changes; a schema bug fix that accepts the same valid documents | Patch |
+| Removing or renaming a field or section | Major |
+| Making an optional field required, or adding a required field | Major |
+| Tightening a constraint, changing a default, a type, a unit or the meaning of a value | Major |
+
+A major bump needs an ADR and a migration script. A field is marked deprecated in its description for at least one minor release before a major removes it.
 
 | A consumer sees | It does |
 |---|---|
 | Same major, higher or lower minor | Accepts; ignores unknown optional fields |
+| Any patch difference | Accepts; patch is never inspected |
 | Higher major | Rejects with an error naming both versions |
 | Lower major | Rejects unless a migration exists, then loads through it |
-| Unknown enum value | Treats it as unsupported; the adapter reports the element as skipped and never fails the whole template |
+| Unknown enum value or track kind | Treats it as unsupported; the adapter reports the element as skipped and never fails the whole template |
 
-### Strict for writers, tolerant for readers
+Rules for writers and tools:
 
-Enums in the schema are strict: workers validate their output before saving, so they only emit values their own schema version knows. Generated union types therefore look exhaustive, but readers must not rely on that. A template written by a newer minor version can contain an enum value the reader has never seen, and the reader must handle it at runtime.
+- Workers validate their output before saving. Enums are strict for writers.
+- A tool that reads and rewrites a template **preserves unknown fields** it does not understand, so a template from a newer minor is not silently stripped.
+- When partial templates from several workers are merged, they must share a major version, and the merged `schema_version` is the highest minor among them.
+- Readers must not rely on enum exhaustiveness. Generated union types look exhaustive, but a template from a newer minor can hold a value the reader has never seen.
 
-Two places use an escape hatch: transition `type` has `"other"` plus `type_detail`, and track `kind` is a free string so unknown kinds are skipped.
+Two places use an escape hatch: transition `type` has `"other"` plus `type_detail`, and track `kind` is a free string so unknown kinds are skipped. Objects are open (unknown fields allowed) so a newer minor still passes an older validator. The one exception is `sound_ref`, which is closed so audio fields cannot be added.
 
-Objects are open (unknown fields are allowed) so a newer minor still passes an older validator. The one exception is `sound_ref`, which is closed so audio fields cannot be added.
+### Contract tests
+
+Required for every adapter and reader, using a shared fixture set (`schema/test-vectors/`, still to be added).
+
+- **Adapters:** all rescale vectors above; the 29.97 drop-frame and non-drop-frame cases; an apply report that flags approximate timing when `vfr` is true; an unknown enum value or track kind comes back as "skipped" while the rest of the template applies.
+- **Readers** (MCP servers, web app, assistant, exporters): the version table; unknown optional fields survive a round trip; an `audio` field on `sound_ref` is rejected.
 
 ## Conventions
 
@@ -82,8 +144,9 @@ Objects are open (unknown fields are allowed) so a newer minor still passes an o
 |---|---|---|---|
 | `duration` | integer ≥ 1 | yes | Length of the reference in frames at `fps`. |
 | `fps` | `Rational` | yes | The template timebase. Constant. |
-| `vfr` | boolean | no | True if the reference was variable-frame-rate and was conformed. Default false. |
+| `vfr` | boolean | no | True if the reference was variable-frame-rate and was conformed (a lossy step). Default false. |
 | `original_fps` | `Rational` | no | Nominal rate before conforming. Provenance only; set when `vfr` is true. |
+| `conform` | `Provenance` | when `vfr` is true | Which tool conformed a variable-frame-rate reference, and its version. |
 | `resolution.width` | integer ≥ 1 | yes | Width in pixels. |
 | `resolution.height` | integer ≥ 1 | yes | Height in pixels. |
 | `aspect_ratio` | `Rational` | yes | Display aspect ratio, e.g. `9/16` for vertical video. |
