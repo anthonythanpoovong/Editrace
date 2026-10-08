@@ -52,6 +52,7 @@ jobs:
       - run: .github/scripts/test-discord-review-payload.sh
       - run: .github/scripts/test-discord-review-ack.sh
       - run: .github/scripts/test-discord-review-comment.sh
+      - run: .github/scripts/test-project-intake.sh
       - run: .github/scripts/test-vercel-deploy.sh
 
   schema:

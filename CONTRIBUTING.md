@@ -40,6 +40,17 @@ Stories come from approved proposals, so there is no blank story template. To pr
 
 If the grill says "Needs a spike first", use `/spike`. Bugs and spikes have issue templates; open them from **Issues → New issue**.
 
+### What happens to a new issue
+
+`project-intake.yml` runs on every new issue (#178). You do not add it to the board by hand.
+
+- It is added to the [Project Board](https://github.com/users/anthonythanpoovong/projects/2) in the **current sprint** with Status **Backlog**. Between sprints it uses the next upcoming one; if no sprint exists, the run fails and comments on the issue. Create the next iteration on the board before a sprint ends.
+- It gets any **missing labels**: `story` (or `subtask` if it has a parent), `type:build`, and a domain/area from the issue form's Area answer. With no domain it gets `needs-triage`; set `platform`, `product` or `ml` and the workflow removes it. Labels you set yourself are never changed.
+- A sprint or status that is already set is never overwritten, so moving a card is safe.
+- To backfill open issues that are not on the board: **Actions → Project intake → Run workflow**.
+
+It needs the secret `PROJECT_TOKEN`: a token with the `project` scope, because `GITHUB_TOKEN` cannot write to a user-owned project. It is Anthony's personal token. Note its expiry date when you create it and rotate it before then (**Settings → Secrets and variables → Actions**). A run that fails with "PROJECT_TOKEN expired, revoked or missing the project scope" means it needs replacing. If the repo moves to an organisation or the token owner changes, switch to a GitHub App.
+
 ### Which skill to use
 
 | You are... | Use |
