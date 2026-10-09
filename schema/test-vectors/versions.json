@@ -1,0 +1,12 @@
+{
+  "description": "What a reader does with a template's schema_version (ADR 0002). `migrations` lists the major versions the reader can migrate from. An `error_mentions` entry must appear in the error message so both versions are named.",
+  "cases": [
+    { "name": "same version", "reader": "0.2.0", "migrations": [], "document": "0.2.0", "expected": "accept" },
+    { "name": "higher minor is accepted", "reader": "0.2.0", "migrations": [], "document": "0.3.0", "expected": "accept" },
+    { "name": "lower minor is accepted", "reader": "0.2.0", "migrations": [], "document": "0.1.0", "expected": "accept" },
+    { "name": "patch is never inspected", "reader": "0.2.0", "migrations": [], "document": "0.2.9", "expected": "accept" },
+    { "name": "higher major is rejected and both versions are named", "reader": "0.2.0", "migrations": [], "document": "1.0.0", "expected": "reject", "error_mentions": ["0.2.0", "1.0.0"] },
+    { "name": "lower major without a migration is rejected", "reader": "1.2.0", "migrations": [], "document": "0.9.0", "expected": "reject", "error_mentions": ["1.2.0", "0.9.0"] },
+    { "name": "lower major with a migration loads through it", "reader": "1.2.0", "migrations": [0], "document": "0.9.0", "expected": "accept_via_migration" }
+  ]
+}
