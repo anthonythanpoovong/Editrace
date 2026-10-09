@@ -127,9 +127,10 @@ Quality is gated by the eval harness (#39): retrieval recall@5, citation support
 |---|---|---|---|
 | CV 1: Visual timeline & editors | calvinkafaiyuen | `ml`, `platform` | Cuts, motion, transitions, exporters, editor adapters, ontology (visual) |
 | CV 2: Signals & scoring | sktchan | `ml` | Audio, OCR/captions, color, Format Match Score, ontology (signals) |
+| CV 3: Footage match & format benchmark | mikeleboss | `ml`, `platform` | Footage matching, format benchmarking |
 | Product, MCP & assistant | anthonythanpoovong | `product` | Web app, auth, billing, job queue, MCP server + Bridge core, RAG assistant, GTM |
 
-All three collaborators are code owners on every path, so any of them can approve any PR. There is no admin bypass on `main` (#132); as `/.github/` owners they can also grant coverage exemptions. See CONTRIBUTING.md.
+All four collaborators are code owners on every path, so any of them can approve any PR. There is no admin bypass on `main` (#132); as `/.github/` owners they can also grant coverage exemptions. See CONTRIBUTING.md.
 
 ## Epics
 
@@ -152,8 +153,9 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 
 ### Phase 0: De-risk (spikes & foundation)
 - Template JSON Schema v0 (#1), type generation (#2), monorepo scaffold (#3, done)
-- Foundations: CI/CD + environments (#48), migrations + RLS test harness (#49)
-- Repo hardening: Armour skip notice (#126), changed files + coverage in reviews (#125), sharper rules (#127), eval set (#128); 80% changed-line coverage gate (#129); CONTRIBUTING + templates (#130), pre-commit hooks (#131), teammates + review rules (#132)
+- Foundations: CI/CD + environments (#48, done: PR previews, staging on merge, manual prod; Supabase/Modal environments follow in #163; a move off Vercel Hobby is proposed in ADR 0001, #171), migrations + RLS test harness (#49)
+- PR notifications in Discord (#140, #154, #156, #177, done): review request and ack, comment, approval, merge, re-review and `@mention` pings; Armour reads its rules from the base branch (#159, done)
+- Repo hardening: Armour skip notice (#126), changed files + coverage in reviews (#125), sharper rules (#127), eval set (#128); 80% changed-line coverage gate (#129); CONTRIBUTING + templates (#130, done), pre-commit hooks (#131), teammates + review rules (#132, done)
 - Pipeline: golden video dataset (#52), worker framework (#53)
 - CV1: cut detection spike (#4), Resolve rebuild spike (#5), CapCut draft spike (#6)
 - CV1: **live editor control spike (#29)**
@@ -202,7 +204,7 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 | Marketing over-promises features (e.g. MCP for CapCut before Phase 2) | "Preview" labels before the MVP; lead with the breakdown + CapCut export (#10), not the Bridge (#36) |
 | One person can't sustain marketing alongside product work | Organic, 2 posts/week max, batch-produced (#119); revisit if the cadence slips |
 | Armour skips silently (workflow-change PRs, errors, usage limits), and its accuracy is unmeasured | Visible skip notice from an always-run job (#126); eval set of seeded bugs, target ≥ 4/5, re-run when rules or model change (#128) |
-| Untested code merges, or the coverage gate is bypassed | 80% changed-line coverage gate in `ci-ok` (#129). An exemption is only a `/coverage-exempt` PR review from a `/.github/` code owner (all three collaborators) on the current head commit; labels and statuses have no effect; fails closed. Write access is treated as trusted. |
+| Untested code merges, or the coverage gate is bypassed | 80% changed-line coverage gate in `ci-ok` (#129). An exemption is only a `/coverage-exempt` PR review from a `/.github/` code owner (all four collaborators) on the current head commit; labels and statuses have no effect; fails closed. Write access is treated as trusted. |
 | Armour eval token exposed to collaborators' branch workflows | Stored as a `main`-only environment secret with owner approval, or the eval runs from a local script with no stored token (#128) |
 
 ## Metrics
