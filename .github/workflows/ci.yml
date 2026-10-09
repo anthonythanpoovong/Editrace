@@ -53,6 +53,7 @@ jobs:
       - run: .github/scripts/test-discord-review-ack.sh
       - run: .github/scripts/test-discord-review-comment.sh
       - run: .github/scripts/test-sync-docs-paths.sh
+      - run: .github/scripts/test-project-intake.sh
       - run: .github/scripts/test-discord-pr-status.sh
       - run: .github/scripts/test-vercel-deploy.sh
 
@@ -74,6 +75,14 @@ jobs:
           files=(schema/examples/*.json)
           [ ${#files[@]} -eq 0 ] && { echo "no examples yet"; exit 0; }
           check-jsonschema --schemafile schema/template.schema.json "${files[@]}"
+      - name: Invalid fixtures are rejected, for the right reason
+        run: |
+          [ -d schema/examples/invalid ] || { echo "no invalid fixtures yet"; exit 0; }
+          schema/check-invalid.sh
+      - name: Every schema field is documented
+        run: schema/check-docs.sh
+      - name: Test vectors match the reference implementation
+        run: schema/check-vectors.sh
 
   codegen:
     needs: detect
