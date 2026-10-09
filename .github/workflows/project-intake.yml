@@ -45,9 +45,16 @@ jobs:
           LABELS: ${{ toJSON(github.event.issue.labels.*.name) }}
           ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
-          # The parent endpoint is 404 when the issue has no parent.
-          if gh api "repos/$REPO/issues/$ISSUE/parent" > /dev/null 2>&1; then HAS_PARENT=true; else HAS_PARENT=false; fi
-          export HAS_PARENT
+          # The parent endpoint returns the parent issue, or 404 when there is none. Any other
+          # failure (rate limit, 5xx) must fail the job: guessing "no parent" would mislabel the issue.
+          if parent=$(gh api "repos/$REPO/issues/$ISSUE/parent" 2>&1); then
+            PARENT_LABELS=$(jq -c '[.labels[].name]' <<<"$parent")
+          elif grep -q "HTTP 404" <<<"$parent"; then
+            PARENT_LABELS=null
+          else
+            echo "::error::Could not read the parent of #$ISSUE: $parent"; exit 1
+          fi
+          export PARENT_LABELS
           plan=$(.github/scripts/project-intake-labels.sh)
           echo "$plan"
           mapfile -t add < <(jq -r '.add[]' <<<"$plan")

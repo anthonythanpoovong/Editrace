@@ -6,15 +6,33 @@ fail=0
 check() { if [ "$2" -eq 0 ]; then echo "ok   $1"; else echo "FAIL $1"; fail=1; fi; }
 
 # --- labels ---
-labels() { LABELS="$1" HAS_PARENT="${2:-false}" ISSUE_BODY="${3:-}" ./project-intake-labels.sh; }
+labels() { LABELS="$1" PARENT_LABELS="${2:-null}" ISSUE_BODY="${3:-}" ./project-intake-labels.sh; }
 form() { printf '### 🧭 Area\n\n%s\n\n### 💻 Environment\n\nmac\n' "$1"; }
 same() { [ "$(jq -cS . <<<"$1")" = "$(jq -cS . <<<"$2")" ]; }
 
 same "$(labels '[]')" '{"add":["story","type:build","needs-triage"],"remove":[]}'
 check "a bare issue gets story, type:build and needs-triage" $?
 
-same "$(labels '[]' true)" '{"add":["subtask","type:build","needs-triage"],"remove":[]}'
-check "an issue with a parent is a subtask" $?
+same "$(labels '[]' '["platform","epic"]')" '{"add":["story","type:build","needs-triage"],"remove":[]}'
+check "a story under an epic is a story, not a subtask" $?
+
+same "$(labels '[]' '["platform","story","type:build"]')" '{"add":["subtask","type:build","needs-triage"],"remove":[]}'
+check "an issue under a story is a subtask" $?
+
+same "$(labels '[]' '["subtask"]')" '{"add":["subtask","type:build","needs-triage"],"remove":[]}'
+check "an issue under a subtask is still a subtask" $?
+
+same "$(labels '[]' '["platform","bug"]')" '{"add":["story","type:build","needs-triage"],"remove":[]}'
+check "a parent with no level label falls back to story" $?
+
+same "$(labels '[]' '["epic","story"]')" '{"add":["story","type:build","needs-triage"],"remove":[]}'
+check "a parent labelled both epic and story counts as an epic" $?
+
+same "$(labels '["epic"]' '["story"]')" '{"add":["type:build","needs-triage"],"remove":[]}'
+check "an existing level label is never overridden by the parent's" $?
+
+same "$(labels '[]' '[]')" '{"add":["story","type:build","needs-triage"],"remove":[]}'
+check "a parent with no labels at all falls back to story" $?
 
 same "$(labels '["platform","type:build","story","area:infra"]')" '{"add":[],"remove":[]}'
 check "a fully labelled issue is left alone" $?
@@ -22,16 +40,16 @@ check "a fully labelled issue is left alone" $?
 same "$(labels '["epic","type:research","product"]')" '{"add":[],"remove":[]}'
 check "an epic is not also made a story, and an existing type is kept" $?
 
-same "$(labels '["bug"]' false "$(form 'Web app')")" '{"add":["story","type:build","product","area:frontend"],"remove":[]}'
+same "$(labels '["bug"]' null "$(form 'Web app')")" '{"add":["story","type:build","product","area:frontend"],"remove":[]}'
 check "the Area answer fills domain and area" $?
 
-same "$(labels '["bug"]' false "$(form 'CI / tooling')")" '{"add":["story","type:build","platform","area:infra"],"remove":[]}'
+same "$(labels '["bug"]' null "$(form 'CI / tooling')")" '{"add":["story","type:build","platform","area:infra"],"remove":[]}'
 check "CI / tooling maps to platform + area:infra" $?
 
-same "$(labels '["bug","platform"]' false "$(form 'Web app')")" '{"add":["story","type:build","area:frontend"],"remove":[]}'
+same "$(labels '["bug","platform"]' null "$(form 'Web app')")" '{"add":["story","type:build","area:frontend"],"remove":[]}'
 check "an existing domain label is not replaced" $?
 
-same "$(labels '["bug"]' false "$(form 'Not sure')")" '{"add":["story","type:build","needs-triage"],"remove":[]}'
+same "$(labels '["bug"]' null "$(form 'Not sure')")" '{"add":["story","type:build","needs-triage"],"remove":[]}'
 check "Not sure falls back to needs-triage" $?
 
 same "$(labels '["needs-triage","product"]')" '{"add":["story","type:build"],"remove":["needs-triage"]}'
@@ -40,11 +58,15 @@ check "needs-triage is removed once a domain label is set" $?
 same "$(labels '["needs-triage"]')" '{"add":["story","type:build"],"remove":[]}'
 check "needs-triage is not added twice" $?
 
-same "$(labels '[]' false $'### Area\n\n@everyone Web app\n')" '{"add":["story","type:build","needs-triage"],"remove":[]}'
+same "$(labels '[]' null $'### Area\n\n@everyone Web app\n')" '{"add":["story","type:build","needs-triage"],"remove":[]}'
 check "an Area answer that is not an exact option is ignored" $?
 
-LABELS='not json' HAS_PARENT=false ./project-intake-labels.sh > /dev/null 2>&1; [ $? -ne 0 ]
+LABELS='not json' ./project-intake-labels.sh > /dev/null 2>&1; [ $? -ne 0 ]
 check "bad LABELS is rejected" $?
+LABELS='[true,1]' ./project-intake-labels.sh > /dev/null 2>&1; [ $? -ne 0 ]
+check "LABELS that are not all strings are rejected" $?
+LABELS='[]' PARENT_LABELS='{"a":1}' ./project-intake-labels.sh > /dev/null 2>&1; [ $? -ne 0 ]
+check "bad PARENT_LABELS is rejected" $?
 
 # --- sprint ---
 its='[{"id":"a","title":"Sprint 1","startDate":"2026-10-05","duration":14},{"id":"b","title":"Sprint 2","startDate":"2026-10-19","duration":14}]'
