@@ -30,20 +30,25 @@ If you're unsure, treat it as breaking.
 ## 3. Edit
 1. Change `schema/template.schema.json`.
 2. Update or add at least one file in `schema/examples/` that exercises the new or changed part.
-3. Validate locally (the same check CI runs):
+3. For **each new or changed constraint** (`required`, `minimum`/`maximum`, `enum`, `pattern`, `type`, `additionalProperties: false`), add an invalid fixture that breaks only that constraint:
+   - Copy `schema/examples/01-simple-reel-30fps.json` into `schema/examples/invalid/<defect>.json` and introduce exactly one defect.
+   - Add a line to `schema/examples/invalid/EXPECTED`: `<defect>.json|<text the validation error must contain>`. Pick text specific to this constraint, so the fixture fails for the right reason, not because of some other error.
+   - If you loosened a constraint, update or remove the fixture that relied on it, and say why in the PR.
+4. Validate locally (the same checks CI runs):
    ```sh
    pipx run check-jsonschema --check-metaschema schema/template.schema.json
    pipx run check-jsonschema --schemafile schema/template.schema.json schema/examples/*.json
+   schema/check-invalid.sh   # needs check-jsonschema on PATH
    ```
-4. Regenerate: `make codegen`. Commit the generated output. CI fails if generated code is stale.
-5. Find consumers that need updating: search workers, exporters, web and MCP tools for the changed section and fix them in the same PR, or open follow-up issues.
+5. Regenerate: `make codegen`. Commit the generated output. CI fails if generated code is stale.
+6. Find consumers that need updating: search workers, exporters, web and MCP tools for the changed section and fix them in the same PR, or open follow-up issues.
 
 ## 4. Version
 - Bump the schema's version per its versioning rule (see the wiki `Template-Schema` page). If none is defined yet, flag that as a TODO on #1 rather than inventing a scheme.
 - Additive changes: old templates must still validate. Prove it by validating the existing examples unchanged.
 
 ## 5. PR
-Title: `Schema: <change>`. The body covers the kind (additive or breaking + ADR link), the fields changed, consumers updated, examples added, and the codegen result. Link the story (e.g. #99).
+Title: `Schema: <change>`. The body covers the kind (additive or breaking + ADR link), the fields changed, consumers updated, examples added, invalid fixtures added (one per constraint), and the codegen result. Link the story (e.g. #99).
 
 ## Rules
 - Never hand-edit generated files. Never add types by hand in `web/`, `workers/` or `exporters/`.
