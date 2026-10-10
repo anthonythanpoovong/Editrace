@@ -1,0 +1,66 @@
+name: Discord reminders
+
+# Scheduled Discord pings for the team's rhythm (#184), all to the review role:
+#   - the day before the weekly sync (Tuesday ~2:30 PM Eastern): time, Meet link and agenda
+#   - when the sync starts (Wednesday 2:30 PM Eastern): "Editrace weekly sync starts now" + Meet link
+#   - the day before a sprint's last day (9:00 AM Eastern): "Sprint due tomorrow"
+# The schedule lives in .github/reminders.json (timezone, meeting day/time/link/agenda, skip dates).
+# Sprint dates are read from the project board's Sprint field, not copied into the repo.
+#
+# GitHub cron is UTC and ignores daylight saving, so each reminder has a summer and a winter UTC
+# entry; discord-reminder-due.sh sends only when the time in the config's timezone is inside the
+# reminder's window, so exactly one entry fires. Scheduled runs can be a few minutes late; the windows
+# allow for that. Not a required check and not part of ci-ok: a failed post, or a board that cannot
+# be read, shows as a red X.
+# Needs: secret DISCORD_REVIEW_WEBHOOK (or DISCORD_MEETING_WEBHOOK to use another channel), variable
+# DISCORD_REVIEW_ROLE_ID, and secret PROJECT_TOKEN (a token with the "project" scope, read only here;
+# GITHUB_TOKEN cannot read a user-owned project).
+# Manual run: dry_run prints the messages without posting; now simulates a time, e.g. 2026-10-13T18:30:00Z.
+#
+# Scheduled runs always use the default branch; the scripts and config are checked out from it too.
+
+on:
+  schedule:
+    - cron: "30 18,19 * * 2,3"   # 2:30 PM Eastern on Tue/Wed: summer (EDT) and winter (EST) UTC hours
+    - cron: "0 13,14 * * *"      # 9:00 AM Eastern, every day: summer and winter UTC hours
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Print the messages instead of posting them
+        type: boolean
+        default: true
+      now:
+        description: "Simulate this UTC time (dry runs only), e.g. 2026-10-13T18:30:00Z"
+        type: string
+        default: ""
+
+permissions: {}
+
+# One run at a time, so two runs close together can never both post.
+concurrency:
+  group: discord-reminders
+  cancel-in-progress: false
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          # Trusted scripts and schedule only: the default branch.
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: |
+            .github/scripts
+            .github/reminders.json
+      - name: Send the reminders that are due
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_MEETING_WEBHOOK || secrets.DISCORD_REVIEW_WEBHOOK }}
+          ROLE_ID: ${{ vars.DISCORD_REVIEW_ROLE_ID }}
+          # Only used to read the Sprint field of the project board.
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
+          NOW: ${{ github.event_name == 'workflow_dispatch' && inputs.now || '' }}
+        run: .github/scripts/discord-reminders.sh
