@@ -1,0 +1,4 @@
+# Normalize to LF on checkout, regardless of a contributor's local
+# core.autocrlf. Without this, prettier (LF by default) and Windows
+# checkouts (CRLF by default) fight every time pre-commit runs.
+* text=auto eol=lf

@@ -18,11 +18,12 @@ See [`docs/plan.md`](docs/plan.md) for the full project plan, architecture and r
 
 ```
 schema/      Template JSON Schema (source of truth) + editor tool ontology
-web/         Next.js + TypeScript app (breakdown UI, assistant, remote MCP server)
+web/         Next.js + TypeScript app (a placeholder page so far; breakdown UI, assistant and remote MCP server are planned)
 workers/     Python analysis pipeline (Modal)
 exporters/   OpenTimelineIO + CapCut adapters
-docs/        Plan, architecture, decisions (ADRs), epic proposals, customer research
+docs/        Plan, architecture, environments and secrets, decisions (ADRs), epic proposals, customer research
 .claude/     Claude Code skills shared by the team (see Claude Code Skills below)
+.github/     Workflows, issue and PR templates, CODEOWNERS and the Armour review rules
 ```
 
 The Editrace Bridge (local MCP server + editor adapters) gets its own folder once its language is chosen (#29).
@@ -45,17 +46,19 @@ The Editrace Bridge (local MCP server + editor adapters) gets its own folder onc
 
 ## Getting Started
 
-1. Read [`docs/plan.md`](docs/plan.md)
-2. Check the [Project Board](https://github.com/users/anthonythanpoovong/projects/2) (views per area, incl. MCP and RAG)
-3. Start with Phase 0 issues
+1. Read [`docs/plan.md`](docs/plan.md) and [`CONTRIBUTING.md`](CONTRIBUTING.md) (branches, PRs, review rules)
+2. Install the pre-commit hooks once per clone: `pip install pre-commit && pre-commit install` (ruff, prettier, gitleaks, schema check; see CONTRIBUTING.md)
+3. Check the [Project Board](https://github.com/users/anthonythanpoovong/projects/2) (views per area, incl. MCP and RAG). New issues are added to it automatically.
+4. Start with Phase 0 issues
 
 ## Schema
 
-The **template JSON Schema** (`schema/template.schema.json`) is the single source of truth. TypeScript types, Pydantic models and MCP tool schemas are **generated from it**, never hand-written.
+The **template JSON Schema** (`schema/template.schema.json`, v0) is the single source of truth. TypeScript types, Pydantic models and MCP tool schemas are **generated from it**, never hand-written. Every field is explained in [`docs/schema.md`](docs/schema.md); examples, invalid fixtures and test vectors are in [`schema/`](schema/README.md).
 
 ## Development
 
 - Setup instructions in each folder's README
+- Environments, deploys and where each secret lives: [`docs/environments.md`](docs/environments.md)
 - Generated code: run type generation before committing schema changes
 - Tests: CI validates schema compliance
 
@@ -91,6 +94,7 @@ The repo ships Claude Code skills in `.claude/skills/`. They're available automa
 | Skill | Use it for |
 |---|---|
 | `/sync-docs` | After large changes merge, update this README, `docs/plan.md` (via PR) and the wiki to match `main`. |
+| `/ticket-sync` | Comment on each issue a commit or merged PR references: what changed and which acceptance criteria it covers. Idempotent; the merged-PR workflow runs it for you. |
 
 The build skills check their prerequisites first (e.g. `/new-detector` needs the worker base #53). If a prerequisite doesn't exist yet, they stop and point to its issue.
 
@@ -98,17 +102,24 @@ The build skills check their prerequisites first (e.g. `/new-detector` needs the
 
 ## CI & AI Code Review
 
-Three workflows in `.github/workflows/` run on every pull request:
+These workflows live in `.github/workflows/`:
 
 | Workflow | File | What it does |
 |---|---|---|
-| **CI** | `ci.yml` | Scans for secrets with gitleaks, validates the template schema, and runs web/Python/codegen checks. Each job switches on once its part of the monorepo has real code. |
-| **Editrace Armour** | `ai-review.yml` | An AI reviewer (Claude **Sonnet 5.5**) that posts one summary comment and inline comments on every PR, including drafts, following the rules in [`.github/armour.md`](.github/armour.md). It's advisory only, never a required check. |
-| **Claude Code** | `claude.yml` | Mention `@claude` in an issue, PR comment or review to have Claude respond. |
+| **CI** | `ci.yml` | Scans for secrets with gitleaks, lints the workflow files (actionlint), unit-tests the CI helper scripts, validates the template schema, and runs web/Python/codegen checks. Each part switches on once its folder has real code. `ci-ok` is the required check. |
+| **Editrace Armour** | `ai-review.yml` | An AI reviewer (Claude **Sonnet 5.5**) that posts one summary comment and inline comments on every PR, including drafts, following the rules in [`.github/armour.md`](.github/armour.md) read from the **base branch**, so a PR can't edit its own reviewer. It's advisory only, never a required check. |
+| **Claude Code** | `claude.yml` | Mention `@claude` in an issue, PR comment or review to have Claude respond. It has a timeout and read-only tools. |
+| **Deploy** | `deploy.yml` | Deploys a preview for every same-repo PR, staging on every push to `main`, and production only when run by hand. See [`docs/environments.md`](docs/environments.md). |
+| **Discord review request / ack** | `discord-review-request.yml`, `discord-review-ack.yml` | Posts a review request in Discord when a PR is ready for review, and marks it reviewed when a person reviews. |
+| **Discord review comment / PR status** | `discord-review-comment.yml`, `discord-pr-status.yml` | Pings people in Discord about their PR: comments and requested changes, approvals, merges and closes, a request to review again after new commits or a re-request, and `@mentions` and replies. |
+| **Ticket sync** | `ticket-sync.yml` | When a PR merges, comments on the issues it references (the `/ticket-sync` skill). |
+| **Project intake** | `project-intake.yml` | Adds every new issue to the Project Board in the current sprint (Status Backlog) and fills in missing level, type and domain/area labels. Needs the secret `PROJECT_TOKEN`; see [CONTRIBUTING.md](CONTRIBUTING.md). |
+
+The Discord workflows are not required checks and never touch the PR's code: they run their scripts from the default branch, so a script change only takes effect once merged. They need the secret `DISCORD_REVIEW_WEBHOOK` and the repo variables `DISCORD_REVIEW_ROLE_ID` and `DISCORD_USER_MAP` (GitHub login to Discord user ID).
 
 **Authentication:** Armour and `@claude` authenticate with the `CLAUDE_CODE_OAUTH_TOKEN` repo secret, which is billed to the owner's Claude Pro plan. CI runs count against the same Pro usage limits as personal Claude use. A Console API key (`ANTHROPIC_API_KEY`) would need separately purchased API credits, because Pro doesn't include them.
 
-**Ownership:** `.github/CODEOWNERS` requires owner approval for changes under `.github/` (workflows and Armour rules), `docs/decisions/`, `docs/epics/` and `.claude/` (skills). All three collaborators are code owners on every path, so any of them can approve any PR. Review rules and the no-admin-bypass decision are in [CONTRIBUTING.md](CONTRIBUTING.md).
+**Ownership:** `.github/CODEOWNERS` requires owner approval for changes under `.github/` (workflows and Armour rules), `docs/decisions/`, `docs/epics/` and `.claude/` (skills). All four collaborators are code owners on every path, so any of them can approve any PR. Review rules and the no-admin-bypass decision are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 **Gotcha:** a PR that changes a Claude workflow file skips its own Armour/`@claude` run ("workflow validation failed"). The action only runs when the workflow matches `main`, so a green check on that PR doesn't mean Claude ran. Merge it first, then test on another PR (for example, close and reopen it).
 

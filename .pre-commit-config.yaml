@@ -1,0 +1,35 @@
+# Run `pre-commit autoupdate` after cloning or editing this file — it
+# queries each hook's own repo for the current tag, which is more
+# reliable than any version pinned here by hand.
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  # Official pre-commit/mirrors-prettier is archived; this is the
+  # actively maintained community fork.
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: v3.9.9
+    hooks:
+      - id: prettier
+        files: ^web/
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.38.2
+    hooks:
+      - id: check-metaschema
+        name: schema is valid JSON Schema
+        files: ^schema/template\.schema\.json$
+      - id: check-jsonschema
+        name: examples validate against the schema
+        files: ^schema/examples/[^/]+\.json$
+        args: ["--schemafile", "schema/template.schema.json"]
