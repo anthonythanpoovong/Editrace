@@ -1,0 +1,117 @@
+name: Project intake
+
+# Every new issue lands on the Editrace project board (Project #2) in the current sprint with
+# Status Backlog, and gets any missing Level, Type and domain/area labels (#178). Labels are only
+# ever added (plus removing our own needs-triage once a domain is set), never changed or removed.
+# A sprint or status that is already set is never overwritten. Run it by hand (workflow_dispatch)
+# to backfill every open issue that is not on the board yet.
+# Not a required check and not part of ci-ok: a failed run shows as a red X and comments on the issue.
+# Needs: secret PROJECT_TOKEN (a token with the "project" scope; GITHUB_TOKEN cannot write to a
+# user-owned project). It is Anthony's personal token: see CONTRIBUTING.md for expiry and rotation.
+#
+# issues events always run from the default branch, so a change here only takes effect once merged.
+# The issue title and body are untrusted: the body only reaches the label script through env, and
+# the board script uses nothing from the issue except its node ID.
+
+on:
+  issues:
+    types: [opened, reopened]
+  workflow_dispatch:
+
+permissions: {}
+
+env:
+  PROJECT_OWNER: anthonythanpoovong
+  PROJECT_NUMBER: "2"
+
+jobs:
+  labels:
+    if: github.event_name == 'issues'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: .github/scripts
+      - name: Add the missing labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          LABELS: ${{ toJSON(github.event.issue.labels.*.name) }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          # The parent endpoint returns the parent issue, or 404 when there is none. Any other
+          # failure (rate limit, 5xx) must fail the job: guessing "no parent" would mislabel the issue.
+          if parent=$(gh api "repos/$REPO/issues/$ISSUE/parent" 2>&1); then
+            PARENT_LABELS=$(jq -c '[.labels[].name]' <<<"$parent")
+          elif grep -q "HTTP 404" <<<"$parent"; then
+            PARENT_LABELS=null
+          else
+            echo "::error::Could not read the parent of #$ISSUE: $parent"; exit 1
+          fi
+          export PARENT_LABELS
+          plan=$(.github/scripts/project-intake-labels.sh)
+          echo "$plan"
+          mapfile -t add < <(jq -r '.add[]' <<<"$plan")
+          mapfile -t remove < <(jq -r '.remove[]' <<<"$plan")
+          if printf '%s\n' "${add[@]}" | grep -qx needs-triage; then
+            gh label create needs-triage --repo "$REPO" --color FBCA04 \
+              --description "No domain label yet: pick platform, product or ml" 2> /dev/null || true
+          fi
+          args=()
+          for l in "${add[@]}"; do [ -z "$l" ] || args+=(--add-label "$l"); done
+          for l in "${remove[@]}"; do [ -z "$l" ] || args+=(--remove-label "$l"); done
+          [ "${#args[@]}" -eq 0 ] || gh issue edit "$ISSUE" --repo "$REPO" "${args[@]}"
+
+  board:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: .github/scripts
+      - name: Add to the board and the current sprint
+        env:
+          # The project token only touches the project; listing issues uses the repo's own token.
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          LIST_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
+        run: |
+          [ -n "$GH_TOKEN" ] || { echo "::error::PROJECT_TOKEN is not set"; exit 1; }
+          if [ "$EVENT" = issues ]; then
+            .github/scripts/project-intake.sh
+          else
+            # Backfill: every open issue. Existing sprints and statuses are left alone.
+            ids=$(GH_TOKEN="$LIST_TOKEN" gh issue list --repo "$REPO" --state open --limit 500 --json id --jq '.[].id')
+            for id in $ids; do ISSUE_NODE_ID="$id" .github/scripts/project-intake.sh; done
+          fi
+
+  # Only this job can write to the issue. It runs only when something failed, so a dead token or
+  # a missing sprint surfaces on the issue instead of as a card nobody noticed was missing.
+  fallback:
+    needs: [labels, board]
+    if: always() && github.event_name == 'issues' && contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Comment on the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue comment "$ISSUE" --repo "$REPO" \
+            --body "Adding this issue to the board or labelling it failed. Please add it to the current sprint and set its labels by hand. ([workflow run]($RUN_URL))"
