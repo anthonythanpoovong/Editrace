@@ -5,6 +5,8 @@ name: Discord reminders
 #   - when the sync starts (Wednesday 2:30 PM Eastern): "Editrace weekly sync starts now" + Meet link
 #   - the day before a sprint's last day (9:00 AM Eastern): "Sprint due tomorrow"
 # The schedule lives in .github/reminders.json (timezone, meeting day/time/link/agenda, skip dates).
+# The cron lines below must match it: GitHub cron is fixed UTC, so if you change the meeting day, its
+# time or sprint.remind_at, update the cron lines too. test-discord-reminders.sh fails CI if they disagree.
 # Sprint dates are read from the project board's Sprint field, not copied into the repo.
 #
 # GitHub cron is UTC and ignores daylight saving, so each reminder has a summer and a winter UTC
@@ -52,9 +54,9 @@ jobs:
         with:
           # Trusted scripts and schedule only: the default branch.
           ref: ${{ github.event.repository.default_branch }}
-          sparse-checkout: |
-            .github/scripts
-            .github/reminders.json
+          # Cone mode: this also brings the files directly in .github/ (reminders.json). Do not list the
+          # file itself: cone mode rejects it ("is not a directory") and the checkout fails.
+          sparse-checkout: .github/scripts
       - name: Send the reminders that are due
         env:
           WEBHOOK: ${{ secrets.DISCORD_MEETING_WEBHOOK || secrets.DISCORD_REVIEW_WEBHOOK }}

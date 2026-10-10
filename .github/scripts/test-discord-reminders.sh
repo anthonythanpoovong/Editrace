@@ -110,6 +110,51 @@ done
 KIND=nope CONFIG="$CONFIG" ROLE_ID=999 ./discord-reminder-payload.sh > /dev/null 2>&1; [ $? -ne 0 ]; check "payload: an unknown kind is rejected" $?
 KIND=meeting_start CONFIG="$CONFIG" ROLE_ID=abc MEETING_EPOCH=1 ./discord-reminder-payload.sh > /dev/null 2>&1; [ $? -ne 0 ]; check "payload: a non-numeric role is rejected" $?
 
+# --- the cron lines in the workflow must match the config ---
+# GitHub cron is fixed UTC, so a meeting time or day changed in reminders.json needs matching cron
+# lines. For a summer and a winter date, work out the UTC weekday, hour and minute of each reminder
+# from the config and require some cron line to fire then.
+wf=../workflows/discord-reminders.yml
+crons=$(grep -E '^\s*- cron:' "$wf" | sed -E 's/.*cron: *"([^"]+)".*/\1/')
+tz=$(jq -r .timezone <<<"$CONFIG")
+utc_slots() { # ISO weekday, local HH:MM -> "utc_dow hour minute" for one summer and one winter date
+  for base in 2026-07-06 2027-01-04; do # both Mondays
+    TZ="$tz" jq -nr --arg base "$base" --argjson wd "$1" --arg hm "$2" '
+      (($base + "T00:00:00Z") | fromdate) as $mon
+      | ($mon + ($wd - 1) * 86400 | todate | .[0:10]) as $date
+      | (($date + "T" + $hm + ":00Z") | fromdate) as $naive
+      | ([range(-14; 15)] | map($naive - . * 3600) | map(select(strflocaltime("%Y-%m-%d %H:%M") == ($date + " " + $hm))) | .[0]) as $e
+      | $e | strftime("%w %-H %-M")'
+  done
+}
+cron_fires() { # utc_dow hour minute
+  local dow=$1 hour=$2 min=$3 line m h d
+  while read -r line; do
+    read -r m h _ _ d <<<"$line"
+    [ "$m" = "$min" ] || continue
+    [[ ",$h," == *",$hour,"* ]] || continue
+    [ "$d" = "*" ] || [[ ",$d," == *",$dow,"* ]] || continue
+    return 0
+  done <<<"$crons"
+  return 1
+}
+start=$(jq -r .meeting.start <<<"$CONFIG"); wd=$(jq -r .meeting.weekday <<<"$CONFIG"); eve=$(( (wd + 5) % 7 + 1 ))
+remind=$(jq -r .sprint.remind_at <<<"$CONFIG")
+missing=""
+while read -r dow hour min; do cron_fires "$dow" "$hour" "$min" || missing="$missing meeting-start(utc weekday $dow $hour:$min)"; done < <(utc_slots "$wd" "$start")
+while read -r dow hour min; do cron_fires "$dow" "$hour" "$min" || missing="$missing meeting-eve(utc weekday $dow $hour:$min)"; done < <(utc_slots "$eve" "$start")
+for d in 1 2 3 4 5 6 7; do
+  while read -r dow hour min; do cron_fires "$dow" "$hour" "$min" || missing="$missing sprint(utc weekday $dow $hour:$min)"; done < <(utc_slots "$d" "$remind")
+done
+[ -z "$missing" ]; check "the workflow's cron lines cover every reminder time in reminders.json (missing:${missing:- none})" $?
+
+# A config change that moves the meeting must be caught: a 10:00 meeting is not covered by the crons.
+cfg_moved=$(jq '.meeting.start = "10:00"' <<<"$CONFIG")
+saved=$CONFIG; CONFIG=$cfg_moved
+start2=$(jq -r .meeting.start <<<"$CONFIG"); miss2=0
+while read -r dow hour min; do cron_fires "$dow" "$hour" "$min" || miss2=1; done < <(utc_slots "$wd" "$start2")
+CONFIG=$saved; [ "$miss2" -eq 1 ]; check "the cron check does notice a meeting moved to a time the crons do not cover" $?
+
 # --- orchestrator, against fake gh and curl ---
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 cat > "$tmp/curl" <<'FAKE'
