@@ -16,6 +16,21 @@ Branch from an up-to-date `main`, one branch per issue.
 
 `<n>` is the issue number. Use `/pick-up-story` to create the branch and a linked draft PR from an issue.
 
+### Pre-commit hooks
+
+Install once per clone:
+
+```
+pip install pre-commit
+pre-commit install
+```
+
+From then on, every `git commit` runs ruff + ruff-format (Python), prettier (`web/`), gitleaks (secrets, anywhere in the repo), and check-jsonschema (`schema/`) against the files you're committing — the same tools CI runs, just earlier, so you find out before pushing instead of after.
+
+- `pre-commit run --all-files` runs every hook against the whole repo on demand, not just staged files.
+- A hook that **modifies** files (ruff `--fix`, prettier) fails that run on purpose — it's telling you it changed something. `git add` the result and commit again.
+- Run `pre-commit autoupdate` occasionally to refresh the pinned hook versions in `.pre-commit-config.yaml` against each tool's own repo, rather than hand-editing version numbers.
+
 ### Commits
 
 - Short, imperative subject line that says what changed: "Add pull request template", not "added stuff".
