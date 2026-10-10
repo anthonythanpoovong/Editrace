@@ -30,13 +30,17 @@ SENSITIVE = re.compile(
     r"token|authorization|password|secret|api_?key|cookie|email", re.IGNORECASE
 )
 _LEVELS = {"WARNING": "warn", "CRITICAL": "error"}
+MAX_DEPTH = 5
 
 
 def _clean(value: Any, depth: int = 0) -> Any:
     if isinstance(value, BaseException):
         return _serialize_error(value)
-    if depth > 5:
+    if not isinstance(value, dict | list | tuple):
         return value
+    # Past the limit, drop the value: returning it raw would skip redaction and keep cycles.
+    if depth > MAX_DEPTH:
+        return "[truncated]"
     if isinstance(value, dict):
         return {
             k: "[redacted]" if SENSITIVE.search(str(k)) else _clean(v, depth + 1)
@@ -64,7 +68,7 @@ class JsonFormatter(logging.Formatter):
         fields: dict[str, Any] = {**_context.get(), **getattr(record, "fields", {})}
         if record.exc_info and record.exc_info[1] is not None:
             fields.setdefault("err", record.exc_info[1])
-        entry = {
+        base = {
             "ts": datetime.fromtimestamp(record.created, UTC).isoformat(
                 timespec="milliseconds"
             ),
@@ -72,9 +76,12 @@ class JsonFormatter(logging.Formatter):
             "service": self.service,
             "env": os.environ.get("APP_ENV", "dev"),
             "msg": record.getMessage(),
-            **_clean(fields),
         }
-        return json.dumps(entry, default=str)
+        try:
+            return json.dumps({**base, **_clean(fields)}, default=str)
+        except (TypeError, ValueError) as err:
+            # Logging must never fail (e.g. non-string dict keys). Keep the line, drop the fields.
+            return json.dumps({**base, "log_error": f"fields not serializable: {err}"})
 
 
 def get_logger(service: str, stream: Any = None) -> logging.Logger:

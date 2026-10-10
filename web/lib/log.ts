@@ -24,9 +24,13 @@ function serializeError(err: Error): Record<string, unknown> {
   return { name: err.name, message: err.message, stack: err.stack };
 }
 
+const MAX_DEPTH = 5;
+
 function clean(value: unknown, depth = 0): unknown {
   if (value instanceof Error) return serializeError(value);
-  if (depth > 5 || value === null || typeof value !== "object") return value;
+  if (value === null || typeof value !== "object") return value;
+  // Past the limit, drop the value: returning it raw would skip redaction and keep cycles.
+  if (depth > MAX_DEPTH) return "[truncated]";
   if (Array.isArray(value)) return value.map((v) => clean(v, depth + 1));
   return Object.fromEntries(
     Object.entries(value).map(([k, v]) => [
@@ -46,15 +50,27 @@ export function createLogger(
     msg: string,
     fields: Record<string, unknown> = {},
   ) => {
-    const entry = {
+    const base = {
       ts: new Date().toISOString(),
       level,
       service,
       env: process.env.APP_ENV ?? "dev",
       msg,
-      ...(clean({ ...context, ...fields }) as Record<string, unknown>),
     };
-    write(JSON.stringify(entry), level);
+    let line: string;
+    try {
+      line = JSON.stringify({
+        ...base,
+        ...(clean({ ...context, ...fields }) as Record<string, unknown>),
+      });
+    } catch (err) {
+      // Logging must never throw (e.g. a BigInt field). Keep the line, drop the fields.
+      line = JSON.stringify({
+        ...base,
+        log_error: `fields not serializable: ${err instanceof Error ? err.message : String(err)}`,
+      });
+    }
+    write(line, level);
   };
 
   return {

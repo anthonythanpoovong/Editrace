@@ -60,6 +60,34 @@ class LogTest(unittest.TestCase):
             entry["headers"], {"Authorization": "[redacted]", "accept": "json"}
         )
 
+    def test_truncates_past_depth_limit(self):
+        log, stream = make_logger()
+        deep = {"a": {"b": {"c": {"d": {"e": {"f": {"token": "x"}}}}}}}
+        log.info("deep", extra={"fields": deep})
+
+        raw = stream.getvalue()
+        self.assertNotIn('"x"', raw)
+        self.assertIn("[truncated]", raw)
+
+    def test_circular_objects_do_not_break_logging(self):
+        log, stream = make_logger()
+        loop: dict = {"name": "loop"}
+        loop["self"] = loop
+        log.info("circular", extra={"fields": {"loop": loop}})
+
+        [entry] = lines(stream)
+        self.assertEqual(entry["msg"], "circular")
+
+    def test_keeps_line_when_fields_not_serializable(self):
+        log, stream = make_logger()
+        with bind(job_id="j1"):
+            log.error("job failed", extra={"fields": {"by_pair": {(1, 2): "x"}}})
+
+        [entry] = lines(stream)
+        self.assertEqual(entry["level"], "error")
+        self.assertEqual(entry["msg"], "job failed")
+        self.assertIn("fields not serializable", entry["log_error"])
+
     def test_serializes_exceptions(self):
         log, stream = make_logger()
         try:

@@ -60,6 +60,40 @@ test("redacts sensitive keys, including nested ones", () => {
   expect(JSON.stringify(entry)).not.toContain("abc");
 });
 
+test("truncates past the depth limit, so deep secrets are never logged", () => {
+  const { lines, write } = capture();
+  createLogger("web", {}, write).info("deep", {
+    a: { b: { c: { d: { e: { f: { token: "x" } } } } } },
+  });
+
+  const { entry } = lines[0];
+  expect(JSON.stringify(entry)).not.toContain('"x"');
+  expect(JSON.stringify(entry)).toContain("[truncated]");
+});
+
+test("does not throw on circular objects", () => {
+  const { lines, write } = capture();
+  const loop: Record<string, unknown> = { name: "loop" };
+  loop.self = loop;
+
+  expect(() =>
+    createLogger("web", {}, write).info("circular", { loop }),
+  ).not.toThrow();
+  expect(lines[0].entry.msg).toBe("circular");
+});
+
+test("keeps the line when fields can't be serialized", () => {
+  const { lines, write } = capture();
+  createLogger("web", { job_id: "j1" }, write).error("job failed", {
+    size: BigInt(1),
+  });
+
+  const { entry, level } = lines[0];
+  expect(level).toBe("error");
+  expect(entry).toMatchObject({ msg: "job failed", service: "web" });
+  expect(entry.log_error).toContain("fields not serializable");
+});
+
 test("serializes errors", () => {
   const { lines, write } = capture();
   createLogger("web", {}, write).error("job failed", {
