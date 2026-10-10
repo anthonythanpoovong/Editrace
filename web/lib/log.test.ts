@@ -1,0 +1,73 @@
+import { expect, test } from "vitest";
+import { createLogger, type LogLevel } from "./log";
+
+function capture() {
+  const lines: { entry: Record<string, unknown>; level: LogLevel }[] = [];
+  const write = (line: string, level: LogLevel) =>
+    lines.push({ entry: JSON.parse(line), level });
+  return { lines, write };
+}
+
+test("writes one JSON object with the standard fields", () => {
+  const { lines, write } = capture();
+  createLogger("web", {}, write).info("job started", { duration_ms: 5 });
+
+  expect(lines).toHaveLength(1);
+  const { entry, level } = lines[0];
+  expect(level).toBe("info");
+  expect(entry).toMatchObject({
+    level: "info",
+    service: "web",
+    msg: "job started",
+    duration_ms: 5,
+  });
+  expect(typeof entry.env).toBe("string");
+  expect(new Date(entry.ts as string).toISOString()).toBe(entry.ts);
+});
+
+test("child loggers carry context on every line", () => {
+  const { lines, write } = capture();
+  const log = createLogger("web", { request_id: "r1" }, write).child({
+    job_id: "j1",
+    user_id: "u1",
+  });
+  log.info("a");
+  log.warn("b");
+
+  for (const { entry } of lines) {
+    expect(entry).toMatchObject({
+      request_id: "r1",
+      job_id: "j1",
+      user_id: "u1",
+    });
+  }
+});
+
+test("redacts sensitive keys, including nested ones", () => {
+  const { lines, write } = capture();
+  createLogger("web", {}, write).info("call", {
+    authorization: "Bearer abc",
+    headers: { cookie: "sb=1", accept: "json" },
+    user_email: "a@b.com",
+    access_token: "xyz",
+  });
+
+  const { entry } = lines[0];
+  expect(entry.authorization).toBe("[redacted]");
+  expect(entry.user_email).toBe("[redacted]");
+  expect(entry.access_token).toBe("[redacted]");
+  expect(entry.headers).toEqual({ cookie: "[redacted]", accept: "json" });
+  expect(JSON.stringify(entry)).not.toContain("abc");
+});
+
+test("serializes errors", () => {
+  const { lines, write } = capture();
+  createLogger("web", {}, write).error("job failed", {
+    err: new TypeError("boom"),
+  });
+
+  const { entry, level } = lines[0];
+  expect(level).toBe("error");
+  expect(entry.err).toMatchObject({ name: "TypeError", message: "boom" });
+  expect((entry.err as { stack: string }).stack).toContain("boom");
+});
