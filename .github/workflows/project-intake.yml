@@ -37,6 +37,22 @@ jobs:
         with:
           ref: ${{ github.event.repository.default_branch }}
           sparse-checkout: .github/scripts
+      # Only on "opened": a reopened issue whose author was unassigned on purpose stays unassigned.
+      # Never fatal: an author who cannot be assigned (not a collaborator) must not make the fallback
+      # comment claim the board or labels failed.
+      - name: Assign the author
+        if: github.event.action == 'opened'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          ASSIGNEES: ${{ toJSON(github.event.issue.assignees.*.login) }}
+          AUTHOR: ${{ github.event.issue.user.login }}
+          AUTHOR_TYPE: ${{ github.event.issue.user.type }}
+        run: |
+          who=$(.github/scripts/project-intake-assignee.sh)
+          [ -z "$who" ] || gh issue edit "$ISSUE" --repo "$REPO" --add-assignee "$who" \
+            || echo "::warning::Could not assign $who to #$ISSUE"
       - name: Add the missing labels
         env:
           GH_TOKEN: ${{ github.token }}
@@ -67,17 +83,6 @@ jobs:
           for l in "${add[@]}"; do [ -z "$l" ] || args+=(--add-label "$l"); done
           for l in "${remove[@]}"; do [ -z "$l" ] || args+=(--remove-label "$l"); done
           [ "${#args[@]}" -eq 0 ] || gh issue edit "$ISSUE" --repo "$REPO" "${args[@]}"
-      - name: Assign the author
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          ISSUE: ${{ github.event.issue.number }}
-          ASSIGNEES: ${{ toJSON(github.event.issue.assignees.*.login) }}
-          AUTHOR: ${{ github.event.issue.user.login }}
-          AUTHOR_TYPE: ${{ github.event.issue.user.type }}
-        run: |
-          who=$(.github/scripts/project-intake-assignee.sh)
-          [ -z "$who" ] || gh issue edit "$ISSUE" --repo "$REPO" --add-assignee "$who"
 
   board:
     runs-on: ubuntu-latest
