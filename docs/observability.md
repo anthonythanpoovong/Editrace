@@ -66,17 +66,21 @@ Variables are listed in [`.env.example`](../.env.example). Where they live is in
 
 ## Spend alerts
 
-| Provider | Guardrail | Where it's set | Alerts go to |
-|---|---|---|---|
-| Modal (GPU, CPU) | Workspace spend limit + usage notifications | Modal dashboard → workspace settings | `#alerts` on Discord + owner email |
-| Anthropic (assistant, LLM tokens) | Monthly spend limit + notification thresholds | Anthropic Console → Settings → Limits | Owner email, forwarded to `#alerts` |
+Alerts are delivered to the **`#alerts`** channel on Discord through a webhook. Its URL is the `DISCORD_ALERTS_WEBHOOK` GitHub secret ([environments.md](environments.md)). Provider alerts arrive by email, and the people on the provider's notification list post anything that fires in `#alerts`. The daily budget check (part 2 of #50) posts to the webhook directly.
 
-Budgets (the owner sets these and updates this table):
+| Provider | Guardrail | Where it's set | Status |
+|---|---|---|---|
+| Modal (GPU, CPU) | Workspace spend limit + usage notifications | Modal dashboard → workspace settings | **Not set up yet.** No Editrace workspace exists. Set up and tested when it's created (#163) |
+| Anthropic (assistant, LLM tokens) | Monthly spend limit + notification thresholds | Anthropic Console → Settings → Limits | **Not set up yet.** No Editrace organisation exists. Set up and tested when the assistant's API key is created (#65) |
+
+Setting up a provider's alert means: set the monthly limit, add notifications at 50% and 80%, add the team to the notification list, then cross a temporary low threshold and confirm the alert is posted in `#alerts`. Test on the real Editrace account, not a personal one: alerts belong to one account, so a test elsewhere proves nothing.
+
+Budgets (the owner sets these when the accounts are created):
 
 | Provider | Monthly limit | Alert at |
 |---|---|---|
-| Modal | TBD | 50%, 80% |
-| Anthropic | TBD | 50%, 80% |
+| Modal | TBD (#163) | 50%, 80% |
+| Anthropic | TBD (#65) | 50%, 80% |
 
 When an alert fires, follow [`runbooks/spend-alert.md`](runbooks/spend-alert.md). Per-job cost tracking (`job_costs`) and a daily budget check come with the worker base (#53) and jobs table (#58).
 
@@ -97,3 +101,4 @@ Tracked in #50 and depending on other stories:
 - Job-ID wiring in the worker base (#53) and jobs table (#58), and the status UI linking to it (#60)
 - `job_costs` table, spend dashboard and daily budget check (#53, #58; shared with #102)
 - Per-user rate limits on uploads (#57), MCP calls (#27) and assistant messages (#65)
+- Modal and Anthropic spend limits and alert tests, when the Editrace accounts are created (#163, #65)
