@@ -1,0 +1,26 @@
+{
+  "timezone": "America/Toronto",
+  "meeting": {
+    "name": "Editrace Weekly Sync",
+    "weekday": 3,
+    "start": "14:30",
+    "duration_minutes": 30,
+    "meet_url": "https://meet.google.com/xmq-csjt-npw",
+    "agenda": [
+      "What you accomplished this week",
+      "What went well",
+      "What didn't go so well",
+      "What you are blocked by",
+      "Any Q/A you may have"
+    ],
+    "skip": []
+  },
+  "sprint": {
+    "remind_at": "09:00"
+  },
+  "project": {
+    "owner": "anthonythanpoovong",
+    "number": 2,
+    "url": "https://github.com/users/anthonythanpoovong/projects/2"
+  }
+}
