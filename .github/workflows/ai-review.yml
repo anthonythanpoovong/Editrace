@@ -54,6 +54,8 @@ jobs:
             the markdown into one line.
             Use `mcp__github_inline_comment__create_inline_comment` (with `confirmed: true`) for findings tied to specific lines.
             Only post GitHub comments; don't reply with review text as a message.
+          # Edit(), not Write(): the Write tool passes an absolute path, so a Write(armour-comment.md) rule never
+          # matches and every review is denied its one file write. Edit() rules cover Write and match this file only.
           claude_args: |
             --model claude-sonnet-5-5
-            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Write(armour-comment.md),Read,Glob,Grep"
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Edit(armour-comment.md),Read,Glob,Grep"
