@@ -121,4 +121,15 @@ check "only the missing field is filled" $?
 ISSUE_NODE_ID='x";drop' PROJECT_OWNER=me PROJECT_NUMBER=2 ./project-intake.sh > /dev/null 2>&1; [ $? -ne 0 ]
 check "a bad node ID is rejected" $?
 
+# --- assignee ---
+who() { ASSIGNEES="$1" AUTHOR="$2" AUTHOR_TYPE="${3:-User}" ./project-intake-assignee.sh; }
+[ "$(who '[]' anthonythanpoovong)" = anthonythanpoovong ]
+check "an unassigned issue is assigned to its author" $?
+[ -z "$(who '["mikeleboss"]' anthonythanpoovong)" ]
+check "an issue that already has an assignee is left alone" $?
+[ -z "$(who '[]' dependabot Bot)" ]
+check "an issue opened by a bot is not assigned" $?
+[ -z "$(who '[]' 'a b;rm')" ]
+check "a login that is not a plain GitHub login is not used" $?
+
 exit $fail

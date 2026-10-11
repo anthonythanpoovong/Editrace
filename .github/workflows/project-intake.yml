@@ -1,7 +1,7 @@
 name: Project intake
 
 # Every new issue lands on the Editrace project board (Project #2) in the current sprint with
-# Status Backlog, and gets any missing Level, Type and domain/area labels (#178). Labels are only
+# Status Backlog, is assigned to its author (unless already assigned or opened by a bot), and gets any missing Level, Type and domain/area labels (#178). Labels are only
 # ever added (plus removing our own needs-triage once a domain is set), never changed or removed.
 # A sprint or status that is already set is never overwritten. Run it by hand (workflow_dispatch)
 # to backfill every open issue that is not on the board yet.
@@ -67,6 +67,17 @@ jobs:
           for l in "${add[@]}"; do [ -z "$l" ] || args+=(--add-label "$l"); done
           for l in "${remove[@]}"; do [ -z "$l" ] || args+=(--remove-label "$l"); done
           [ "${#args[@]}" -eq 0 ] || gh issue edit "$ISSUE" --repo "$REPO" "${args[@]}"
+      - name: Assign the author
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          ASSIGNEES: ${{ toJSON(github.event.issue.assignees.*.login) }}
+          AUTHOR: ${{ github.event.issue.user.login }}
+          AUTHOR_TYPE: ${{ github.event.issue.user.type }}
+        run: |
+          who=$(.github/scripts/project-intake-assignee.sh)
+          [ -z "$who" ] || gh issue edit "$ISSUE" --repo "$REPO" --add-assignee "$who"
 
   board:
     runs-on: ubuntu-latest
