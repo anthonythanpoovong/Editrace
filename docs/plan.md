@@ -50,18 +50,20 @@ It has three surfaces:
 
 **Editor flow:** the user asks their MCP client to "apply template X in Resolve". The client calls the Bridge's `apply_template`. The Bridge fetches the template from the Editrace API and passes it to the Resolve adapter, which builds the timeline and returns a report of applied, skipped and approximated elements.
 
-## Template Schema (v0 outline, #1)
+## Template Schema (v0, #1)
+
+v0 is in `schema/template.schema.json`; every field is documented in [`schema.md`](schema.md). Time and versioning follow [ADR 0002](decisions/0002-time-representation-and-schema-versioning.md).
 
 | Section | Contents |
 |---|---|
-| `source` | duration (frames), fps (rational), resolution, aspect, content hash |
-| `clips` / slots | source range, speed, zoom/pan keyframes |
-| `cuts`, `transitions` | position, type, duration |
-| `text_overlays` | text, normalized bbox, style hints, in/out |
-| `captions` | word-level timing, line grouping |
-| `beats`, `sound_ref` | bpm, beat/downbeat markers; sound id, title, artist, link (no audio) |
-| `color` | per-shot params, optional LUT |
-| every element | `confidence`, `provenance` (detector, version) |
+| `schema_version` | semver of the schema the document was written against |
+| `source` | duration (frames), fps (rational), resolution, aspect ratio, content hash; VFR references are conformed (lossy, recorded) |
+| `tracks` | ordered bottom to top, each with a `kind` |
+| — `video` tracks | `slots` (range, source range, speed, zoom/pan keyframes, per-shot `color` with optional LUT name), `cuts`, `transitions` (type, range, from/to slot) |
+| — `text` tracks | `text_overlays`: text, normalized bbox, style hints, range |
+| — `captions` tracks | `captions`: lines of words with per-word timing |
+| `beats`, `sound_ref` | bpm, beat/downbeat frames; sound id, title, artist, link (no audio) |
+| every detected element | `confidence`, `provenance` (detector, version) |
 
 ## Editor Integrations
 
@@ -152,10 +154,10 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 ## Roadmap
 
 ### Phase 0: De-risk (spikes & foundation)
-- Template JSON Schema v0 (#1), type generation (#2), monorepo scaffold (#3, done)
+- Template JSON Schema v0 (#1, done), type generation (#2), monorepo scaffold (#3, done)
 - Foundations: CI/CD + environments (#48, done: PR previews, staging on merge, manual prod; Supabase/Modal environments follow in #163; a move off Vercel Hobby is proposed in ADR 0001, #171), migrations + RLS test harness (#49)
 - PR notifications in Discord (#140, #154, #156, #177, done): review request and ack, comment, approval, merge, re-review and `@mention` pings; Armour reads its rules from the base branch (#159, done)
-- Repo hardening: Armour skip notice (#126), changed files + coverage in reviews (#125), sharper rules (#127), eval set (#128); 80% changed-line coverage gate (#129); CONTRIBUTING + templates (#130, done), pre-commit hooks (#131), teammates + review rules (#132, done)
+- Repo hardening: Armour skip notice (#126), changed files + coverage in reviews (#125), sharper rules (#127), eval set (#128); 80% changed-line coverage gate (#129); CONTRIBUTING + templates (#130, done), pre-commit hooks (#131, done), teammates + review rules (#132, done)
 - Pipeline: golden video dataset (#52), worker framework (#53)
 - CV1: cut detection spike (#4), Resolve rebuild spike (#5), CapCut draft spike (#6)
 - CV1: **live editor control spike (#29)**

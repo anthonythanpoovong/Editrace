@@ -47,12 +47,13 @@ The Editrace Bridge (local MCP server + editor adapters) gets its own folder onc
 ## Getting Started
 
 1. Read [`docs/plan.md`](docs/plan.md) and [`CONTRIBUTING.md`](CONTRIBUTING.md) (branches, PRs, review rules)
-2. Check the [Project Board](https://github.com/users/anthonythanpoovong/projects/2) (views per area, incl. MCP and RAG)
-3. Start with Phase 0 issues
+2. Install the pre-commit hooks once per clone: `pip install pre-commit && pre-commit install` (ruff, prettier, gitleaks, schema check; see CONTRIBUTING.md)
+3. Check the [Project Board](https://github.com/users/anthonythanpoovong/projects/2) (views per area, incl. MCP and RAG). New issues are added to it automatically.
+4. Start with Phase 0 issues
 
 ## Schema
 
-The **template JSON Schema** (`schema/template.schema.json`) is the single source of truth. TypeScript types, Pydantic models and MCP tool schemas are **generated from it**, never hand-written.
+The **template JSON Schema** (`schema/template.schema.json`, v0) is the single source of truth. TypeScript types, Pydantic models and MCP tool schemas are **generated from it**, never hand-written. Every field is explained in [`docs/schema.md`](docs/schema.md); examples, invalid fixtures and test vectors are in [`schema/`](schema/README.md).
 
 ## Development
 
@@ -112,6 +113,7 @@ These workflows live in `.github/workflows/`:
 | **Discord review request / ack** | `discord-review-request.yml`, `discord-review-ack.yml` | Posts a review request in Discord when a PR is ready for review, and marks it reviewed when a person reviews. |
 | **Discord review comment / PR status** | `discord-review-comment.yml`, `discord-pr-status.yml` | Pings people in Discord about their PR: comments and requested changes, approvals, merges and closes, a request to review again after new commits or a re-request, and `@mentions` and replies. |
 | **Ticket sync** | `ticket-sync.yml` | When a PR merges, comments on the issues it references (the `/ticket-sync` skill). |
+| **Project intake** | `project-intake.yml` | Adds every new issue to the Project Board in the current sprint (Status Backlog) and fills in missing level, type and domain/area labels. Needs the secret `PROJECT_TOKEN`; see [CONTRIBUTING.md](CONTRIBUTING.md). |
 
 The Discord workflows are not required checks and never touch the PR's code: they run their scripts from the default branch, so a script change only takes effect once merged. They need the secret `DISCORD_REVIEW_WEBHOOK` and the repo variables `DISCORD_REVIEW_ROLE_ID` and `DISCORD_USER_MAP` (GitHub login to Discord user ID).
 
