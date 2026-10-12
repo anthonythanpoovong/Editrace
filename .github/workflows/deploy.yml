@@ -1,6 +1,10 @@
 name: Deploy
 
-# Staging deploys automatically when a merge lands on main; prod is a manual run of this workflow (#48).
+# Two Vercel projects: editrace-np holds PR previews and staging, editrace-prod holds production (#48).
+# Staging deploys automatically when a merge lands on main. Production is a manual run that promotes a commit
+# already live on staging: staging records a `deployed/staging` commit status, and the prod run refuses any commit without it.
+# Separate projects can't share a build (env vars like NEXT_PUBLIC_* are baked in at build time), so promoting
+# means rebuilding that exact commit with production's env vars.
 # PR previews are deployed here too, not by Vercel's Git integration: on Hobby it refuses commits from anyone who
 # isn't a member of the Vercel team, which blocks every collaborator. web/vercel.json turns the integration's deploys off.
 # Vercel still marks a deployment BLOCKED when the commit's author isn't on the team, even from the CLI. Vercel must never
@@ -13,11 +17,10 @@ on:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
     inputs:
-      target:
-        description: Where to deploy
-        type: choice
-        options: [production]
-        default: production
+      sha:
+        description: Commit to promote to production (blank = the newest commit live on staging)
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -27,7 +30,6 @@ env:
   VERCEL_CLI_VERSION: 62.2.0
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
 jobs:
   # Same convention as ci.yml: stay a no-op until web/ has an app, so this can merge before the app does.
@@ -53,6 +55,8 @@ jobs:
       && needs.detect.outputs.web == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID_NP }}
     permissions:
       contents: read
       pull-requests: write
@@ -63,7 +67,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
       - run: npm install --global "vercel@$VERCEL_CLI_VERSION"
       - run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
       - run: vercel build --token="$VERCEL_TOKEN"
@@ -105,6 +109,11 @@ jobs:
     if: github.event_name == 'push' && needs.detect.outputs.web == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID_NP }}
+    permissions:
+      contents: read
+      statuses: write
     environment:
       name: staging
       url: ${{ steps.alias.outputs.url }}
@@ -115,9 +124,9 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
       - run: npm install --global "vercel@$VERCEL_CLI_VERSION"
-      # Hobby has no custom environments, so staging is a preview build aliased to a stable URL.
+      # Staging is a preview-environment build in editrace-np, aliased to a stable URL.
       - run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
       - run: vercel build --token="$VERCEL_TOKEN"
       - id: deploy
@@ -139,6 +148,16 @@ jobs:
             url="https://$STAGING_ALIAS"
           fi
           echo "url=$url" >> "$GITHUB_OUTPUT"
+      # This is what lets the production run promote this commit. BLOCKED never gets here, so a commit that
+      # never reached staging can't be promoted.
+      - name: Mark the commit as live on staging
+        if: steps.deploy.outputs.state == 'READY'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          URL: ${{ steps.alias.outputs.url }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            -f state=success -f context=deployed/staging -f target_url="$URL" -f description="Live on staging" >/dev/null
       # The latest commit on main was written by someone without a Vercel seat, so staging stays on the last good build.
       - name: Staging not updated
         if: steps.deploy.outputs.state == 'BLOCKED'
@@ -155,6 +174,11 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && needs.detect.outputs.web == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID_PROD }}
+    permissions:
+      contents: read
+      statuses: read # the pick step reads deployed/staging; without it a private repo refuses every promotion
     # The Production environment only accepts protected branches, so run this from main.
     environment:
       name: Production
@@ -163,18 +187,65 @@ jobs:
       group: deploy-production
       cancel-in-progress: false
     steps:
+      # Pick the commit to promote and check it really is live on staging before building anything.
+      - id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_SHA: ${{ inputs.sha }}
+        run: |
+          # Newest status first; sed (not head) reads every page so pipefail never sees a closed pipe.
+          staged() { gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$1/statuses" \
+            --jq '.[] | select(.context == "deployed/staging") | .state' | sed -n 1p; }
+          sha=$INPUT_SHA
+          # The input ends up in an API path, so accept nothing but a (short) SHA.
+          if [ -n "$sha" ] && ! [[ $sha =~ ^[0-9a-fA-F]{7,40}$ ]]; then
+            echo "::error::sha must be 7 to 40 hex characters."
+            exit 1
+          fi
+          if [ -z "$sha" ]; then
+            for c in $(gh api "repos/$GITHUB_REPOSITORY/commits?sha=main&per_page=30" --jq '.[].sha'); do
+              [ "$(staged "$c")" = success ] && { sha=$c; break; }
+            done
+          fi
+          if [ -z "$sha" ]; then
+            echo "::error::None of the last 30 commits on main is live on staging, so there is nothing to promote."
+            exit 1
+          fi
+          sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/$sha" --jq .sha)
+          if [ "$(staged "$sha")" != success ]; then
+            echo "::error::${sha:0:7} was never deployed to staging. Merge it to main and let the staging deploy go green first."
+            exit 1
+          fi
+          # Anyone with write access can post a commit status, so the status alone isn't proof. Main is protected
+          # (PR plus approval), so also require the commit to be on it: a PR-branch commit can never reach prod.
+          rel=$(gh api "repos/$GITHUB_REPOSITORY/compare/$sha...main" --jq .status)
+          if [ "$rel" != identical ] && [ "$rel" != ahead ]; then
+            echo "::error::${sha:0:7} isn't on main (main is $rel of it), so it can't be promoted."
+            exit 1
+          fi
+          echo "Promoting $sha"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      # The promoted commit supplies the app to build (what was tested on staging). The deploy script that holds the
+      # prod token comes from the main commit this run was dispatched from, so a rollback to an old commit never
+      # runs that commit's copy of it.
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.pick.outputs.sha }}
+      - uses: actions/checkout@v6
+        with:
+          path: ci
+          sparse-checkout: .github/scripts
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
       - run: npm install --global "vercel@$VERCEL_CLI_VERSION"
       - run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
       - run: vercel build --prod --token="$VERCEL_TOKEN"
       - id: deploy
-        run: .github/scripts/vercel-deploy.sh --prod
+        run: ci/.github/scripts/vercel-deploy.sh --prod
       # Unlike preview and staging, a blocked prod deploy is a failure: the owner asked for it by hand.
       - name: Fail unless the deploy is live
         if: steps.deploy.outputs.state != 'READY'
         run: |
-          echo "::error::Production deploy ended as ${{ steps.deploy.outputs.state }}. BLOCKED means Vercel rejected the commit author: run this from a commit authored by a Vercel team member."
+          echo "::error::Production deploy ended as ${{ steps.deploy.outputs.state }}. BLOCKED means Vercel rejected the commit author: promote a commit authored by a Vercel team member."
           exit 1
