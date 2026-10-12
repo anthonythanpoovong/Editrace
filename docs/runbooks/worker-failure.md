@@ -26,6 +26,7 @@ Follow [find-a-job.md](find-a-job.md) to get the error and logs. Common causes:
 
 - **Transient** (network, storage blip, preempted GPU): retry the job. The worker base retries with backoff and is idempotent, so a retry doesn't pay for GPU work twice. *TODO (#53, #58): retry command or button.*
 - **Permanent** (bad input, bug): leave the job failed with a clear, user-facing error message. Don't retry in a loop.
+- **Bad input that reached Sentry as an error:** it's a bug in how the worker reports it. User input failures are logged at `warn` and never sent to Sentry ([observability.md](../observability.md#what-goes-to-alerts)). Open an issue to fix the reporting.
 
 ## 4. Follow up
 

@@ -64,6 +64,25 @@ Both helpers replace values under sensitive keys (`token`, `authorization`, `pas
 
 Variables are listed in [`.env.example`](../.env.example). Where they live is in [`environments.md`](environments.md).
 
+**Not connected yet.** The Python SDK goes in with the worker base (#53). The web SDK waits for ADR 0001 and the first real route (#57 or #58). Decide seats first.
+
+## What goes to `#alerts`
+
+Only things someone needs to act on. If `#alerts` posts every error, people mute it and miss the alert that matters.
+
+| Send | Don't send |
+|---|---|
+| A **new** Sentry issue (an error type not seen before) | Every occurrence of a known issue. Sentry groups and counts them |
+| A **regression** (a resolved issue comes back) | Jobs that fail because of the user's input (corrupt file, too long, wrong format) |
+| A **spike** (e.g. one issue seen more than 10 times in an hour, or many jobs failing at once) | Anything from `dev` or `preview` |
+| Every **spend alert** (provider emails, the daily budget check) | |
+
+Only `prod` sends to `#alerts`. `staging` stays in Sentry unless it's being used for a release check.
+
+**User input is not a bug.** When a job fails because of what the user uploaded, log it at `warn`, mark the job failed with a message the user can act on, and don't report it to Sentry. That keeps Sentry's "new issue" alert meaning "our code broke".
+
+Sentry posts through its own Discord integration (set up in its alert rules, filtered by environment). The daily budget check posts through `DISCORD_ALERTS_WEBHOOK`. To check the webhook still works, run **Actions → Alerts test → Run workflow**.
+
 ## Spend alerts
 
 Alerts are delivered to the **`#alerts`** channel on Discord through a webhook. Its URL is the `DISCORD_ALERTS_WEBHOOK` GitHub secret ([environments.md](environments.md)). Provider alerts arrive by email, and the people on the provider's notification list post anything that fires in `#alerts`. The daily budget check (part 2 of #50) posts to the webhook directly.
