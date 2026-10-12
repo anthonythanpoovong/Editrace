@@ -192,8 +192,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           INPUT_SHA: ${{ inputs.sha }}
         run: |
-          staged() { gh api "repos/$GITHUB_REPOSITORY/commits/$1/statuses" \
-            --jq '[.[] | select(.context == "deployed/staging")][0].state // empty'; }
+          # Newest status first; sed (not head) reads every page so pipefail never sees a closed pipe.
+          staged() { gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$1/statuses" \
+            --jq '.[] | select(.context == "deployed/staging") | .state' | sed -n 1p; }
           sha=$INPUT_SHA
           if [ -z "$sha" ]; then
             for c in $(gh api "repos/$GITHUB_REPOSITORY/commits?sha=main&per_page=30" --jq '.[].sha'); do
