@@ -2,8 +2,10 @@
 # Armour eval (#128): opens each seeded-bug case as a draft PR, waits for Armour, scores caught / missed,
 # then closes the PRs and deletes the branches.
 #
-# Usage: scripts/armour-eval/run.sh            run every case in scripts/armour-eval/cases/
-#        scripts/armour-eval/run.sh --cleanup  close leftover eval PRs and delete leftover eval branches
+# Usage: scripts/armour-eval/run.sh [--post <n>]  run every case in scripts/armour-eval/cases/; with --post,
+#                                                 also comment the summary on issue or PR <n>
+#        scripts/armour-eval/run.sh --cleanup     close leftover eval PRs and delete leftover eval branches
+# A valid score is appended to scripts/armour-eval/RESULTS.md: commit it with the rules or model change.
 #
 # Run it on your own machine with your own `gh` login, never in Actions: PRs opened with GITHUB_TOKEN
 # don't trigger other workflows, so Armour would never review them. No token is stored anywhere.
@@ -51,7 +53,13 @@ if [ "${1:-}" = "--cleanup" ]; then
   cleanup_leftovers
   exit 0
 fi
-[ $# -eq 0 ] || die "unknown argument: $1 (only --cleanup)"
+post=""
+if [ "${1:-}" = "--post" ]; then
+  post=${2:-}
+  case $post in ''|*[!0-9]*) die "--post needs an issue or PR number" ;; esac
+  shift 2
+fi
+[ $# -eq 0 ] || die "unknown argument: $1 (use --post <n> or --cleanup)"
 
 [ -z "$(gh api "repos/$REPO/git/matching-refs/heads/$PREFIX" --jq '.[].ref')" ] \
   || die "eval branches from an earlier run still exist; run: $0 --cleanup"
@@ -169,4 +177,18 @@ $rows"
 **Not a valid score:** Armour didn't review $unreviewed case(s) (usage limit, error or timeout). Re-run later."
 
 printf '%s\n' "$summary"
+
+if [ "$unreviewed" -eq 0 ]; then
+  results=$here/RESULTS.md
+  [ -f "$results" ] || printf '%s\n' "# Armour eval results" "" \
+    "One row per valid run of \`run.sh\`. Target: at least 4 of 5 caught." "" \
+    "| Date (UTC) | Score | Model | \`armour.md\` | main | Missed |" "|---|---|---|---|---|---|" > "$results"
+  missed=$(printf '%s' "$rows" | grep -F '❌' | cut -d'`' -f2 | paste -sd, - | sed 's/,/, /g')
+  echo "| $(date -u +%Y-%m-%d) | $caught/$total | \`$model\` | \`$rules\` | \`${main_sha:0:7}\` | ${missed:-none} |" >> "$results"
+  log "recorded in ${results#"$(git -C "$here" rev-parse --show-toplevel)/"}"
+fi
+
+if [ -n "$post" ]; then
+  gh api "repos/$REPO/issues/$post/comments" -f body="$summary" --jq .html_url
+fi
 [ "$unreviewed" -eq 0 ] || exit 2
