@@ -197,6 +197,11 @@ jobs:
           staged() { gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$1/statuses" \
             --jq '.[] | select(.context == "deployed/staging") | .state' | sed -n 1p; }
           sha=$INPUT_SHA
+          # The input ends up in an API path, so accept nothing but a (short) SHA.
+          if [ -n "$sha" ] && ! [[ $sha =~ ^[0-9a-fA-F]{7,40}$ ]]; then
+            echo "::error::sha must be 7 to 40 hex characters."
+            exit 1
+          fi
           if [ -z "$sha" ]; then
             for c in $(gh api "repos/$GITHUB_REPOSITORY/commits?sha=main&per_page=30" --jq '.[].sha'); do
               [ "$(staged "$c")" = success ] && { sha=$c; break; }
@@ -211,11 +216,25 @@ jobs:
             echo "::error::${sha:0:7} was never deployed to staging. Merge it to main and let the staging deploy go green first."
             exit 1
           fi
+          # Anyone with write access can post a commit status, so the status alone isn't proof. Main is protected
+          # (PR plus approval), so also require the commit to be on it: a PR-branch commit can never reach prod.
+          rel=$(gh api "repos/$GITHUB_REPOSITORY/compare/$sha...main" --jq .status)
+          if [ "$rel" != identical ] && [ "$rel" != ahead ]; then
+            echo "::error::${sha:0:7} isn't on main (main is $rel of it), so it can't be promoted."
+            exit 1
+          fi
           echo "Promoting $sha"
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      # The promoted commit supplies the app to build (what was tested on staging). The deploy script that holds the
+      # prod token comes from the main commit this run was dispatched from, so a rollback to an old commit never
+      # runs that commit's copy of it.
       - uses: actions/checkout@v6
         with:
           ref: ${{ steps.pick.outputs.sha }}
+      - uses: actions/checkout@v6
+        with:
+          path: ci
+          sparse-checkout: .github/scripts
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -223,7 +242,7 @@ jobs:
       - run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
       - run: vercel build --prod --token="$VERCEL_TOKEN"
       - id: deploy
-        run: .github/scripts/vercel-deploy.sh --prod
+        run: ci/.github/scripts/vercel-deploy.sh --prod
       # Unlike preview and staging, a blocked prod deploy is a failure: the owner asked for it by hand.
       - name: Fail unless the deploy is live
         if: steps.deploy.outputs.state != 'READY'
