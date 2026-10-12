@@ -178,6 +178,7 @@ jobs:
       VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID_PROD }}
     permissions:
       contents: read
+      statuses: read # the pick step reads deployed/staging; without it a private repo refuses every promotion
     # The Production environment only accepts protected branches, so run this from main.
     environment:
       name: Production
