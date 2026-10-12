@@ -21,7 +21,7 @@ import traceback
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 _context: ContextVar[dict[str, Any]] = ContextVar("log_context", default={})  # noqa: B039
@@ -29,8 +29,17 @@ _context: ContextVar[dict[str, Any]] = ContextVar("log_context", default={})  # 
 SENSITIVE = re.compile(
     r"token|authorization|password|secret|api_?key|cookie|email", re.IGNORECASE
 )
+# LLM usage counts (input_tokens, max_tokens, token_count): kept when the value is a number.
+COUNT_KEY = re.compile(r"tokens$|token_count$", re.IGNORECASE)
 _LEVELS = {"WARNING": "warn", "CRITICAL": "error"}
 MAX_DEPTH = 5
+
+
+def _is_sensitive(key: Any, value: Any) -> bool:
+    if not SENSITIVE.search(str(key)):
+        return False
+    is_number = isinstance(value, int | float) and not isinstance(value, bool)
+    return not (COUNT_KEY.search(str(key)) and is_number)
 
 
 def _clean(value: Any, depth: int = 0) -> Any:
@@ -43,12 +52,21 @@ def _clean(value: Any, depth: int = 0) -> Any:
         return "[truncated]"
     if isinstance(value, dict):
         return {
-            k: "[redacted]" if SENSITIVE.search(str(k)) else _clean(v, depth + 1)
+            k: "[redacted]" if _is_sensitive(k, v) else _clean(v, depth + 1)
             for k, v in value.items()
         }
     if isinstance(value, list | tuple):
         return [_clean(v, depth + 1) for v in value]
     return value
+
+
+def _default(value: Any) -> Any:
+    """json.dumps fallback: ISO dates like the web logger, sets as lists, else str()."""
+    if isinstance(value, datetime | date):
+        return value.isoformat()
+    if isinstance(value, set | frozenset):
+        return sorted(value, key=str)
+    return str(value)
 
 
 def _serialize_error(err: BaseException) -> dict[str, Any]:
@@ -78,7 +96,10 @@ class JsonFormatter(logging.Formatter):
             "msg": record.getMessage(),
         }
         try:
-            return json.dumps({**base, **_clean(fields)}, default=str)
+            cleaned = _clean(fields)
+            # Fields can't overwrite ts, level, service, env or msg: a stray `level` would break filtering.
+            extra = {k: v for k, v in cleaned.items() if k not in base}
+            return json.dumps({**base, **extra}, default=_default)
         except (TypeError, ValueError) as err:
             # Logging must never fail (e.g. non-string dict keys). Keep the line, drop the fields.
             return json.dumps({**base, "log_error": f"fields not serializable: {err}"})

@@ -2,6 +2,7 @@ import io
 import json
 import unittest
 import uuid
+from datetime import UTC, datetime
 
 from common.log import bind, get_logger
 
@@ -87,6 +88,57 @@ class LogTest(unittest.TestCase):
         self.assertEqual(entry["level"], "error")
         self.assertEqual(entry["msg"], "job failed")
         self.assertIn("fields not serializable", entry["log_error"])
+
+    def test_dates_and_sets(self):
+        log, stream = make_logger()
+        started = datetime(2026, 10, 12, 19, 38, 35, tzinfo=UTC)
+        log.info(
+            "job started", extra={"fields": {"started_at": started, "tags": {"b", "a"}}}
+        )
+
+        [entry] = lines(stream)
+        self.assertEqual(entry["started_at"], "2026-10-12T19:38:35+00:00")
+        self.assertEqual(entry["tags"], ["a", "b"])
+
+    def test_fields_cannot_overwrite_standard_fields(self):
+        log, stream = make_logger()
+        with bind(service="spoofed"):
+            log.warning(
+                "real message",
+                extra={"fields": {"level": "debug", "msg": "fake", "ts": "yesterday"}},
+            )
+
+        [entry] = lines(stream)
+        self.assertEqual(entry["level"], "warn")
+        self.assertEqual(entry["msg"], "real message")
+        self.assertTrue(entry["service"].startswith("worker:test-"))
+        self.assertNotEqual(entry["ts"], "yesterday")
+
+    def test_keeps_token_counts_but_redacts_tokens(self):
+        log, stream = make_logger()
+        log.info(
+            "assistant reply",
+            extra={
+                "fields": {
+                    "usage": {"input_tokens": 512, "cache_read_input_tokens": 64},
+                    "max_tokens": 1024,
+                    "token_count": 7,
+                    "access_token": "abc",
+                    "auth_tokens": ["abc", "def"],
+                    "refresh_token": 12345,
+                    "id_tokens": True,
+                }
+            },
+        )
+
+        [entry] = lines(stream)
+        self.assertEqual(
+            entry["usage"], {"input_tokens": 512, "cache_read_input_tokens": 64}
+        )
+        self.assertEqual(entry["max_tokens"], 1024)
+        self.assertEqual(entry["token_count"], 7)
+        for key in ("access_token", "auth_tokens", "refresh_token", "id_tokens"):
+            self.assertEqual(entry[key], "[redacted]", key)
 
     def test_serializes_exceptions(self):
         log, stream = make_logger()

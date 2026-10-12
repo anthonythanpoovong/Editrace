@@ -19,6 +19,13 @@ export type Logger = {
 };
 
 const SENSITIVE = /token|authorization|password|secret|api_?key|cookie|email/i;
+// LLM usage counts (input_tokens, max_tokens, token_count): kept when the value is a number.
+const COUNT_KEY = /tokens$|token_count$/i;
+
+function isSensitive(key: string, value: unknown): boolean {
+  if (!SENSITIVE.test(key)) return false;
+  return !(COUNT_KEY.test(key) && typeof value === "number");
+}
 
 function serializeError(err: Error): Record<string, unknown> {
   return { name: err.name, message: err.message, stack: err.stack };
@@ -31,12 +38,27 @@ function clean(value: unknown, depth = 0): unknown {
   if (value === null || typeof value !== "object") return value;
   // Past the limit, drop the value: returning it raw would skip redaction and keep cycles.
   if (depth > MAX_DEPTH) return "[truncated]";
+  // Date, URL and others serialize through toJSON; Object.entries would turn them into {}.
+  const { toJSON } = value as { toJSON?: unknown };
+  if (typeof toJSON === "function") return clean(toJSON.call(value), depth + 1);
+  if (value instanceof Map) return clean(Object.fromEntries(value), depth);
+  if (value instanceof Set) return clean([...value], depth);
   if (Array.isArray(value)) return value.map((v) => clean(v, depth + 1));
   return Object.fromEntries(
     Object.entries(value).map(([k, v]) => [
       k,
-      SENSITIVE.test(k) ? "[redacted]" : clean(v, depth + 1),
+      isSensitive(k, v) ? "[redacted]" : clean(v, depth + 1),
     ]),
+  );
+}
+
+// Fields can't overwrite ts, level, service, env or msg: a stray `level` would break filtering.
+function withoutReserved(
+  fields: Record<string, unknown>,
+  base: Record<string, unknown>,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(fields).filter(([k]) => !(k in base)),
   );
 }
 
@@ -59,10 +81,11 @@ export function createLogger(
     };
     let line: string;
     try {
-      line = JSON.stringify({
-        ...base,
-        ...(clean({ ...context, ...fields }) as Record<string, unknown>),
-      });
+      const cleaned = clean({ ...context, ...fields }) as Record<
+        string,
+        unknown
+      >;
+      line = JSON.stringify({ ...base, ...withoutReserved(cleaned, base) });
     } catch (err) {
       // Logging must never throw (e.g. a BigInt field). Keep the line, drop the fields.
       line = JSON.stringify({
