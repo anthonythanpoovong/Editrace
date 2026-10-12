@@ -156,8 +156,8 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 ### Phase 0: De-risk (spikes & foundation)
 - Template JSON Schema v0 (#1, done), type generation (#2), monorepo scaffold (#3, done)
 - Foundations: CI/CD + environments (#48, done: PR previews, staging on merge, manual prod; Supabase/Modal environments follow in #163; a move off Vercel Hobby is proposed in ADR 0001, #171), migrations + RLS test harness (#49)
-- PR notifications in Discord (#140, #154, #156, #177, done): review request and ack, comment, approval, merge, re-review and `@mention` pings; Armour reads its rules from the base branch (#159, done)
-- Repo hardening: Armour skip notice (#126), changed files + coverage in reviews (#125), sharper rules (#127), eval set (#128); 80% changed-line coverage gate (#129); CONTRIBUTING + templates (#130, done), pre-commit hooks (#131, done), teammates + review rules (#132, done)
+- PR notifications in Discord (#140, #154, #156, #177, done): review request and ack, comment, approval, merge, re-review and `@mention` pings; weekly sync and sprint-due reminders (#184, done); Armour reads its rules from the base branch (#159, done)
+- Repo hardening: Armour skip notice (#126, done), changed files + coverage in reviews (#125), sharper rules (#127), eval set (#128); 80% changed-line coverage gate (#129); CONTRIBUTING + templates (#130, done), pre-commit hooks (#131, done), teammates + review rules (#132, done)
 - Pipeline: golden video dataset (#52), worker framework (#53)
 - CV1: cut detection spike (#4), Resolve rebuild spike (#5), CapCut draft spike (#6)
 - CV1: **live editor control spike (#29)**
