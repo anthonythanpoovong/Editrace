@@ -38,5 +38,6 @@ It takes 5–15 minutes. A valid score is appended to [`RESULTS.md`](RESULTS.md)
 To add a case, create `cases/<nn-name>/` with:
 
 - `title`: the PR title Armour sees. Keep it neutral, so it doesn't name the bug.
-- `expect`: a regex (case-insensitive) that a 🔴/🟠 finding about the bug must match. Make it broad enough for different wordings, but specific to this bug.
+- `expect`: a regex (case-insensitive) that a 🔴/🟠 finding about the bug must match. It must match only findings about *this* bug: Armour also reports unrelated problems in the same code, and a loose pattern (such as just `audio`) scores those as catches.
+- After its first run, add `fixtures/<nn-name>.txt` with Armour's real 🔴/🟠 findings on that PR: `+ ` before the ones about the seeded bug, `- ` before the rest. `test-score.sh` checks `expect` matches every `+` line and no `-` line.
 - `files/`: the files to add, at their paths in the repo.

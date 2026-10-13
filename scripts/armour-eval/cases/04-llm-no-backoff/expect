@@ -1,1 +1,1 @@
-backoff|retr(y|ies)|unbounded|infinite|forever|loop|rate[ -]limit|cost|cap|limit
+backoff|back off|retr(y|ies|ied|ying)|while ?\(true\)|forever|endless|infinite|unbounded

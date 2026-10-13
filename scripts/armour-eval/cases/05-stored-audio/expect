@@ -1,1 +1,1 @@
-audio|copyright|licen[cs]|sound file|stor(e|ed|ing|age)|upload|persist|keep
+copyright|(upload|stor|persist|bucket|cach)[a-z]* .{0,60}(audio|track|sound)|(audio|track|sound)[a-z_`]* .{0,60}(upload|stor|persist|bucket|cach)

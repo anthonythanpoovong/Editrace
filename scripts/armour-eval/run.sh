@@ -42,7 +42,7 @@ cleanup_leftovers() {
   done
   # Case branches before base branches: deleting a base first would auto-close PRs without us.
   refs=$(gh api "repos/$REPO/git/matching-refs/heads/$PREFIX" --paginate --jq '.[].ref | sub("^refs/heads/"; "")' \
-    | sort -r)
+    | awk '/\/base$/ { base = base $0 "\n"; next } { print } END { printf "%s", base }')
   for r in $refs; do
     gh api -X DELETE "repos/$REPO/git/refs/heads/$r" >/dev/null && log "deleted branch $r"
   done
@@ -88,6 +88,12 @@ cleanup() {
 trap cleanup EXIT
 trap 'exit 130' INT TERM
 
+# git push prints GitHub's "create a pull request" and security banners even with -q: show them only on failure.
+push_quiet() {
+  local out
+  out=$(git -C "$wt" push -q origin "$1" 2>&1) || { printf '%s\n' "$out" >&2; return 1; }
+}
+
 git -C "$here" fetch -q origin main
 git -C "$here" worktree add -q --detach "$wt" origin/main
 main_sha=$(git -C "$wt" rev-parse HEAD)
@@ -101,7 +107,7 @@ gh api "repos/$REPO/labels" -f name="$LABEL" -f color=8a8a8a \
 # --ignore-unmatch and --allow-empty: before this lands on main there is nothing to remove.
 git -C "$wt" rm -r -q --ignore-unmatch scripts/armour-eval
 git -C "$wt" commit -q --no-verify --allow-empty -m "Armour eval base: main without scripts/armour-eval"
-git -C "$wt" push -q origin "HEAD:refs/heads/$base"
+push_quiet "HEAD:refs/heads/$base"
 branches=$base
 base_sha=$(git -C "$wt" rev-parse HEAD)
 
@@ -118,7 +124,7 @@ for c in $cases; do
   cp -R "$dir/files/." "$wt/"
   git -C "$wt" add -A
   git -C "$wt" commit -q --no-verify -m "$title"
-  git -C "$wt" push -q origin "HEAD:refs/heads/$branch"
+  push_quiet "HEAD:refs/heads/$branch"
   branches="$branch $branches"
   n=$(gh api "repos/$REPO/pulls" -f title="$title" -f head="$branch" -f base="$base" -F draft=true \
     -f body="Automated Armour eval run \`$run\` (#128). Never merge: it's closed and its branch deleted automatically." \

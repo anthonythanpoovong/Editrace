@@ -69,4 +69,22 @@ check "inline moved onto this commit from an older one is ignored" 1 "missed" \
 check "case-insensitive" 0 "caught:" \
   "$(doc "[$(top "$hdr" "- 🟠 SERVICE ROLE client in a request handler")]" '[]')"
 
+# Each case's expect pattern against Armour's real findings (fixtures/): it must match every finding
+# about the seeded bug ('+') and none of the other findings on that PR ('-').
+for f in fixtures/*.txt; do
+  c=$(basename "$f" .txt)
+  re=$(cat "cases/$c/expect")
+  case_fail=0
+  while IFS= read -r line; do
+    case $line in '#'*|'') continue ;; esac
+    want=${line:0:1}
+    got=$(jq -n --arg l "${line:2}" --arg re "$re" '$l | test($re; "i")')
+    if { [ "$want" = + ] && [ "$got" != true ]; } || { [ "$want" = - ] && [ "$got" != false ]; }; then
+      echo "FAIL $c expect: '$want' line got $got: ${line:2:90}"
+      case_fail=1
+    fi
+  done < "$f"
+  if [ "$case_fail" = 0 ]; then echo "ok   $c expect vs real findings"; else fail=1; fi
+done
+
 exit $fail

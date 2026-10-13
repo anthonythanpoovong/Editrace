@@ -1,0 +1,6 @@
+# Armour's real 🔴/🟠 findings on this case (eval run 20261012-232528).
+# '+' lines are about the seeded bug and must match expect; '-' lines are other findings and must not.
+- - 🟠 `workers/cuts/track.py:5`: No input validation. Mismatched `confidences` and `boundaries` lengths raise `IndexError` or silently drop cuts, and unsorted or out-of-range boundaries produce zero or negative-duration slots. **Fix:** Validate lengths and strict ascending order within `(0, duration)`, and raise `ValueError` otherwise.
++ - 🟠 `workers/cuts/track.py:26`: `cuts[].frame` is set to float seconds. **Fix:** Emit an integer frame number computed from the rational fps.
++ - 🟠 `workers/cuts/track.py:17`: Slot ranges use float seconds, but the plan requires frames plus rational fps. **Fix:** Take `fps` as `(num, den)` and emit integer frames for `start` and `duration`.
+- - 🟠 `workers/cuts/track.py:29`: The track is a hand-built dict, not a type generated from `schema/template.schema.json`, so schema drift won't be caught. **Fix:** Return the generated Pydantic model.

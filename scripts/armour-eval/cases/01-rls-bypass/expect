@@ -1,1 +1,1 @@
-service[ _-]?role|RLS|row[ -]level|bypass|ownership|owner|any (user|template)|other users|cross-user|unauthenticated|auth
+RLS|row[ -]level|bypass|no auth|without auth|unauthenticated|any (caller|user|one)|anyone|other users|cross-user
