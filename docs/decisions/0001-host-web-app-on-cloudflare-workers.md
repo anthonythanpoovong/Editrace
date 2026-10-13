@@ -1,10 +1,16 @@
 # 0001: Host the web app on Cloudflare Workers instead of Vercel
 
-- **Status:** Proposed
+- **Status:** Rejected (2026-10-12): we upgraded to Vercel Pro and are staying on Vercel. See below.
 - **Date:** 2026-10-07
 - **Author:** @anthonythanpoovong
 - **Deciders:** @anthonythanpoovong
 - **Related:** #171, #48 (CI/CD + environments), #19 (Stripe), #27 (remote MCP server), #149 (coming-soon site)
+
+## Outcome
+
+Rejected. This was written because Vercel Hobby has no collaborators, and teammates' deploys failed. The team upgraded to Vercel Pro on 2026-10-12, which removed that blocker: teammates' deploys now go through, and Pro also covers commercial use. Moving hosts would cost a port and re-validation for no remaining benefit, so we stay on Vercel. The deploy pipeline is documented in [`docs/environments.md`](../environments.md).
+
+What this does **not** settle: the $0-until-revenue constraint. Pro costs money, so if hosting cost becomes a problem, write a new ADR rather than reviving this one. The text below is the original proposal, kept unchanged.
 
 ## Context
 
