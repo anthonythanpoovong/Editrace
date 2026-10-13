@@ -1,6 +1,6 @@
 # Armour eval results
 
-One row per valid run of `run.sh`. Target: at least 4 of 5 caught.
+One row per valid run of `run.sh`. Target: at least 80% caught (4 of 5).
 
 | Date (UTC) | Score | Model | `armour.md` | main | Missed |
 |---|---|---|---|---|---|

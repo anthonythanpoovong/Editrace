@@ -7,13 +7,14 @@
 #   0  caught: a 🔴 or 🟠 finding matching the regex (case-insensitive)
 #   1  missed: Armour reviewed this commit but no 🔴/🟠 finding matches
 #   2  not reviewed: no Armour comment (summary or inline) for this commit
+#   3  error: the comments JSON or the regex couldn't be read, so there's no score
 # Only 🔴/🟠 count: a 🟢 "consider" mention of a security or cost bug isn't catching it.
 set -euo pipefail
 
 sha=${1:?head sha}
 re=${2:?expect regex}
 
-jq -r --arg sha7 "${sha:0:7}" --arg sha "$sha" --arg re "$re" '
+result=$(jq -r --arg sha7 "${sha:0:7}" --arg sha "$sha" --arg re "$re" '
   def armour: .user.login == "claude[bot]";
   def severe: test("🔴|🟠");
   # Same loose header match as the skip notice in ai-review.yml: first line names Editrace Armour and the commit.
@@ -29,12 +30,11 @@ jq -r --arg sha7 "${sha:0:7}" --arg sha "$sha" --arg re "$re" '
       | map(select(test($re; "i")))
       | if length > 0 then "caught: " + (.[0] | .[0:200]) else "missed" end
     end
-' | {
-  read -r line
-  echo "$line"
-  case "$line" in
-    caught:*) exit 0 ;;
-    missed) exit 1 ;;
-    *) exit 2 ;;
-  esac
-}
+') || { echo "error: couldn't score (bad comments JSON or expect regex)"; exit 3; }
+
+echo "$result"
+case "$result" in
+  caught:*) exit 0 ;;
+  missed) exit 1 ;;
+  *) exit 2 ;;
+esac

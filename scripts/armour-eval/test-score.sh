@@ -69,6 +69,11 @@ check "inline moved onto this commit from an older one is ignored" 1 "missed" \
 check "case-insensitive" 0 "caught:" \
   "$(doc "[$(top "$hdr" "- 🟠 SERVICE ROLE client in a request handler")]" '[]')"
 
+code=0; ./score.sh "$SHA" "$RE" <<< 'not json' >/dev/null 2>&1 || code=$?
+if [ "$code" = 3 ]; then echo "ok   bad comments JSON is an error, not a miss"; else echo "FAIL bad JSON: exit $code (want 3)"; fail=1; fi
+code=0; doc "[$(top "$hdr" "- 🔴 RLS")]" '[]' | ./score.sh "$SHA" 'RLS(' >/dev/null 2>&1 || code=$?
+if [ "$code" = 3 ]; then echo "ok   bad expect regex is an error, not a miss"; else echo "FAIL bad regex: exit $code (want 3)"; fail=1; fi
+
 # Each case's expect pattern against Armour's real findings (fixtures/): it must match every finding
 # about the seeded bug ('+') and none of the other findings on that PR ('-').
 for f in fixtures/*.txt; do

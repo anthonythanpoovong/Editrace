@@ -16,14 +16,14 @@ scripts/armour-eval/run.sh --cleanup     # close eval PRs and delete eval branch
 
 Run it on your own machine, logged in with `gh auth login`. It needs `git`, `gh` and `jq`, plus push access to the repo. It refuses to run in GitHub Actions: PRs opened with `GITHUB_TOKEN` don't trigger other workflows, so Armour would never review them. No token is created or stored anywhere.
 
-It takes 5–15 minutes. A valid score is appended to [`RESULTS.md`](RESULTS.md): commit that file with the rules or model change. **Target: at least 4 of 5 caught.** If Armour didn't review a case (usage limit, error or timeout), the score is marked not valid, nothing is recorded, and the script exits with code 2. Re-run it later.
+It takes 5–15 minutes. A valid score is appended to [`RESULTS.md`](RESULTS.md): commit that file with the rules or model change. **Target: at least 80% caught (4 of 5 today).** If Armour didn't review a case (usage limit, error or a timeout after 30 minutes) or a case couldn't be scored, the score is marked not valid, nothing is recorded, and the script exits with code 2. Re-run it later.
 
 ## How it works
 
 - **Eval PRs can't reach `main`.** They target a temporary base branch: `main` with this folder removed. The script never merges, and on every exit (success, error or Ctrl-C) it closes the PRs and deletes the branches. Deleting the base branch would also close any PR still open.
-- **Armour never sees the answers.** The base branch has no `scripts/armour-eval/`, so neither the PR diff nor the files Armour can browse contain the cases' `expect` patterns. The bait code has no comments pointing at the bug.
+- **Armour never sees the answers.** The base branch drops `scripts/armour-eval/` and the epic that lists the seeded bugs (`HIDE` in `run.sh`), so neither the PR diff nor the files Armour can browse name them. Branches are named `armour-eval/<run>/c1`, `c2`, ..., not after the case, and the PRs have no body. The bait code has no comments pointing at the bug.
 - **Scoring** (`score.sh`, tested by `test-score.sh` in CI): a case is **caught** only when a 🔴 or 🟠 finding, in Armour's summary or inline on that commit, matches the case's `expect` pattern (case-insensitive). A 🟢 "consider" mention of a security or cost bug doesn't count.
-- Side effects per eval PR: CI and the Deploy workflow run too. Vercel blocks the preview for non-team authors and posts a "No preview" comment. Drafts closed by their author send no Discord pings.
+- Side effects per eval PR: CI runs (it skips this folder's tests, which aren't on the base branch). The Deploy workflow skips the Vercel preview for `armour-eval/` branches, since a preview of deliberately buggy code would outlive the PR. Drafts closed by their author send no Discord pings.
 
 ## Cases
 
@@ -37,7 +37,7 @@ It takes 5–15 minutes. A valid score is appended to [`RESULTS.md`](RESULTS.md)
 
 To add a case, create `cases/<nn-name>/` with:
 
-- `title`: the PR title Armour sees. Keep it neutral, so it doesn't name the bug.
+- `title`: the PR title Armour sees. Keep it neutral, so it doesn't name the bug. If a doc Armour can read describes the bug, add that file to `HIDE` in `run.sh`.
 - `expect`: a regex (case-insensitive) that a 🔴/🟠 finding about the bug must match. It must match only findings about *this* bug: Armour also reports unrelated problems in the same code, and a loose pattern (such as just `audio`) scores those as catches.
 - After its first run, add `fixtures/<nn-name>.txt` with Armour's real 🔴/🟠 findings on that PR: `+ ` before the ones about the seeded bug, `- ` before the rest. `test-score.sh` checks `expect` matches every `+` line and no `-` line.
 - `files/`: the files to add, at their paths in the repo.

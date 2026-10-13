@@ -12,9 +12,10 @@
 # Each run costs about one Armour review per case from the owner's Claude Pro usage, so run it only
 # when .github/armour.md or the Armour model changes.
 #
-# The PRs target a temporary base branch: origin/main with scripts/armour-eval/ removed. The PR diff then
-# holds only the seeded files, and the checkout Armour can browse holds no expected answers. Deleting
-# that base branch at the end also closes any eval PR that's still open, so none can ever reach main.
+# The PRs target a temporary base branch: origin/main without the files that name the seeded bugs (HIDE).
+# The PR diff then holds only the seeded files, and the checkout Armour can browse holds no expected
+# answers. Branch names and PR bodies are neutral too. Deleting that base branch at the end also closes
+# any eval PR that's still open, so none can ever reach main.
 #
 # Needs: git, gh (logged in, with push access), jq. Works with macOS's bash 3.2.
 set -euo pipefail
@@ -23,6 +24,8 @@ here=$(cd "$(dirname "$0")" && pwd)
 LABEL=armour-eval
 PREFIX=armour-eval/
 TIMEOUT_MIN=${ARMOUR_EVAL_TIMEOUT_MIN:-30}
+# Removed from the base branch: the cases and their expected answers, and the epic that lists the seeded bugs.
+HIDE="scripts/armour-eval docs/epics/repo-hardening-phase-0.md"
 
 die() { echo "armour-eval: $*" >&2; exit 1; }
 log() { echo "armour-eval: $*" >&2; }
@@ -103,10 +106,11 @@ rules=$(git -C "$wt" log -1 --format=%h -- .github/armour.md)
 gh api "repos/$REPO/labels" -f name="$LABEL" -f color=8a8a8a \
   -f description="Armour eval PR (#128): never merge, closed automatically" >/dev/null 2>&1 || true
 
-# Base branch: main without the eval set.
-# --ignore-unmatch and --allow-empty: before this lands on main there is nothing to remove.
-git -C "$wt" rm -r -q --ignore-unmatch scripts/armour-eval
-git -C "$wt" commit -q --no-verify --allow-empty -m "Armour eval base: main without scripts/armour-eval"
+# Base branch: main without the eval set or anything naming its bugs.
+# --ignore-unmatch and --allow-empty: before this lands on main, some of it may not exist.
+# shellcheck disable=SC2086 # HIDE is a list of paths
+git -C "$wt" rm -r -q --ignore-unmatch $HIDE
+git -C "$wt" commit -q --no-verify --allow-empty -m "Eval base"
 push_quiet "HEAD:refs/heads/$base"
 branches=$base
 base_sha=$(git -C "$wt" rev-parse HEAD)
@@ -115,56 +119,66 @@ cases=""
 for d in "$here"/cases/*/; do [ -d "$d" ] && cases="$cases $(basename "$d")"; done
 [ -n "$cases" ] || die "no cases in $here/cases"
 
-shas=""
+items="" i=0
 for c in $cases; do
   dir=$here/cases/$c
   title=$(cat "$dir/title")
-  branch=${PREFIX}${run}/$c
+  i=$((i + 1))
+  branch=${PREFIX}${run}/c$i   # not the case name: Armour can see the branch with `gh pr view`
   git -C "$wt" checkout -q --detach "$base_sha"
   cp -R "$dir/files/." "$wt/"
   git -C "$wt" add -A
   git -C "$wt" commit -q --no-verify -m "$title"
   push_quiet "HEAD:refs/heads/$branch"
   branches="$branch $branches"
-  n=$(gh api "repos/$REPO/pulls" -f title="$title" -f head="$branch" -f base="$base" -F draft=true \
-    -f body="Automated Armour eval run \`$run\` (#128). Never merge: it's closed and its branch deleted automatically." \
-    --jq .number)
+  # No body: anything saying this is an eval, or what it tests, would be a hint.
+  n=$(gh api "repos/$REPO/pulls" -f title="$title" -f head="$branch" -f base="$base" -F draft=true --jq .number)
   prs="$prs $n"
   gh api "repos/$REPO/issues/$n/labels" -f "labels[]=$LABEL" >/dev/null
-  shas="$shas $(git -C "$wt" rev-parse HEAD)"
+  items="$items $n:$(git -C "$wt" rev-parse HEAD)"
   log "opened #$n for $c"
 done
 
 # Wait for the skip-notice job on each commit: it runs after the review job, so by then Armour has
-# posted everything it's going to post for that commit.
+# posted everything it's going to post for that commit. A case still running at the deadline is
+# scored "not reviewed", so the others' reviews (already paid for) still show.
 log "waiting for Armour (up to $TIMEOUT_MIN min)..."
 deadline=$(( $(date +%s) + TIMEOUT_MIN * 60 ))
-for sha in $shas; do
+timed_out=""
+for item in $items; do
+  sha=${item#*:}
   until [ "$(gh api "repos/$REPO/commits/$sha/check-runs?check_name=Armour%20skip%20notice" \
       --jq '.check_runs[0].status // "none"')" = completed ]; do
-    [ "$(date +%s)" -lt "$deadline" ] || die "timed out after $TIMEOUT_MIN min waiting for Armour on ${sha:0:7}"
+    if [ "$(date +%s)" -ge "$deadline" ]; then
+      log "timed out after $TIMEOUT_MIN min waiting for Armour on ${sha:0:7}"
+      timed_out="$timed_out $sha"
+      break
+    fi
     sleep 20
   done
 done
 
-caught=0 total=0 unreviewed=0
-rows=""
-# shellcheck disable=SC2086 # split the PR numbers into $1, $2, ... in case order
-set -- $prs
+caught=0 total=0 invalid=0
+rows="" missed=""
+# shellcheck disable=SC2086 # split the PR:sha pairs into $1, $2, ... in case order
+set -- $items
 for c in $cases; do
-  n=$1; shift
-  sha=$(gh api "repos/$REPO/pulls/$n" --jq .head.sha)
+  n=${1%%:*} sha=${1#*:}; shift
   json=$(jq -n \
     --argjson i "$(gh api "repos/$REPO/issues/$n/comments" --paginate | jq -s 'add // []')" \
     --argjson r "$(gh api "repos/$REPO/pulls/$n/comments" --paginate | jq -s 'add // []')" \
     '{issue_comments: $i, review_comments: $r}')
-  code=0
-  result=$(printf '%s' "$json" | "$here/score.sh" "$sha" "$(cat "$here/cases/$c/expect")") || code=$?
+  code=0 result=""
+  case " $timed_out " in
+    *" $sha "*) code=2 ;;
+    *) result=$(printf '%s' "$json" | "$here/score.sh" "$sha" "$(cat "$here/cases/$c/expect")") || code=$? ;;
+  esac
   total=$((total + 1))
   case $code in
     0) caught=$((caught + 1)); mark="✅ caught" ;;
-    1) mark="❌ missed" ;;
-    *) unreviewed=$((unreviewed + 1)); mark="⚠️ not reviewed" ;;
+    1) missed="$missed, $c"; mark="❌ missed" ;;
+    2) invalid=$((invalid + 1)); mark="⚠️ not reviewed" ;;
+    *) invalid=$((invalid + 1)); mark="⚠️ scoring error"; log "$c: $result" ;;
   esac
   detail=${result#caught: }
   [ "$code" -eq 0 ] || detail=""
@@ -172,25 +186,25 @@ for c in $cases; do
 "
 done
 
+target=$(( (total * 4 + 4) / 5 ))   # at least 80%, rounded up: 4 of 5
 summary="### Armour eval: $caught/$total caught
 
-Run \`$run\` · model \`$model\` · rules \`.github/armour.md\` at \`$rules\` · main \`${main_sha:0:7}\` · target ≥ 4/5
+Run \`$run\` · model \`$model\` · rules \`.github/armour.md\` at \`$rules\` · main \`${main_sha:0:7}\` · target ≥ $target/$total
 
 | Case | PR | Result | Matching finding |
 |---|---|---|---|
 $rows"
-[ "$unreviewed" -eq 0 ] || summary="$summary
-**Not a valid score:** Armour didn't review $unreviewed case(s) (usage limit, error or timeout). Re-run later."
+[ "$invalid" -eq 0 ] || summary="$summary
+**Not a valid score:** $invalid case(s) weren't reviewed or couldn't be scored (usage limit, error or timeout). Re-run later."
 
 printf '%s\n' "$summary"
 
-if [ "$unreviewed" -eq 0 ]; then
+if [ "$invalid" -eq 0 ]; then
   results=$here/RESULTS.md
   [ -f "$results" ] || printf '%s\n' "# Armour eval results" "" \
-    "One row per valid run of \`run.sh\`. Target: at least 4 of 5 caught." "" \
+    "One row per valid run of \`run.sh\`. Target: at least 80% caught (4 of 5)." "" \
     "| Date (UTC) | Score | Model | \`armour.md\` | main | Missed |" "|---|---|---|---|---|---|" > "$results"
-  # grep finds nothing on a full score: || true keeps set -e and pipefail from stopping the run there.
-  missed=$(printf '%s' "$rows" | { grep -F '❌' || true; } | cut -d'`' -f2 | paste -sd, - | sed 's/,/, /g')
+  missed=${missed#, }
   echo "| $(date -u +%Y-%m-%d) | $caught/$total | \`$model\` | \`$rules\` | \`${main_sha:0:7}\` | ${missed:-none} |" >> "$results"
   log "recorded in ${results#"$(git -C "$here" rev-parse --show-toplevel)/"}"
 fi
@@ -198,4 +212,4 @@ fi
 if [ -n "$post" ]; then
   gh api "repos/$REPO/issues/$post/comments" -f body="$summary" --jq .html_url
 fi
-[ "$unreviewed" -eq 0 ] || exit 2
+[ "$invalid" -eq 0 ] || exit 2
