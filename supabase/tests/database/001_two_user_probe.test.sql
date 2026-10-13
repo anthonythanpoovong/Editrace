@@ -3,7 +3,7 @@
 -- is left behind. Copy it as `<table>.test.sql`, drop the probe table and point it at the real one: the check in
 -- .github/scripts/check-rls-tests.sh requires every table in public to be named in a test file.
 begin;
-select plan(9);
+select plan(13);
 
 insert into auth.users (id, email, aud, role) values
   ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'a@probe.test', 'authenticated', 'authenticated'),
@@ -45,6 +45,10 @@ select lives_ok(
   'A can insert a row for themself');
 select is((select count(*)::int from public.probe_items), 1, 'A can read their own row');
 select is(pg_temp.affected($$update public.probe_items set note = 'edited'$$), 1, 'A can update their own row');
+-- An update policy checks the new row too: without that, A could hand their row to B (or take one over).
+select throws_ok(
+  $$update public.probe_items set user_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'$$,
+  '42501', null, 'A cannot reassign their row to B');
 
 -- User B
 reset role;
@@ -64,6 +68,11 @@ select set_config('request.jwt.claim.sub', '', true);
 set local role anon;
 select is(auth.uid(), null, 'anonymous users have no user id');
 select is((select count(*)::int from public.probe_items), 0, 'anonymous users cannot read A''s row');
+select throws_ok(
+  $$insert into public.probe_items (user_id, note) values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'anon')$$,
+  '42501', null, 'anonymous users cannot insert a row');
+select is(pg_temp.affected($$update public.probe_items set note = 'anon edit'$$), 0, 'anonymous users cannot update A''s row');
+select is(pg_temp.affected($$delete from public.probe_items$$), 0, 'anonymous users cannot delete A''s row');
 
 select * from finish();
 rollback;

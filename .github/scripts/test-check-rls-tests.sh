@@ -40,6 +40,17 @@ echo "select * from templates;" > "$tmp/tests/000_rls_guardrails.test.sql"
 STUB_TABLES="templates" run > /dev/null 2>&1
 check "the guardrail file doesn't count as a table's test" $((1 - $?))
 
+# A failed query must fail the check, not read as "no tables".
+cat > "$tmp/bin/psql_fail" <<'STUB'
+#!/usr/bin/env bash
+echo "psql: connection refused" >&2
+exit 2
+STUB
+mkdir "$tmp/failbin"; cp "$tmp/bin/psql_fail" "$tmp/failbin/psql"; chmod +x "$tmp/failbin/psql"
+PATH="$tmp/failbin:$PATH" DB_URL=postgresql://stub RLS_TESTS_DIR="$tmp/tests" ./check-rls-tests.sh > "$tmp/fail.out" 2>&1
+[ $? -ne 0 ] && ! grep -q 'Every table' "$tmp/fail.out"
+check "a failed database query fails the check instead of passing as no tables" $?
+
 DB_URL="" PATH="$tmp/bin:$PATH" RLS_TESTS_DIR="$tmp/tests" bash -c 'supabase() { :; }; export -f supabase; ./check-rls-tests.sh' > /dev/null 2>&1
 [ $? -eq 2 ]
 check "no database URL exits 2" $?
