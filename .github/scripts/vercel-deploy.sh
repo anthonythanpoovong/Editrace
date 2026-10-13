@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Creates a prebuilt Vercel deployment and waits for it to settle, without ever hanging on a blocked one (#48).
-# Usage: vercel-deploy.sh [--prod]
+# Usage: vercel-deploy.sh [--prod | --target=<custom environment>]
 # Needs VERCEL_TOKEN and VERCEL_ORG_ID, and `vercel build` already run. Writes url= and state= to $GITHUB_OUTPUT.
 # state is READY, ERROR, CANCELED, BLOCKED or TIMEOUT. The script only fails if the deployment can't be created;
 # the caller decides what each state means.
@@ -14,7 +14,11 @@ tries=${VERCEL_POLL_TRIES:-60}
 delay=${VERCEL_POLL_DELAY:-5}
 
 args=(deploy --prebuilt --no-wait --token "$VERCEL_TOKEN")
-[ "${1:-}" = "--prod" ] && args+=(--prod)
+case "${1:-}" in
+  --prod | --target=*) args+=("$1") ;;
+  "") ;;
+  *) echo "usage: vercel-deploy.sh [--prod | --target=<custom environment>]" >&2; exit 2 ;;
+esac
 
 # Even with --no-wait the CLI exits 1 ("Your deployment failed") the moment it creates a BLOCKED deployment, and then
 # prints nothing on stdout. So don't stop on its exit code: read the URL from its output and let the poll decide.

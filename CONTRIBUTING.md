@@ -63,6 +63,7 @@ If the grill says "Needs a spike first", use `/spike`. Bugs and spikes have issu
 - It gets any **missing labels**: a level (`subtask` if its parent is a story or subtask, otherwise `story`; being under an epic does not make it a subtask), `type:build`, and a domain/area from the issue form's Area answer. With no domain it gets `needs-triage`; set `platform`, `product` or `ml` and the workflow removes it. Labels you set yourself are never changed.
 - It is assigned to whoever opened it, unless it already has an assignee or a bot opened it. Reopening does not reassign.
 - A sprint or status that is already set is never overwritten, so moving a card is safe.
+- Pull requests: `project-intake-pr.yml` assigns the author, and adds a card (current sprint, Backlog) only when the PR closes no issue, since that issue already has a card. A `Closes #N` added after the PR opens does not remove a card that was already created.
 - To backfill open issues that are not on the board: **Actions → Project intake → Run workflow**.
 
 It needs the secret `PROJECT_TOKEN`: a token with the `project` scope, because `GITHUB_TOKEN` cannot write to a user-owned project. It is Anthony's personal token. Note its expiry date when you create it and rotate it before then (**Settings → Secrets and variables → Actions**). A run that fails with "PROJECT_TOKEN expired, revoked or missing the project scope" means it needs replacing. If the repo moves to an organisation or the token owner changes, switch to a GitHub App.
