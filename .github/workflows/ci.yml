@@ -57,7 +57,9 @@ jobs:
       - run: .github/scripts/test-discord-pr-status.sh
       - run: .github/scripts/test-discord-reminders.sh
       - run: .github/scripts/test-vercel-deploy.sh
-      - run: scripts/armour-eval/test-score.sh
+      # Armour eval PRs run CI on a base branch without scripts/armour-eval (#128).
+      - if: hashFiles('scripts/armour-eval/test-score.sh') != ''
+        run: scripts/armour-eval/test-score.sh
 
   schema:
     needs: detect
