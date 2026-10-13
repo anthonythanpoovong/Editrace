@@ -5,3 +5,7 @@ export function probe(n: number): number {
   }
   return n + 1;
 }
+
+export function probe2(n: number): number {
+  return n - 1;
+}
