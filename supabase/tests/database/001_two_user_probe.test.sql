@@ -3,7 +3,7 @@
 -- is left behind. Copy it as `<table>.test.sql`, drop the probe table and point it at the real one: the check in
 -- .github/scripts/check-rls-tests.sh requires every table in public to be named in a test file.
 begin;
-select plan(8);
+select plan(9);
 
 insert into auth.users (id, email, aud, role) values
   ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'a@probe.test', 'authenticated', 'authenticated'),
@@ -56,9 +56,13 @@ select throws_ok(
   $$insert into public.probe_items (user_id, note) values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'forged')$$,
   '42501', null, 'B cannot insert a row owned by A');
 
--- Anonymous
+-- Anonymous. `reset role` doesn't clear B's JWT claims, so clear them too: otherwise auth.uid() is still B's id and
+-- A's row stays hidden for the wrong reason, which would let a policy that lets anonymous users in pass this test.
 reset role;
+select set_config('request.jwt.claims', '', true);
+select set_config('request.jwt.claim.sub', '', true);
 set local role anon;
+select is(auth.uid(), null, 'anonymous users have no user id');
 select is((select count(*)::int from public.probe_items), 0, 'anonymous users cannot read A''s row');
 
 select * from finish();
