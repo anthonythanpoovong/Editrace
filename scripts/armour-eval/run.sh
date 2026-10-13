@@ -189,7 +189,8 @@ if [ "$unreviewed" -eq 0 ]; then
   [ -f "$results" ] || printf '%s\n' "# Armour eval results" "" \
     "One row per valid run of \`run.sh\`. Target: at least 4 of 5 caught." "" \
     "| Date (UTC) | Score | Model | \`armour.md\` | main | Missed |" "|---|---|---|---|---|---|" > "$results"
-  missed=$(printf '%s' "$rows" | grep -F '❌' | cut -d'`' -f2 | paste -sd, - | sed 's/,/, /g')
+  # grep finds nothing on a full score: || true keeps set -e and pipefail from stopping the run there.
+  missed=$(printf '%s' "$rows" | { grep -F '❌' || true; } | cut -d'`' -f2 | paste -sd, - | sed 's/,/, /g')
   echo "| $(date -u +%Y-%m-%d) | $caught/$total | \`$model\` | \`$rules\` | \`${main_sha:0:7}\` | ${missed:-none} |" >> "$results"
   log "recorded in ${results#"$(git -C "$here" rev-parse --show-toplevel)/"}"
 fi
