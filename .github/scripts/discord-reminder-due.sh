@@ -9,9 +9,8 @@
 # reminder: the workflow runs at both the summer and the winter UTC hour and only the one that
 # lands in the window sends. Windows: meeting eve = the meeting time to +8 h on the day before;
 # meeting start = the meeting time to +30 min (later than that is too late for "starts now");
-# sprint due = remind_at to +8 h on the day before the sprint ends. A sprint ends on the day the next one starts
-# (startDate + duration, e.g. start Wed Sep 30, 14 days: it ends Wed Oct 14), so the ping goes out on
-# the day before that wrap-up day. The long windows are
+# sprint due = remind_at to +8 h on the day before the sprint's last day. The last day is startDate + duration - 1 (the Sprint field on
+# the board: Sep 30 + 15 days = last day Wed Oct 14, so the ping is Tue Oct 13). The long windows are
 # because GitHub starts scheduled runs hours late and sometimes drops one; both cron entries can now
 # fall inside a window, so discord-reminders.sh sends each item's "key" at most once.
 # Weekdays are ISO: 1 = Monday ... 7 = Sunday. Dates are YYYY-MM-DD.
@@ -57,7 +56,7 @@ TZ="$tz" jq -n --argjson c "$config" --argjson now "$now" --argjson sprints "$sp
         then {kind: "meeting_start", key: ("meeting_start-" + $l.date), meeting_date: $l.date, meeting_epoch: local_epoch($l.date; $c.meeting.start)} else empty end,
         ( if $sprint_window and $sprints != null then
             $sprints[] | select(.startDate | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$"))
-            | ((.startDate + "T00:00:00Z" | fromdate) + .duration * 86400) as $end
+            | ((.startDate + "T00:00:00Z" | fromdate) + (.duration - 1) * 86400) as $end
             | select(($end | todate | .[0:10]) == $tomorrow)
             | {kind: "sprint_due", key: ("sprint_due-" + $tomorrow), sprint_title: .title, due_date: $tomorrow,
                due_label: ($end | strftime("%A, %B %d") | sub(" 0"; " "))}
