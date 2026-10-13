@@ -30,7 +30,26 @@ Vercel's own Git deploys are turned off for every branch in `web/vercel.json`, s
 - **A blocked deploy never fails a collaborator's push.** Vercel marks a deployment `BLOCKED` when the commit's author isn't on the team, and the CLI would then wait forever. `.github/scripts/vercel-deploy.sh` polls instead: the preview job comments "No preview" and ends green, and the staging job leaves staging on its last build with a warning annotation. Only the manual prod run fails on `BLOCKED`, so run it from a commit authored by a Vercel team member. Staging therefore only advances when the latest commit on `main` is by a team member, if it happens again. It stopped on Pro (Oct 12), so this is defensive.
 - Previews are deployed from Actions under the owner's token, not Vercel's Git integration, which refuses commits from anyone who isn't on the team. Collaborators who aren't Vercel team members can't open previews while SSO protection is on. Add them as Vercel members (a paid seat each) if they need to.
 - GitHub required reviewers on environments need a paid plan for private repos, so `Production` has no approval gate. The `main` branch protection (PR plus 1 approval plus `ci-ok`) is the only gate.
-- Supabase and Modal staging/prod environments aren't set up yet. Add them when the first schema and worker code land.
+- Supabase staging and prod projects exist and their keys are set in Vercel (`staging` target on `editrace-np`, Production on `editrace-prod`). The Preview target has no Supabase variables: the free Supabase plan allows two projects, and both are taken. Previews run without a database until we upgrade or point them at staging with the anon key only, never the service-role key. Modal environments, and applying migrations from `deploy.yml`, follow in #163.
+
+## Supabase locally
+
+Local development uses a Supabase stack on your own machine, not a cloud project. That's why the Preview target has no Supabase variables, and it needs no Supabase account or keys from a teammate.
+
+The `supabase/` directory (migrations and the RLS test harness) comes from #49. Until it lands there is nothing to start, and nothing in `web/` reads a Supabase variable yet. Don't run `supabase init` yourself: it would create a second config that #49 then has to untangle.
+
+Once `supabase/` is in the repo:
+
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and start it, then install the Supabase CLI: `brew install supabase/tap/supabase`.
+2. From the repo root, run `supabase start`. The first run pulls the images, which takes a few minutes.
+3. Run `supabase status`. Copy the API URL into `NEXT_PUBLIC_SUPABASE_URL`, the anon (or publishable) key into `NEXT_PUBLIC_SUPABASE_ANON_KEY` and the service-role (or secret) key into `SUPABASE_SERVICE_ROLE_KEY`, in `web/.env.local`. The names are in [`.env.example`](../.env.example).
+4. `supabase db reset` rebuilds the local database from the migrations and is what the RLS tests run against. `supabase stop` shuts the stack down.
+
+Rules:
+
+- The keys `supabase status` prints are for your local stack only. Never put a staging or prod service-role key in `.env.local`.
+- Schema changes go through the `/db-migration` skill, which writes the migration together with its RLS policies and tests.
+- A deployed PR preview can't reach the database on your laptop. If a preview needs a database, see the Preview limitation above.
 
 ## Where each secret lives
 
