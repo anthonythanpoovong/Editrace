@@ -12,7 +12,7 @@ due() { # UTC timestamp, optional SPRINTS json, optional CONFIG override
   CONFIG="${3:-$CONFIG}" NOW="$(ep "$1")" SPRINTS="${2:-null}" ./discord-reminder-due.sh
 }
 kinds() { jq -r '[.due[].kind] | join(",")' <<<"$1"; }
-SPRINTS='[{"title":"Sprint 1","startDate":"2026-10-05","duration":14},{"title":"Sprint 2","startDate":"2026-10-19","duration":14}]'
+SPRINTS='[{"title":"Sprint 1","startDate":"2026-09-30","duration":14},{"title":"Sprint 2","startDate":"2026-10-14","duration":14},{"title":"Sprint 3","startDate":"2026-10-28","duration":14}]'
 
 # --- meeting eve: Tuesday, 2:30 to 10:30 PM Eastern (8 hours, for late scheduled runs) ---
 [ "$(kinds "$(due 2026-10-13T18:30:00Z)")" = meeting_eve ]; check "eve: Tuesday 2:30 PM EDT (summer)" $?
@@ -68,25 +68,30 @@ mon=$(jq '.meeting.weekday = 5 | .meeting.start = "10:00"' <<<"$CONFIG")
 sun=$(jq '.meeting.weekday = 1' <<<"$CONFIG")
 [ "$(kinds "$(due 2026-10-18T18:30:00Z "" "$sun")")" = meeting_eve ]; check "config: Monday meeting -> eve on Sunday (week wraps)" $?
 
-# --- sprint due: 9:00 AM Eastern the day before the last day ---
-s=$(due 2026-10-17T13:00:00Z "$SPRINTS")
-[ "$(kinds "$s")" = sprint_due ] && [ "$(jq -r '.due[0].sprint_title' <<<"$s")" = "Sprint 1" ] && [ "$(jq -r '.due[0].due_label' <<<"$s")" = "Sunday, October 18" ]
-check "sprint: Saturday 9:00 AM EDT before the Sunday Oct 18 end" $?
-[ "$(kinds "$(due 2026-10-16T13:00:00Z "$SPRINTS")")" = "" ]; check "sprint: nothing on Friday" $?
-[ "$(kinds "$(due 2026-10-18T13:00:00Z "$SPRINTS")")" = "" ]; check "sprint: nothing on the last day itself" $?
-[ "$(kinds "$(due 2026-10-17T14:00:00Z "$SPRINTS")")" = sprint_due ]; check "sprint: 10:00 AM (a late run) is still in the window" $?
-[ "$(kinds "$(due 2026-10-17T20:59:00Z "$SPRINTS")")" = sprint_due ]; check "sprint: just before 5:00 PM is still in the window" $?
-[ "$(kinds "$(due 2026-10-17T21:01:00Z "$SPRINTS")")" = "" ]; check "sprint: after 5:00 PM is out of the window" $?
-[ "$(jq -r '.due[0].key' <<<"$(due 2026-10-17T13:00:00Z "$SPRINTS")")" = sprint_due-2026-10-18 ]; check "sprint: the key names the due date" $?
-[ "$(kinds "$(due 2026-10-17T12:00:00Z "$SPRINTS")")" = "" ]; check "sprint: 8:00 AM is out of the window" $?
-[ "$(kinds "$(due 2026-10-31T13:00:00Z "$SPRINTS")")" = sprint_due ] && [ "$(jq -r '.due[0].sprint_title' <<<"$(due 2026-10-31T13:00:00Z "$SPRINTS")")" = "Sprint 2" ]
-check "sprint: the next sprint ends Sunday Nov 1 (daylight saving ends that night)" $?
-[ "$(kinds "$(due 2026-11-14T14:00:00Z "$(jq -c '. + [{"title":"Sprint 3","startDate":"2026-11-02","duration":14}]' <<<"$SPRINTS")")")" = sprint_due ]
-check "sprint: winter 9:00 AM EST is 14:00 UTC" $?
-[ "$(kinds "$(due 2026-10-17T13:00:00Z '[]')")" = "" ]; check "sprint: no sprints means nothing is sent" $?
-[ "$(jq -r .sprint_window <<<"$(due 2026-10-17T13:00:00Z)")" = true ] && [ "$(jq -r .sprint_window <<<"$(due 2026-10-17T22:00:00Z)")" = false ]
+# --- sprint due: 9:00 AM Eastern the day before the sprint ends (the day the next one starts) ---
+s=$(due 2026-10-13T13:00:00Z "$SPRINTS")
+[ "$(kinds "$s")" = sprint_due ] && [ "$(jq -r '.due[0].sprint_title' <<<"$s")" = "Sprint 1" ] && [ "$(jq -r '.due[0].due_label' <<<"$s")" = "Wednesday, October 14" ]
+check "sprint: Tuesday 9:00 AM EDT before Sprint 1 ends on Wednesday Oct 14" $?
+[ "$(kinds "$(due 2026-10-12T13:00:00Z "$SPRINTS")")" = "" ]; check "sprint: nothing on Monday" $?
+[ "$(kinds "$(due 2026-10-14T13:00:00Z "$SPRINTS")")" = "" ]; check "sprint: nothing on the day it ends" $?
+[ "$(kinds "$(due 2026-10-13T14:00:00Z "$SPRINTS")")" = sprint_due ]; check "sprint: 10:00 AM (a late run) is still in the window" $?
+[[ "$(kinds "$(due 2026-10-13T20:59:00Z "$SPRINTS")")" == *sprint_due* ]]; check "sprint: just before 5:00 PM is still in the window" $?
+[[ "$(kinds "$(due 2026-10-13T21:01:00Z "$SPRINTS")")" != *sprint_due* ]]; check "sprint: after 5:00 PM is out of the window" $?
+[ "$(jq -r '.due[0].key' <<<"$(due 2026-10-13T13:00:00Z "$SPRINTS")")" = sprint_due-2026-10-14 ]; check "sprint: the key names the day it ends" $?
+[ "$(kinds "$(due 2026-10-13T12:00:00Z "$SPRINTS")")" = "" ]; check "sprint: 8:00 AM is out of the window" $?
+s=$(due 2026-10-27T13:00:00Z "$SPRINTS")
+[ "$(kinds "$s")" = sprint_due ] && [ "$(jq -r '.due[0].sprint_title' <<<"$s")" = "Sprint 2" ] && [ "$(jq -r '.due[0].due_label' <<<"$s")" = "Wednesday, October 28" ]
+check "sprint: every two weeks, Sprint 2 ends Wednesday Oct 28" $?
+[ "$(kinds "$(due 2026-11-10T14:00:00Z "$SPRINTS")")" = sprint_due ] && [ "$(kinds "$(due 2026-11-10T13:00:00Z "$SPRINTS")")" = "" ]
+check "sprint: winter 9:00 AM EST is 14:00 UTC (Sprint 3 ends Nov 11)" $?
+dst='[{"title":"Sprint X","startDate":"2026-10-19","duration":14}]'
+s=$(due 2026-11-01T14:00:00Z "$dst")
+[ "$(kinds "$s")" = sprint_due ] && [ "$(jq -r '.due[0].due_label' <<<"$s")" = "Monday, November 2" ]
+check "sprint: the ping the morning daylight saving ends (Nov 1) still lands at 9:00 AM EST" $?
+[ "$(kinds "$(due 2026-10-13T13:00:00Z '[]')")" = "" ]; check "sprint: no sprints means nothing is sent" $?
+[ "$(jq -r .sprint_window <<<"$(due 2026-10-13T13:00:00Z)")" = true ] && [ "$(jq -r .sprint_window <<<"$(due 2026-10-13T22:00:00Z)")" = false ]
 check "sprint_window tells the caller when to read the board" $?
-[ "$(kinds "$(due 2026-10-17T13:00:00Z "$(jq -c '.[0].startDate = "not a date"' <<<"$SPRINTS")")")" = "" ]; check "sprint: a malformed start date is ignored, not fatal" $?
+[ "$(kinds "$(due 2026-10-13T13:00:00Z "$(jq -c '.[0].startDate = "not a date"' <<<"$SPRINTS")")")" = "" ]; check "sprint: a malformed start date is ignored, not fatal" $?
 
 # --- bad input ---
 bad=$(jq '.meeting.start = "25:99"' <<<"$CONFIG"); due 2026-10-13T18:30:00Z "" "$bad" > /dev/null 2>&1; [ $? -ne 0 ]; check "a bad time in the config is rejected" $?
@@ -203,9 +208,9 @@ run DRY_RUN=false; grep -q "No reminder" "$tmp/out" || grep -q "Sent" "$tmp/out"
 check "orchestrator: a real run at the current time works (nothing due or one sent)" $?
 run DRY_RUN=true NOW=2026-10-13T22:00:00Z; grep -q 'is tomorrow' "$tmp/out" && ! [ -s "$FAKE_GH_CALLS" ]
 check "orchestrator: a meeting reminder does not read the board" $?
-run DRY_RUN=true NOW=2026-10-17T13:00:00Z; [ "$?" -eq 0 ] && grep -q 'Sprint due tomorrow' "$tmp/out" && [ "$(wc -l < "$FAKE_GH_CALLS")" -eq 1 ]
+run DRY_RUN=true NOW=2026-10-18T13:00:00Z; [ "$?" -eq 0 ] && grep -q 'Sprint due tomorrow' "$tmp/out" && [ "$(wc -l < "$FAKE_GH_CALLS")" -eq 1 ]
 check "orchestrator: the sprint reminder reads the board once" $?
-run DRY_RUN=true NOW=2026-10-17T13:00:00Z FAKE_GH_FAIL=1; [ "$?" -ne 0 ] && grep -q "PROJECT_TOKEN" "$tmp/out"
+run DRY_RUN=true NOW=2026-10-18T13:00:00Z FAKE_GH_FAIL=1; [ "$?" -ne 0 ] && grep -q "PROJECT_TOKEN" "$tmp/out"
 check "orchestrator: an unreadable board fails loudly and names PROJECT_TOKEN" $?
 run DRY_RUN=false NOW=2026-10-14T18:30:00Z; [ "$?" -ne 0 ] && grep -q "DRY_RUN=true" "$tmp/out"
 check "orchestrator: a simulated time can never post" $?

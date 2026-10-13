@@ -3,7 +3,7 @@ name: Discord reminders
 # Scheduled Discord pings for the team's rhythm (#184), all to the review role:
 #   - the day before the weekly sync (Tuesday ~2:30 PM Eastern): time, Meet link and agenda
 #   - when the sync starts (Wednesday 2:30 PM Eastern): "Editrace weekly sync starts now" + Meet link
-#   - the day before a sprint's last day (9:00 AM Eastern): "Sprint due tomorrow"
+#   - the day before a sprint ends (9:00 AM Eastern); a sprint ends the day the next starts: "Sprint due tomorrow"
 # The schedule lives in .github/reminders.json (timezone, meeting day/time/link/agenda, skip dates).
 # The cron lines below must match it: GitHub cron is fixed UTC, so if you change the meeting day, its
 # time or sprint.remind_at, update the cron lines too. test-discord-reminders.sh fails CI if they disagree.
