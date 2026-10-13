@@ -94,12 +94,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+      - uses: astral-sh/setup-uv@v6
+      - run: npm ci
+        working-directory: web
       - run: make codegen
+      # Also fails on a generated file that was never committed, which `git diff` alone misses.
       - name: Generated code is up to date
-        run: git diff --exit-code || { echo "::error::Generated code is stale. Run 'make codegen' and commit."; exit 1; }
+        run: test -z "$(git status --porcelain)" || { git status --short; git diff --stat; echo "::error::Generated code is stale. Run 'make codegen' and commit."; exit 1; }
 
   web:
     needs: detect
