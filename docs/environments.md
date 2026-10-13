@@ -36,19 +36,27 @@ Vercel's own Git deploys are turned off for every branch in `web/vercel.json`, s
 
 Local development uses a Supabase stack on your own machine, not a cloud project. That's why the Preview target has no Supabase variables, and it needs no Supabase account or keys from a teammate.
 
-The `supabase/` directory (migrations and the RLS test harness) comes from #49. Until it lands there is nothing to start, and nothing in `web/` reads a Supabase variable yet. Don't run `supabase init` yourself: it would create a second config that #49 then has to untangle.
-
-Once `supabase/` is in the repo:
+The `supabase/` directory holds the config (`config.toml`), migrations (`supabase/migrations/`), seed data (`seed.sql`) and the RLS tests (`supabase/tests/database/`) (#49). Nothing in `web/` reads a Supabase variable yet.
 
 1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and start it, then install the Supabase CLI: `brew install supabase/tap/supabase`.
 2. From the repo root, run `supabase start`. The first run pulls the images, which takes a few minutes.
 3. Run `supabase status`. Copy the API URL into `NEXT_PUBLIC_SUPABASE_URL`, the anon (or publishable) key into `NEXT_PUBLIC_SUPABASE_ANON_KEY` and the service-role (or secret) key into `SUPABASE_SERVICE_ROLE_KEY`, in `web/.env.local`. The names are in [`.env.example`](../.env.example).
-4. `supabase db reset` rebuilds the local database from the migrations and is what the RLS tests run against. `supabase stop` shuts the stack down.
+4. `supabase db reset` rebuilds the local database from the migrations and loads `seed.sql`, which creates two sign-in users, `alice@example.test` and `bob@example.test` (password `password123`), so you can check one can't see the other's rows. `supabase stop` shuts the stack down.
+
+### RLS tests
+
+`supabase test db` runs the pgTAP tests in `supabase/tests/database/`:
+
+- `000_rls_guardrails.test.sql` fails if any table in `public` has RLS off, or has no policy and isn't commented `service-role only: <why>` (`comment on table <t> is '...'`).
+- `001_two_user_probe.test.sql` is the pattern for a real table: user A can read, update and write their own row, user B and anonymous users can't, and B can't insert a row owned by A. Its throwaway table is rolled back, so nothing is left in the database. To test a new table, copy it to `<table>.test.sql` and point it at the real table.
+- `.github/scripts/check-rls-tests.sh` fails if a table in `public` isn't named in any test file other than the guardrails.
+
+CI's `supabase` job runs `supabase db reset`, `supabase test db` and the check on every PR, so a table can't merge without RLS and a two-user test. It doesn't start the API services, only the database.
 
 Rules:
 
 - The keys `supabase status` prints are for your local stack only. Never put a staging or prod service-role key in `.env.local`.
-- Schema changes go through the `/db-migration` skill, which writes the migration together with its RLS policies and tests.
+- Schema changes go through the `/db-migration` skill, which writes the migration together with its RLS policies and its two-user test.
 - A deployed PR preview can't reach the database on your laptop. If a preview needs a database, see the Preview limitation above.
 
 ## Where each secret lives

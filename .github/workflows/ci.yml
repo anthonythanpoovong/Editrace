@@ -20,6 +20,7 @@ jobs:
       web: ${{ steps.d.outputs.web }}
       python: ${{ steps.d.outputs.python }}
       codegen: ${{ steps.d.outputs.codegen }}
+      supabase: ${{ steps.d.outputs.supabase }}
     steps:
       - uses: actions/checkout@v6
       # Jobs switch on as each part of the monorepo gains real code.
@@ -30,6 +31,7 @@ jobs:
           flag web web/package.json
           flag python pyproject.toml
           flag codegen Makefile
+          flag supabase supabase/config.toml
 
   secrets-scan:
     runs-on: ubuntu-latest
@@ -57,6 +59,7 @@ jobs:
       - run: .github/scripts/test-discord-pr-status.sh
       - run: .github/scripts/test-discord-reminders.sh
       - run: .github/scripts/test-vercel-deploy.sh
+      - run: .github/scripts/test-check-rls-tests.sh
 
   schema:
     needs: detect
@@ -152,9 +155,26 @@ jobs:
       - run: ./actionlint -color
 
   # Single required check for branch protection: fails if any job failed, ignores skipped ones.
+  # Applies every migration to a fresh local database, loads the seed, and runs the RLS tests (#49). Only Postgres is
+  # started: RLS lives in the database, and the API services would just add image pulls.
+  supabase:
+    needs: detect
+    if: needs.detect.outputs.supabase == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.120.0
+      - run: supabase start -x gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+      - run: supabase db reset
+      - run: supabase test db
+      - run: .github/scripts/check-rls-tests.sh
+
   ci-ok:
     if: always()
-    needs: [detect, secrets-scan, scripts, actionlint, schema, codegen, web, python]
+    needs: [detect, secrets-scan, scripts, actionlint, schema, codegen, web, python, supabase]
     runs-on: ubuntu-latest
     steps:
       - run: |
