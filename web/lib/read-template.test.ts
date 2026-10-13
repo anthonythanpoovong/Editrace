@@ -3,11 +3,20 @@ import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, test } from "vitest";
 import { templateSchema } from "./generated/template.zod";
-import { readTemplate } from "./read-template";
+import { SCHEMA_VERSION } from "./generated/schema-version";
+import { migrateToSupportedVersion, readTemplate, UnsupportedVersionError } from "./read-template";
 
 const schemaDir = resolve(import.meta.dirname, "../../schema");
 const json = (...parts: string[]) => JSON.parse(readFileSync(resolve(schemaDir, ...parts), "utf8"));
 const vector = json("test-vectors", "forward-compat.json").document;
+const versionCases: {
+  name: string;
+  reader: string;
+  migrations: number[];
+  document: string;
+  expected: "accept" | "reject" | "accept_via_migration";
+  error_mentions?: string[];
+}[] = json("test-vectors", "versions.json").cases;
 const files = (dir: string) => readdirSync(resolve(schemaDir, dir)).filter((name) => name.endsWith(".json")).sort();
 
 describe("readTemplate", () => {
@@ -57,6 +66,56 @@ describe("readTemplate", () => {
       } else {
         expect(() => readTemplate(document), name).toThrow();
       }
+    }
+  });
+});
+
+// ---- versions (ADR 0002): the same cases schema/check-vectors.sh and the Python tests run -------------------------
+
+describe("version rules", () => {
+  test.each(versionCases)("$name", (c) => {
+    const document = { schema_version: c.document };
+    const migrations = Object.fromEntries(c.migrations.map((major) => [major, (doc: object) => ({ ...doc, migrated: true })]));
+    if (c.expected === "reject") {
+      const run = () => migrateToSupportedVersion(c.reader, document, migrations);
+      expect(run).toThrow(UnsupportedVersionError);
+      for (const version of c.error_mentions ?? []) expect(run).toThrow(version);
+    } else if (c.expected === "accept_via_migration") {
+      expect(migrateToSupportedVersion(c.reader, document, migrations).migrated).toBe(true);
+    } else {
+      expect(migrateToSupportedVersion(c.reader, document, migrations)).toEqual(document);
+    }
+  });
+
+  test("a higher major is rejected before anything else is read", () => {
+    // Its structure may not match these types, so no other error should hide the real reason.
+    const major = Number(SCHEMA_VERSION.split(".")[0]) + 1;
+    const document = { schema_version: `${major}.0.0`, tracks: "not even a list" };
+    expect(() => readTemplate(document)).toThrow(new RegExp(`${major}\\.0\\.0.*${SCHEMA_VERSION}`));
+    expect(() => readTemplate(document)).toThrow(UnsupportedVersionError);
+  });
+
+  test("a missing or malformed version is left to validation", () => {
+    for (const document of [{ source: {} }, { schema_version: "banana" }, { schema_version: 3 }]) {
+      expect(() => readTemplate(document)).toThrow();
+      expect(() => readTemplate(document)).not.toThrow(UnsupportedVersionError);
+    }
+  });
+
+  test("the vector is read by the version this code supports", () => {
+    const reader = json("test-vectors", "forward-compat.json").reader as string;
+    expect(reader.split(".")[0]).toBe(SCHEMA_VERSION.split(".")[0]);
+  });
+
+  test("schema/VERSION matches the generated constant and the examples", () => {
+    expect(readFileSync(resolve(schemaDir, "VERSION"), "utf8").trim()).toBe(SCHEMA_VERSION);
+    const current = SCHEMA_VERSION.split(".").map(Number);
+    for (const name of files("examples")) {
+      const written = (json("examples", name).schema_version as string).split(".").map(Number);
+      const notNewer =
+        written[0] < current[0] || (written[0] === current[0] && (written[1] < current[1] || (written[1] === current[1] && written[2] <= current[2])));
+      expect(written[0], name).toBe(current[0]);
+      expect(notNewer, name).toBe(true);
     }
   });
 });

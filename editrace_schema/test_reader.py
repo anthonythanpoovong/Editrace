@@ -7,7 +7,14 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from editrace_schema import Skipped, Template, read_template
+from editrace_schema import (
+    Skipped,
+    Template,
+    UnsupportedVersionError,
+    migrate_to_supported_version,
+    read_template,
+)
+from editrace_schema.version import SCHEMA_VERSION
 
 SCHEMA_DIR = Path(__file__).resolve().parent.parent / "schema"
 VECTOR = json.loads((SCHEMA_DIR / "test-vectors" / "forward-compat.json").read_text())[
@@ -15,6 +22,9 @@ VECTOR = json.loads((SCHEMA_DIR / "test-vectors" / "forward-compat.json").read_t
 ]
 EXAMPLES = sorted((SCHEMA_DIR / "examples").glob("*.json"))
 INVALID = sorted((SCHEMA_DIR / "examples" / "invalid").glob("*.json"))
+VERSION_CASES = json.loads((SCHEMA_DIR / "test-vectors" / "versions.json").read_text())[
+    "cases"
+]
 
 
 def dump(result) -> dict:
@@ -79,3 +89,84 @@ def test_invalid_fixture_is_not_skipped_as_unknown_enum(path: Path) -> None:
     else:
         with pytest.raises(ValidationError):
             read_template(document)
+
+
+# ---- versions (ADR 0002): the same cases schema/check-vectors.sh runs -----------------------------------------------
+
+
+@pytest.mark.parametrize("case", VERSION_CASES, ids=lambda c: c["name"])
+def test_version_rules_match_the_shared_vector(case: dict) -> None:
+    document = {"schema_version": case["document"]}
+    migrations = {
+        major: lambda doc: {**doc, "migrated": True} for major in case["migrations"]
+    }
+    if case["expected"] == "reject":
+        with pytest.raises(UnsupportedVersionError) as error:
+            migrate_to_supported_version(case["reader"], document, migrations)
+        assert all(version in str(error.value) for version in case["error_mentions"])
+    elif case["expected"] == "accept_via_migration":
+        assert (
+            migrate_to_supported_version(case["reader"], document, migrations).get(
+                "migrated"
+            )
+            is True
+        )
+    else:
+        assert (
+            migrate_to_supported_version(case["reader"], document, migrations)
+            == document
+        )
+
+
+def test_a_higher_major_is_rejected_before_anything_else_is_read() -> None:
+    # Its structure may not match these models, so no other error should hide the real reason.
+    major = int(SCHEMA_VERSION.split(".")[0]) + 1
+    document = {"schema_version": f"{major}.0.0", "tracks": "not even a list"}
+    with pytest.raises(
+        UnsupportedVersionError, match=rf"{major}\.0\.0.*{SCHEMA_VERSION}"
+    ):
+        read_template(document)
+
+
+def test_a_higher_minor_loads() -> None:
+    assert read_template(VECTOR).template.schema_version == VECTOR["schema_version"]
+
+
+def test_a_missing_or_malformed_version_is_left_to_validation() -> None:
+    for document in (
+        {"source": {}},
+        {"schema_version": "banana"},
+        {"schema_version": 3},
+    ):
+        with pytest.raises(ValidationError):
+            read_template(document)
+
+
+def test_a_migration_upgrades_an_older_major() -> None:
+    document = json.loads(EXAMPLES[0].read_text())
+    older = {**document, "schema_version": "0.1.0"}
+    # Pretend this reader is 1.x: a migration for major 0 produces a document it can read.
+    migrated = migrate_to_supported_version(
+        "1.0.0", older, {0: lambda doc: {**doc, "schema_version": "1.0.0"}}
+    )
+    assert migrated["schema_version"] == "1.0.0"
+
+
+def test_the_vector_is_read_by_the_version_this_code_supports() -> None:
+    reader = json.loads(
+        (SCHEMA_DIR / "test-vectors" / "forward-compat.json").read_text()
+    )["reader"]
+    assert reader.split(".")[0] == SCHEMA_VERSION.split(".")[0]
+
+
+def test_schema_version_file_matches_the_generated_constant_and_the_examples() -> None:
+    assert (SCHEMA_DIR / "VERSION").read_text().strip() == SCHEMA_VERSION
+    for path in EXAMPLES:
+        # Examples are written against the current schema: same major, and never newer than the schema.
+        written = tuple(
+            int(x) for x in json.loads(path.read_text())["schema_version"].split(".")
+        )
+        current = tuple(int(x) for x in SCHEMA_VERSION.split("."))
+        assert written[0] == current[0] and written <= current, (
+            f"{path.name} is {written}, schema is {current}"
+        )

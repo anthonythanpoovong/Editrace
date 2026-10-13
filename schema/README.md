@@ -5,6 +5,7 @@ Template JSON Schema — the single source of truth for the video template forma
 ## Files
 
 - `template.schema.json` — JSON Schema (2020-12) defining the template structure
+- `VERSION` — the version the schema is at (semver). Bump it with every schema change; `make codegen` passes it to the readers
 - `examples/` — Hand-authored templates that must validate
 - `examples/invalid/` — Single-defect fixtures that must be rejected; `EXPECTED` lists the error each one must produce
 - `test-vectors/` — Shared fixtures every adapter and reader must reproduce: rescaling, timecode, versions, forward compatibility
@@ -33,7 +34,7 @@ Template JSON Schema — the single source of truth for the video template forma
 
 Never edit those files. Change the schema (`/schema-change`) and regenerate. Objects stay open, so a template from a newer minor version keeps its unknown fields on a read and rewrite; `sound_ref` is closed.
 
-**Writers are strict, readers are not.** `Template` and `templateSchema` reject an unknown enum value, so a worker can't save one. A reader must not fail a whole template on a value from a newer minor version (`docs/schema.md`), so use `read_template` (Python) or `readTemplate` (TypeScript) to load a template you didn't write. They return the template plus the elements to skip, e.g. `Skipped(path=("tracks", 0, "transitions", 1), field="type", value="hologram")`. The reader models are the same schema with only the `enum` keyword removed (`scripts/reader_schema.py`), so patterns, ranges and required fields still apply, and any other error still raises.
+**Writers are strict, readers are not.** `Template` and `templateSchema` reject an unknown enum value, so a worker can't save one. A reader must not fail a whole template on a value from a newer minor version (`docs/schema.md`), so use `read_template` (Python) or `readTemplate` (TypeScript) to load a template you didn't write. They return the template plus the elements to skip, e.g. `Skipped(path=("tracks", 0, "transitions", 1), field="type", value="hologram")`. They also apply the version rules from `docs/schema.md`: a higher major version raises `UnsupportedVersionError` naming both versions, and so does a lower one unless you pass `migrations`. The reader models are the same schema with only the `enum` keyword removed (`scripts/reader_schema.py`), so patterns, ranges and required fields still apply, and any other error still raises.
 
 The generated types are weaker than the JSON Schema in a few places: neither Pydantic nor Zod enforces the `if/then` rules (a video track needs `slots`, a variable-frame-rate source needs `conform`), and Pydantic drops the `^https://` pattern on `sound_ref.link`. Writers should still validate with the JSON Schema (`schema/check-invalid.sh` shows how). The round-trip tests (`editrace_schema/test_models.py`, `web/lib/generated/template.test.ts`) list these gaps explicitly and fail if one closes without the list being updated.
 
