@@ -1,0 +1,144 @@
+{
+  "schema_version": "0.1.0",
+  "source": {
+    "duration": 450,
+    "fps": {
+      "num": 30,
+      "den": 1
+    },
+    "resolution": {
+      "width": 1080,
+      "height": 1920
+    },
+    "aspect_ratio": {
+      "num": 9,
+      "den": 16
+    },
+    "content_hash": "md5:abc"
+  },
+  "tracks": [
+    {
+      "id": "video-1",
+      "kind": "video",
+      "name": "Main footage",
+      "slots": [
+        {
+          "id": "slot-1",
+          "range": {
+            "start": 0,
+            "duration": 120
+          },
+          "confidence": 0.97,
+          "provenance": {
+            "detector": "cuts",
+            "version": "0.3.0"
+          }
+        },
+        {
+          "id": "slot-2",
+          "range": {
+            "start": 120,
+            "duration": 150
+          },
+          "confidence": 0.95,
+          "provenance": {
+            "detector": "cuts",
+            "version": "0.3.0"
+          }
+        },
+        {
+          "id": "slot-3",
+          "range": {
+            "start": 270,
+            "duration": 180
+          },
+          "confidence": 0.96,
+          "provenance": {
+            "detector": "cuts",
+            "version": "0.3.0"
+          }
+        }
+      ],
+      "cuts": [
+        {
+          "id": "cut-1",
+          "frame": 120,
+          "confidence": 0.98,
+          "provenance": {
+            "detector": "cuts",
+            "version": "0.3.0"
+          }
+        },
+        {
+          "id": "cut-2",
+          "frame": 270,
+          "confidence": 0.99,
+          "provenance": {
+            "detector": "cuts",
+            "version": "0.3.0"
+          }
+        }
+      ]
+    },
+    {
+      "id": "captions-1",
+      "kind": "captions",
+      "captions": [
+        {
+          "id": "caption-1",
+          "range": {
+            "start": 12,
+            "duration": 96
+          },
+          "language": "en",
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "Three",
+                  "range": {
+                    "start": 12,
+                    "duration": 14
+                  }
+                },
+                {
+                  "text": "tips",
+                  "range": {
+                    "start": 26,
+                    "duration": 12
+                  }
+                },
+                {
+                  "text": "for",
+                  "range": {
+                    "start": 38,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "better",
+                  "range": {
+                    "start": 46,
+                    "duration": 16
+                  }
+                },
+                {
+                  "text": "edits",
+                  "range": {
+                    "start": 62,
+                    "duration": 22
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 0.88,
+          "provenance": {
+            "detector": "captions-asr",
+            "version": "0.2.1"
+          }
+        }
+      ]
+    }
+  ]
+}

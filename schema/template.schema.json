@@ -1,0 +1,316 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Editrace template",
+  "description": "A reverse-engineered video edit: cuts, pacing, motion, transitions, text, captions, beats and color, with slots in place of media. All times are integer frames on the single timebase source.fps (ADR 0002). The template never contains source media or audio.",
+  "type": "object",
+  "required": ["schema_version", "source", "tracks"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$",
+      "description": "Semver of the template schema this document was written against. Minor versions are additive only; consumers reject a major version they do not know (ADR 0002)."
+    },
+    "source": { "$ref": "#/$defs/Source" },
+    "tracks": {
+      "type": "array",
+      "description": "Ordered tracks. Each track holds one kind of element; track order is bottom to top.",
+      "items": { "$ref": "#/$defs/Track" }
+    },
+    "beats": { "$ref": "#/$defs/Beats" },
+    "sound_ref": { "$ref": "#/$defs/SoundRef" }
+  },
+  "$defs": {
+    "Id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$",
+      "maxLength": 64,
+      "description": "Stable identifier, unique within the document. Lowercase letters, digits, hyphen and underscore."
+    },
+    "Frames": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "A count of frames on the template timebase (source.fps). Never seconds."
+    },
+    "Rational": {
+      "type": "object",
+      "description": "An exact ratio num/den, used for fps, speed and aspect ratio so no float drift enters the file. 29.97 fps is 30000/1001.",
+      "required": ["num", "den"],
+      "properties": {
+        "num": { "type": "integer", "minimum": 1, "description": "Numerator." },
+        "den": { "type": "integer", "minimum": 1, "description": "Denominator." }
+      }
+    },
+    "FrameRange": {
+      "type": "object",
+      "description": "A span of frames: start is the first frame, duration the number of frames it covers.",
+      "required": ["start", "duration"],
+      "properties": {
+        "start": { "$ref": "#/$defs/Frames", "description": "First frame of the span." },
+        "duration": { "type": "integer", "minimum": 1, "description": "Length of the span in frames (at least 1)." }
+      }
+    },
+    "Confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "How sure the detector is, 0 to 1. Hand-authored elements use 1."
+    },
+    "Provenance": {
+      "type": "object",
+      "description": "Which detector produced an element, so results can be traced and re-run. Hand-authored elements use the detector name \"manual\".",
+      "required": ["detector", "version"],
+      "properties": {
+        "detector": { "type": "string", "minLength": 1, "maxLength": 64, "description": "Detector name, e.g. \"cuts\" or \"ocr\"." },
+        "version": { "type": "string", "minLength": 1, "maxLength": 64, "description": "Detector version that produced the element." }
+      }
+    },
+    "Detection": {
+      "type": "object",
+      "description": "Mixed into every detected element: how confident we are and where it came from.",
+      "required": ["confidence", "provenance"],
+      "properties": {
+        "confidence": { "$ref": "#/$defs/Confidence" },
+        "provenance": { "$ref": "#/$defs/Provenance" }
+      }
+    },
+    "NormalizedBBox": {
+      "type": "object",
+      "description": "A box in normalized frame coordinates: x and y are the top-left corner, w and h the size, all as fractions (0 to 1) of frame width and height. x + w and y + h must not exceed 1; this is checked by consumers, not by the schema.",
+      "required": ["x", "y", "w", "h"],
+      "properties": {
+        "x": { "type": "number", "minimum": 0, "maximum": 1, "description": "Left edge." },
+        "y": { "type": "number", "minimum": 0, "maximum": 1, "description": "Top edge." },
+        "w": { "type": "number", "exclusiveMinimum": 0, "maximum": 1, "description": "Width." },
+        "h": { "type": "number", "exclusiveMinimum": 0, "maximum": 1, "description": "Height." }
+      }
+    },
+    "Source": {
+      "type": "object",
+      "description": "The reference video this template was derived from, described but never embedded.",
+      "required": ["duration", "fps", "resolution", "aspect_ratio", "content_hash"],
+      "properties": {
+        "duration": { "type": "integer", "minimum": 1, "description": "Length of the reference video in frames at fps." },
+        "fps": { "$ref": "#/$defs/Rational", "description": "The template timebase: every frame count in the document is on this rate. Constant, because variable-frame-rate references are conformed at ingest." },
+        "vfr": { "type": "boolean", "description": "True if the reference had a variable frame rate and was conformed to fps at ingest. The conform is lossy (ADR 0002). Defaults to false." },
+        "original_fps": { "$ref": "#/$defs/Rational", "description": "Nominal frame rate of the reference before conforming. Provenance only; set when vfr is true." },
+        "conform": { "$ref": "#/$defs/Provenance", "description": "Which tool conformed a variable-frame-rate reference to a constant rate, and its version. Required when vfr is true. Conformance is recorded once here; it does not change any element's confidence." },
+        "resolution": {
+          "type": "object",
+          "description": "Pixel size of the reference video.",
+          "required": ["width", "height"],
+          "properties": {
+            "width": { "type": "integer", "minimum": 1, "description": "Width in pixels." },
+            "height": { "type": "integer", "minimum": 1, "description": "Height in pixels." }
+          }
+        },
+        "aspect_ratio": { "$ref": "#/$defs/Rational", "description": "Display aspect ratio, e.g. 9/16 for vertical video." },
+        "content_hash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "Hash of the reference file, used to cache and de-duplicate analysis."
+        }
+      },
+      "allOf": [
+        { "if": { "properties": { "vfr": { "const": true } }, "required": ["vfr"] }, "then": { "required": ["conform"] } }
+      ]
+    },
+    "Track": {
+      "type": "object",
+      "description": "A layer of one kind of element. Unknown kinds are accepted so newer minor versions stay readable; consumers skip them.",
+      "required": ["id", "kind"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "kind": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Known values: \"video\" (slots, cuts, transitions), \"text\" (text_overlays) and \"captions\" (captions)."
+        },
+        "name": { "type": "string", "maxLength": 128, "description": "Optional human-readable label." },
+        "slots": { "type": "array", "description": "Video tracks only: placeholders for the user's own footage.", "items": { "$ref": "#/$defs/Slot" } },
+        "cuts": { "type": "array", "description": "Video tracks only: hard cuts between slots.", "items": { "$ref": "#/$defs/Cut" } },
+        "transitions": { "type": "array", "description": "Video tracks only: transitions between slots.", "items": { "$ref": "#/$defs/Transition" } },
+        "text_overlays": { "type": "array", "description": "Text tracks only: on-screen text.", "items": { "$ref": "#/$defs/TextOverlay" } },
+        "captions": { "type": "array", "description": "Caption tracks only: spoken-word captions.", "items": { "$ref": "#/$defs/Caption" } }
+      },
+      "allOf": [
+        { "if": { "properties": { "kind": { "const": "video" } }, "required": ["kind"] }, "then": { "required": ["slots"] } },
+        { "if": { "properties": { "kind": { "const": "text" } }, "required": ["kind"] }, "then": { "required": ["text_overlays"] } },
+        { "if": { "properties": { "kind": { "const": "captions" } }, "required": ["kind"] }, "then": { "required": ["captions"] } }
+      ]
+    },
+    "Slot": {
+      "type": "object",
+      "description": "A placeholder for one shot of the user's own footage. Holds timing and treatment only, never media.",
+      "required": ["id", "range", "confidence", "provenance"],
+      "allOf": [{ "$ref": "#/$defs/Detection" }],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "range": { "$ref": "#/$defs/FrameRange", "description": "Where the slot sits on the output timeline." },
+        "source_range": { "$ref": "#/$defs/FrameRange", "description": "Where this shot sits in the reference video, if different from range (e.g. the reference was trimmed or reordered)." },
+        "speed": { "$ref": "#/$defs/Rational", "description": "Playback speed as an exact ratio; 1/1 is normal, 2/1 is double speed. Defaults to 1/1." },
+        "zoom_pan": {
+          "type": "array",
+          "description": "Zoom and pan keyframes in time order. Frames are offsets from the start of the slot.",
+          "items": { "$ref": "#/$defs/ZoomPanKeyframe" }
+        },
+        "color": { "$ref": "#/$defs/Color" }
+      }
+    },
+    "ZoomPanKeyframe": {
+      "type": "object",
+      "description": "The framing at one moment inside a slot; values between keyframes follow the easing of the earlier one.",
+      "required": ["frame", "scale", "center"],
+      "properties": {
+        "frame": { "$ref": "#/$defs/Frames", "description": "Offset in frames from the start of the slot." },
+        "scale": { "type": "number", "exclusiveMinimum": 0, "description": "Zoom factor; 1 is the full frame, 2 is a 2x punch-in." },
+        "center": {
+          "type": "object",
+          "description": "Point of the frame that sits at the center of the view, in normalized coordinates.",
+          "required": ["x", "y"],
+          "properties": {
+            "x": { "type": "number", "minimum": 0, "maximum": 1, "description": "Horizontal position, 0 left to 1 right." },
+            "y": { "type": "number", "minimum": 0, "maximum": 1, "description": "Vertical position, 0 top to 1 bottom." }
+          }
+        },
+        "easing": { "type": "string", "enum": ["linear", "ease_in", "ease_out", "ease_in_out", "hold"], "description": "How to move to the next keyframe. Defaults to linear." }
+      }
+    },
+    "Color": {
+      "type": "object",
+      "description": "Per-shot color treatment as relative adjustments. All fields are optional; omitted means unchanged.",
+      "properties": {
+        "brightness": { "type": "number", "minimum": -1, "maximum": 1, "description": "Brightness shift, -1 darker to 1 brighter." },
+        "contrast": { "type": "number", "minimum": -1, "maximum": 1, "description": "Contrast shift, -1 flatter to 1 punchier." },
+        "saturation": { "type": "number", "minimum": -1, "maximum": 1, "description": "Saturation shift, -1 monochrome to 1 vivid." },
+        "temperature_k": { "type": "integer", "minimum": 1000, "maximum": 40000, "description": "White balance in kelvin." },
+        "tint": { "type": "number", "minimum": -1, "maximum": 1, "description": "Tint shift, -1 green to 1 magenta." },
+        "lut": { "type": "string", "minLength": 1, "maxLength": 128, "description": "Name of a look-up table to apply. A name only; the table itself is never embedded." }
+      }
+    },
+    "Cut": {
+      "type": "object",
+      "description": "A hard cut on the output timeline.",
+      "required": ["id", "frame", "confidence", "provenance"],
+      "allOf": [{ "$ref": "#/$defs/Detection" }],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "frame": { "$ref": "#/$defs/Frames", "description": "The first frame of the shot after the cut." }
+      }
+    },
+    "Transition": {
+      "type": "object",
+      "description": "A transition between two shots.",
+      "required": ["id", "type", "range", "confidence", "provenance"],
+      "allOf": [{ "$ref": "#/$defs/Detection" }],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "type": {
+          "type": "string",
+          "enum": ["dissolve", "fade_black", "fade_white", "wipe", "push", "slide", "zoom", "whip", "glitch", "other"],
+          "description": "Kind of transition. \"other\" with type_detail covers anything not listed."
+        },
+        "type_detail": { "type": "string", "maxLength": 128, "description": "Free-text description when type is \"other\"." },
+        "range": { "$ref": "#/$defs/FrameRange", "description": "Frames the transition covers on the output timeline." },
+        "from_slot": { "$ref": "#/$defs/Id", "description": "Id of the outgoing slot." },
+        "to_slot": { "$ref": "#/$defs/Id", "description": "Id of the incoming slot." }
+      }
+    },
+    "TextOverlay": {
+      "type": "object",
+      "description": "On-screen text.",
+      "required": ["id", "text", "bbox", "range", "confidence", "provenance"],
+      "allOf": [{ "$ref": "#/$defs/Detection" }],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 2000, "description": "The text shown." },
+        "bbox": { "$ref": "#/$defs/NormalizedBBox" },
+        "range": { "$ref": "#/$defs/FrameRange", "description": "Frames during which the text is visible." },
+        "style": { "$ref": "#/$defs/TextStyle" }
+      }
+    },
+    "TextStyle": {
+      "type": "object",
+      "description": "Hints for reproducing the look of text. Editors approximate these.",
+      "properties": {
+        "font_family": { "type": "string", "maxLength": 128, "description": "Best-guess font family name." },
+        "font_size": { "type": "number", "exclusiveMinimum": 0, "maximum": 1, "description": "Cap height as a fraction of frame height." },
+        "weight": { "type": "integer", "minimum": 100, "maximum": 900, "description": "CSS-style font weight." },
+        "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Text color as #RRGGBB." },
+        "alignment": { "type": "string", "enum": ["left", "center", "right"], "description": "Horizontal alignment inside the bbox." },
+        "background_color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Box behind the text as #RRGGBB, if any." }
+      }
+    },
+    "Caption": {
+      "type": "object",
+      "description": "A caption block made of lines of timed words.",
+      "required": ["id", "range", "lines", "confidence", "provenance"],
+      "allOf": [{ "$ref": "#/$defs/Detection" }],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "range": { "$ref": "#/$defs/FrameRange", "description": "Frames the whole block is on screen." },
+        "language": { "type": "string", "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$", "description": "BCP 47 language tag, e.g. \"en\" or \"pt-BR\"." },
+        "lines": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Lines in display order; each line is one row of words on screen.",
+          "items": {
+            "type": "object",
+            "required": ["words"],
+            "properties": {
+              "words": {
+                "type": "array",
+                "minItems": 1,
+                "description": "Words in spoken order.",
+                "items": { "$ref": "#/$defs/CaptionWord" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "CaptionWord": {
+      "type": "object",
+      "description": "One word with its timing.",
+      "required": ["text", "range"],
+      "properties": {
+        "text": { "type": "string", "minLength": 1, "maxLength": 128, "description": "The word as displayed." },
+        "range": { "$ref": "#/$defs/FrameRange", "description": "Frames during which the word is spoken or highlighted." }
+      }
+    },
+    "Beats": {
+      "type": "object",
+      "description": "Beat grid of the reference soundtrack. Markers only; no audio.",
+      "required": ["bpm", "beat_frames", "downbeat_frames", "confidence", "provenance"],
+      "allOf": [{ "$ref": "#/$defs/Detection" }],
+      "properties": {
+        "bpm": { "type": "number", "exclusiveMinimum": 0, "maximum": 400, "description": "Tempo in beats per minute." },
+        "beat_frames": {
+          "type": "array",
+          "uniqueItems": true,
+          "description": "Frame of every beat, in ascending order. Includes the downbeats.",
+          "items": { "$ref": "#/$defs/Frames" }
+        },
+        "downbeat_frames": {
+          "type": "array",
+          "uniqueItems": true,
+          "description": "Frame of every downbeat (first beat of a bar), in ascending order.",
+          "items": { "$ref": "#/$defs/Frames" }
+        }
+      }
+    },
+    "SoundRef": {
+      "type": "object",
+      "description": "A pointer to the sound used in the reference video. Identification only: audio is never stored or exported. This object is closed so audio fields cannot be added.",
+      "additionalProperties": false,
+      "required": ["id", "title", "artist", "link", "confidence", "provenance"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "description": "Identifier of the sound at the provider that identified it." },
+        "title": { "type": "string", "minLength": 1, "maxLength": 256, "description": "Track title." },
+        "artist": { "type": "string", "minLength": 1, "maxLength": 256, "description": "Artist name." },
+        "link": { "type": "string", "format": "uri", "pattern": "^https://", "description": "https link to the sound at its source." },
+        "confidence": { "$ref": "#/$defs/Confidence" },
+        "provenance": { "$ref": "#/$defs/Provenance" }
+      }
+    }
+  }
+}

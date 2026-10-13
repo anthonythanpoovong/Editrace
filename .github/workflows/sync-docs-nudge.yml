@@ -1,0 +1,67 @@
+name: Sync docs nudge
+
+# When a PR merges and touched a large-change area (schema, ADRs, epics, skills, CI workflows), comment
+# once on it reminding the team to run /sync-docs. Deterministic: no model, writes nothing but the
+# comment. The area list lives in .github/scripts/sync-docs-paths.sh and mirrors
+# .claude/skills/sync-docs/SKILL.md. Not a required check; a failure is a non-blocking red X.
+#
+# The script always comes from the default branch, never from the PR. The workflow file itself
+# still comes from the PR merge ref; same-repo PR authors have write access, which the repo treats
+# as trusted (plan.md risks).
+
+on:
+  pull_request:
+    types: [closed]
+
+# Serialise per PR so a re-run cannot post the comment twice.
+concurrency:
+  group: sync-docs-nudge-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  nudge:
+    # Merged only (not just closed), no bots (Dependabot touches workflows), no forks.
+    if: >
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.user.type != 'Bot' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          # Trusted script only: the default branch, not the PR merge ref.
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: .github/scripts
+
+      - name: Comment if the PR changed a large-change area
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          marker='<!-- sync-docs-nudge -->'
+          areas=$(gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '.[].filename' \
+            | .github/scripts/sync-docs-paths.sh)
+          if [ -z "$areas" ]; then
+            echo "No large-change areas touched; nothing to say."
+            exit 0
+          fi
+          if gh api --paginate "repos/$REPO/issues/$PR/comments" --jq '.[].body' | grep -qF "$marker"; then
+            echo "Already commented on #$PR."
+            exit 0
+          fi
+          {
+            echo "$marker"
+            echo "📚 This PR changed:"
+            echo
+            echo "$areas"
+            echo
+            echo "That counts as a large change. Run \`/sync-docs\` to update the README, \`docs/plan.md\` and the wiki."
+          } > nudge.md
+          gh pr comment "$PR" --repo "$REPO" --body-file nudge.md

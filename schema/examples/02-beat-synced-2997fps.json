@@ -1,0 +1,44 @@
+{
+  "schema_version": "0.1.0",
+  "source": {
+    "duration": 240,
+    "fps": { "num": 30000, "den": 1001 },
+    "resolution": { "width": 1920, "height": 1080 },
+    "aspect_ratio": { "num": 16, "den": 9 },
+    "content_hash": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "tracks": [
+    {
+      "id": "video-1",
+      "kind": "video",
+      "slots": [
+        { "id": "slot-1", "range": { "start": 0, "duration": 60 }, "confidence": 0.96, "provenance": { "detector": "cuts", "version": "0.3.0" } },
+        { "id": "slot-2", "range": { "start": 60, "duration": 60 }, "source_range": { "start": 60, "duration": 120 }, "speed": { "num": 2, "den": 1 }, "confidence": 0.82, "provenance": { "detector": "motion", "version": "0.1.0" } },
+        { "id": "slot-3", "range": { "start": 120, "duration": 60 }, "confidence": 0.94, "provenance": { "detector": "cuts", "version": "0.3.0" } },
+        { "id": "slot-4", "range": { "start": 180, "duration": 60 }, "source_range": { "start": 240, "duration": 30 }, "speed": { "num": 1, "den": 2 }, "confidence": 0.79, "provenance": { "detector": "motion", "version": "0.1.0" } }
+      ],
+      "cuts": [
+        { "id": "cut-1", "frame": 180, "confidence": 0.99, "provenance": { "detector": "cuts", "version": "0.3.0" } }
+      ],
+      "transitions": [
+        { "id": "transition-1", "type": "dissolve", "range": { "start": 54, "duration": 12 }, "from_slot": "slot-1", "to_slot": "slot-2", "confidence": 0.9, "provenance": { "detector": "transitions", "version": "0.2.0" } },
+        { "id": "transition-2", "type": "whip", "range": { "start": 117, "duration": 6 }, "from_slot": "slot-2", "to_slot": "slot-3", "confidence": 0.74, "provenance": { "detector": "transitions", "version": "0.2.0" } }
+      ]
+    }
+  ],
+  "beats": {
+    "bpm": 120,
+    "beat_frames": [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225],
+    "downbeat_frames": [0, 60, 120, 180],
+    "confidence": 0.93,
+    "provenance": { "detector": "beats", "version": "0.4.0" }
+  },
+  "sound_ref": {
+    "id": "track-48213",
+    "title": "Example Track",
+    "artist": "Example Artist",
+    "link": "https://example.com/sounds/track-48213",
+    "confidence": 0.86,
+    "provenance": { "detector": "sound-id", "version": "0.1.0" }
+  }
+}

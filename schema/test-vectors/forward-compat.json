@@ -1,0 +1,35 @@
+{
+  "description": "A template written by a hypothetical newer minor version (0.2.0), read by a 0.1.0 reader. It has an unknown optional field, an unknown transition type and an unknown track kind. Expected: the template is accepted, the unknown elements are reported as skipped, everything else applies, and the unknown field survives a read-and-rewrite. The document is deliberately NOT valid against the current schema, which is strict for writers.",
+  "reader": "0.1.0",
+  "document": {
+    "schema_version": "0.2.0",
+    "source": {
+      "duration": 90,
+      "fps": { "num": 30, "den": 1 },
+      "resolution": { "width": 1080, "height": 1920 },
+      "aspect_ratio": { "num": 9, "den": 16 },
+      "content_hash": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+    },
+    "tracks": [
+      {
+        "id": "video-1",
+        "kind": "video",
+        "slots": [
+          { "id": "slot-1", "range": { "start": 0, "duration": 45 }, "future_hint": "keep me", "confidence": 0.9, "provenance": { "detector": "cuts", "version": "9.0.0" } },
+          { "id": "slot-2", "range": { "start": 45, "duration": 45 }, "confidence": 0.9, "provenance": { "detector": "cuts", "version": "9.0.0" } }
+        ],
+        "transitions": [
+          { "id": "transition-1", "type": "dissolve", "range": { "start": 40, "duration": 10 }, "confidence": 0.9, "provenance": { "detector": "transitions", "version": "9.0.0" } },
+          { "id": "transition-2", "type": "hologram", "range": { "start": 44, "duration": 2 }, "confidence": 0.9, "provenance": { "detector": "transitions", "version": "9.0.0" } }
+        ]
+      },
+      { "id": "hologram-1", "kind": "hologram" }
+    ]
+  },
+  "expected": {
+    "outcome": "accept",
+    "applied": ["slot-1", "slot-2", "transition-1"],
+    "skipped": ["transition-2", "hologram-1"],
+    "preserved_unknown_fields": [{ "id": "slot-1", "field": "future_hint", "value": "keep me" }]
+  }
+}
