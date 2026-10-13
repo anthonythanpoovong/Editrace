@@ -1,1 +1,1 @@
-RLS|row[ -]level|bypass|no auth|without auth|unauthenticated|any (caller|user|one)|anyone|other users|cross-user
+no auth|without auth|unauthenticated|no owner|owner (check|filter)|any (caller|user|one)|anyone|other users|cross-user|IDOR
