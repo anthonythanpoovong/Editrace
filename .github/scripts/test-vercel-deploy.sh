@@ -69,6 +69,10 @@ run "READY" --prod > /dev/null
 grep -q -- '--prod' "$tmp/vercel-args"
 check "--prod is passed through" $?
 
+run "READY" --target=staging > /dev/null
+grep -q -- '--target=staging' "$tmp/vercel-args"
+check "--target=<environment> is passed through" $?
+
 out=$(STUB_VERCEL_MODE=blocked run "BLOCKED")
 grep -qx 'state=BLOCKED' <<<"$out" && grep -qx 'url=https://editrace-abc-editrace.vercel.app' <<<"$out"
 check "a CLI that exits 1 on a blocked deployment still ends at BLOCKED, with the URL from stderr" $?

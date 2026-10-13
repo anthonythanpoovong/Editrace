@@ -8,7 +8,7 @@ How Editrace's environments are deployed and where each secret lives (#48). The 
 |---|---|---|---|
 | **dev** | Local development | `npm run dev` in `web/` with your own `.env.local` | localhost |
 | **preview** | One per PR | `deploy.yml` deploys to the `editrace-np` Vercel project every same-repo PR with the owner's Vercel token and posts the URL in a PR comment | Per PR (needs a Vercel login, SSO protection is on) |
-| **staging** | Latest `main` | `deploy.yml` runs on every push to `main`, deploys to `editrace-np` and aliases the build to the staging URL | `https://editrace-staging.vercel.app` (repo variable `STAGING_ALIAS`) |
+| **staging** | Latest `main` | `deploy.yml` runs on every push to `main`, deploys to the `staging` custom environment in `editrace-np` | `https://editrace-staging.vercel.app` (the environment's domain; repo variable `STAGING_ALIAS` holds the host) |
 | **prod** | Live | Promote a commit that is live on staging: run `deploy.yml` by hand from `main` (Actions → Deploy → Run workflow); deploys to `editrace-prod` | `editrace-prod.vercel.app` (private: Vercel SSO protection is on, so only team members can open it) |
 
 ### Promotion: PR → staging → prod
@@ -26,9 +26,9 @@ Vercel's own Git deploys are turned off for every branch in `web/vercel.json`, s
 
 ### Limitations (revisit on upgrade)
 
-- Staging shares the `editrace-np` project with PR previews (Hobby has no custom environments), so it is a preview build aliased to a stable URL. Prod is a separate project, so its env vars, domains and protection settings can't leak into staging.
-- **A blocked deploy never fails a collaborator's push.** Vercel marks a deployment `BLOCKED` when the commit's author isn't on the team, and the CLI would then wait forever. `.github/scripts/vercel-deploy.sh` polls instead: the preview job comments "No preview" and ends green, and the staging job leaves staging on its last build with a warning annotation. Only the manual prod run fails on `BLOCKED`, so run it from a commit authored by a Vercel team member. Staging therefore only advances when the latest commit on `main` is by a team member, until Pro seats are bought.
-- Hobby also has no team seats. Vercel's Git integration refuses commits from anyone who isn't on the team, so previews are deployed from Actions under the owner's token instead. Collaborators can't open them while SSO protection is on, because they have no Vercel access either.
+- Staging is a custom environment inside `editrace-np`, so it has its own env vars, separate from PR previews. Prod is a separate project, so its env vars, domains and protection settings can't leak into staging.
+- **A blocked deploy never fails a collaborator's push.** Vercel marks a deployment `BLOCKED` when the commit's author isn't on the team, and the CLI would then wait forever. `.github/scripts/vercel-deploy.sh` polls instead: the preview job comments "No preview" and ends green, and the staging job leaves staging on its last build with a warning annotation. Only the manual prod run fails on `BLOCKED`, so run it from a commit authored by a Vercel team member. Staging therefore only advances when the latest commit on `main` is by a team member, if it happens again. It stopped on Pro (Oct 12), so this is defensive.
+- Previews are deployed from Actions under the owner's token, not Vercel's Git integration, which refuses commits from anyone who isn't on the team. Collaborators who aren't Vercel team members can't open previews while SSO protection is on. Add them as Vercel members (a paid seat each) if they need to.
 - GitHub required reviewers on environments need a paid plan for private repos, so `Production` has no approval gate. The `main` branch protection (PR plus 1 approval plus `ci-ok`) is the only gate.
 - Supabase and Modal staging/prod environments aren't set up yet. Add them when the first schema and worker code land.
 
@@ -40,12 +40,12 @@ Each secret lives in **one** place. Don't copy values between systems except thr
 |---|---|---|
 | `VERCEL_TOKEN`, `VERCEL_ORG_ID` | GitHub repo secrets | `deploy.yml` |
 | `VERCEL_PROJECT_ID_NP`, `VERCEL_PROJECT_ID_PROD` | GitHub repo variables | `deploy.yml` |
-| `STAGING_ALIAS` | GitHub repo variable | `deploy.yml` (staging URL) |
+| `STAGING_ALIAS` | GitHub repo variable | `deploy.yml` (staging host shown on the environment and in the commit status) |
 | `CLAUDE_CODE_OAUTH_TOKEN` | GitHub repo secret | Armour review and `@claude` |
 | `DISCORD_REVIEW_WEBHOOK` | GitHub repo secret | Discord review notifications |
-| `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SERVICE_ROLE_KEY` | Vercel project env vars: `editrace-np` for preview and staging, `editrace-prod` for prod | Web app |
+| `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SERVICE_ROLE_KEY` | Vercel project env vars: `editrace-np` (Preview and `staging` environments), `editrace-prod` (Production) | Web app |
 | `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET` | GitHub repo secrets (deploys) and Modal (runtime) | Workers |
-| `ANTHROPIC_API_KEY`, `STRIPE_*` | Vercel project env vars: `editrace-np` for preview and staging, `editrace-prod` for prod | Web app and assistant |
+| `ANTHROPIC_API_KEY`, `STRIPE_*` | Vercel project env vars: `editrace-np` (Preview and `staging` environments), `editrace-prod` (Production) | Web app and assistant |
 
 Rules:
 
