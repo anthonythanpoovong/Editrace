@@ -4,6 +4,8 @@
 one. Readers can't do that. docs/schema.md says an unknown enum value is "unsupported; the adapter reports the element
 as skipped and never fails the whole template". `read_template` does that: it loads the document with the reader
 models, where enum fields are plain strings, and reports each element holding a value the strict schema doesn't know.
+A track `kind` we don't know is reported the same way. `kind` is a free string, so it never fails validation and
+would otherwise be missed.
 Every other problem (a bad range, a missing field, a malformed pattern) still raises, and unknown fields and values
 survive a `model_dump`.
 
@@ -18,9 +20,9 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from editrace_schema.constants import KNOWN_TRACK_KINDS, SCHEMA_VERSION
 from editrace_schema.models import EditraceTemplate as Template
 from editrace_schema.reader_models import EditraceTemplate as ReaderTemplate
-from editrace_schema.version import SCHEMA_VERSION
 
 # A migration takes a template document from an older major version and returns it in the reader's major version.
 Migration = Callable[[Mapping[str, Any]], Mapping[str, Any]]
@@ -82,7 +84,7 @@ def migrate_to_supported_version(
 def read_template(
     document: Mapping[str, Any], *, migrations: Mapping[int, Migration] | None = None
 ) -> ReadResult:
-    """Load `document`, reporting elements with an unknown enum value as skipped. A template from a higher major
+    """Load `document`, reporting elements with an unknown enum value, and tracks of an unknown kind, as skipped. A template from a higher major
     version raises `UnsupportedVersionError`, and from a lower one unless `migrations` can upgrade it. Anything else
     invalid raises `pydantic.ValidationError`. Validates twice (strict, then reader), which is fine for a template's
     size."""
@@ -103,4 +105,11 @@ def read_template(
             )
             for problem in problems
         ]
-    return ReadResult(template=ReaderTemplate.model_validate(document), skipped=skipped)
+    template = ReaderTemplate.model_validate(document)
+    # An unknown track kind passes validation (it is a free string), so look for it here. Listed after the enum values.
+    skipped += [
+        Skipped(path=("tracks", index), field="kind", value=track.kind)
+        for index, track in enumerate(template.tracks)
+        if track.kind not in KNOWN_TRACK_KINDS
+    ]
+    return ReadResult(template=template, skipped=skipped)

@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, test } from "vitest";
 import { templateSchema } from "./generated/template.zod";
-import { SCHEMA_VERSION } from "./generated/schema-version";
+import { KNOWN_TRACK_KINDS, SCHEMA_VERSION } from "./generated/constants";
 import { migrateToSupportedVersion, readTemplate, UnsupportedVersionError } from "./read-template";
 
 const schemaDir = resolve(import.meta.dirname, "../../schema");
@@ -20,10 +20,19 @@ const versionCases: {
 const files = (dir: string) => readdirSync(resolve(schemaDir, dir)).filter((name) => name.endsWith(".json")).sort();
 
 describe("readTemplate", () => {
-  test("the forward-compat vector loads and reports the unknown transition", () => {
+  test("the forward-compat vector reports the unknown transition and the unknown track kind", () => {
+    // The vector has both: an unknown transition type and an unknown track kind (docs/schema.md skips both).
     expect(readTemplate(vector).skipped).toEqual([
       { path: ["tracks", 0, "transitions", 1], field: "type", value: "hologram" },
+      { path: ["tracks", 1], field: "kind", value: "hologram" },
     ]);
+  });
+
+  test("known track kinds come from the schema, and a known kind is never reported", () => {
+    expect([...KNOWN_TRACK_KINDS].sort()).toEqual(["captions", "text", "video"]);
+    const document = json("examples", files("examples")[0]);
+    expect(document.tracks.every((track: { kind: string }) => KNOWN_TRACK_KINDS.has(track.kind))).toBe(true);
+    expect(readTemplate(document).skipped).toEqual([]);
   });
 
   test("unknown values and fields survive a rewrite", () => {
@@ -45,7 +54,7 @@ describe("readTemplate", () => {
   test("every unknown enum value is reported", () => {
     const document = structuredClone(vector);
     document.tracks[0].transitions[0].type = "star-wipe";
-    expect(readTemplate(document).skipped.map((s) => s.value).sort()).toEqual(["hologram", "star-wipe"]);
+    expect(readTemplate(document).skipped.filter((s) => s.field === "type").map((s) => s.value).sort()).toEqual(["hologram", "star-wipe"]);
   });
 
   test("another problem next to an unknown value still throws", () => {

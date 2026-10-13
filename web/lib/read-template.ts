@@ -1,7 +1,7 @@
 // Reading a template that may come from a newer minor version (#206). The TypeScript counterpart of
 // editrace_schema/reader.py: the strict `templateSchema` is for writers and rejects an unknown enum value, but
 // docs/schema.md says a reader treats one as unsupported ("skipped") and never fails the whole template.
-import { SCHEMA_VERSION } from "./generated/schema-version";
+import { KNOWN_TRACK_KINDS, SCHEMA_VERSION } from "./generated/constants";
 import { templateReaderSchema } from "./generated/template.reader.zod";
 import { templateSchema } from "./generated/template.zod";
 
@@ -44,11 +44,11 @@ export function migrateToSupportedVersion(
   return document;
 }
 
-/** An element holding an enum value this version of the schema doesn't know. */
+/** An element holding an enum value, or a track kind, this version of the schema doesn't know. */
 export type Skipped = {
-  /** Where the element is, e.g. ["tracks", 0, "transitions", 1]. */
+  /** Where the element is, e.g. ["tracks", 0, "transitions", 1] or ["tracks", 1]. */
   path: (string | number)[];
-  /** The field with the unknown value, e.g. "type". */
+  /** The field with the unknown value, e.g. "type", or "kind" for a track. */
   field: string;
   /** The value, e.g. "hologram". */
   value: unknown;
@@ -58,7 +58,8 @@ const valueAt = (document: unknown, path: PropertyKey[]): unknown =>
   path.reduce<unknown>((node, key) => (node as Record<PropertyKey, unknown> | undefined)?.[key], document);
 
 /**
- * Loads `document`, reporting each element with an unknown enum value as skipped. A template from a higher major
+ * Loads `document`, reporting each element with an unknown enum value, and each track of an unknown kind, as skipped.
+ * A template from a higher major
  * version throws UnsupportedVersionError (a lower one too, unless `migrations` can upgrade it); anything else invalid
  * throws a ZodError, and unknown fields and values survive.
  */
@@ -74,11 +75,16 @@ export function readTemplate(
   // The reader schema relaxes only enums, so if it accepts the document every strict failure is an unknown enum value.
   const template = templateReaderSchema.parse(document);
   const strict = templateSchema.safeParse(document);
-  if (strict.success) return { template, skipped: [] };
-  const skipped = strict.error.issues.map((issue) => ({
-    path: issue.path.slice(0, -1).map((key) => (typeof key === "symbol" ? String(key) : key)),
-    field: String(issue.path[issue.path.length - 1]),
-    value: valueAt(document, issue.path),
-  }));
+  const skipped: Skipped[] = strict.success
+    ? []
+    : strict.error.issues.map((issue) => ({
+        path: issue.path.slice(0, -1).map((key) => (typeof key === "symbol" ? String(key) : key)),
+        field: String(issue.path[issue.path.length - 1]),
+        value: valueAt(document, issue.path),
+      }));
+  // An unknown track kind passes validation (it is a free string), so look for it here. Listed after the enum values.
+  template.tracks.forEach((track, index) => {
+    if (!KNOWN_TRACK_KINDS.has(track.kind)) skipped.push({ path: ["tracks", index], field: "kind", value: track.kind });
+  });
   return { template, skipped };
 }

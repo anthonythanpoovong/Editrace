@@ -14,7 +14,7 @@ from editrace_schema import (
     migrate_to_supported_version,
     read_template,
 )
-from editrace_schema.version import SCHEMA_VERSION
+from editrace_schema.constants import KNOWN_TRACK_KINDS, SCHEMA_VERSION
 
 SCHEMA_DIR = Path(__file__).resolve().parent.parent / "schema"
 VECTOR = json.loads((SCHEMA_DIR / "test-vectors" / "forward-compat.json").read_text())[
@@ -31,11 +31,23 @@ def dump(result) -> dict:
     return json.loads(result.template.model_dump_json(exclude_unset=True))
 
 
-def test_forward_compat_vector_loads_and_reports_the_unknown_transition() -> None:
+def test_forward_compat_vector_reports_the_unknown_transition_and_track_kind() -> None:
+    # The vector has both: an unknown transition type and an unknown track kind (docs/schema.md skips both).
     result = read_template(VECTOR)
     assert result.skipped == [
-        Skipped(path=("tracks", 0, "transitions", 1), field="type", value="hologram")
+        Skipped(path=("tracks", 0, "transitions", 1), field="type", value="hologram"),
+        Skipped(path=("tracks", 1), field="kind", value="hologram"),
     ]
+
+
+def test_known_track_kinds_come_from_the_schema() -> None:
+    assert KNOWN_TRACK_KINDS == {"video", "text", "captions"}
+
+
+def test_a_known_track_kind_is_never_reported() -> None:
+    document = json.loads(EXAMPLES[0].read_text())
+    assert {track["kind"] for track in document["tracks"]} <= KNOWN_TRACK_KINDS
+    assert read_template(document).skipped == []
 
 
 def test_unknown_values_and_fields_survive_a_rewrite() -> None:
@@ -59,10 +71,8 @@ def test_valid_example_reports_nothing_skipped(path: Path) -> None:
 def test_every_unknown_enum_value_is_reported() -> None:
     document = copy.deepcopy(VECTOR)
     document["tracks"][0]["transitions"][0]["type"] = "star-wipe"
-    assert {s.value for s in read_template(document).skipped} == {
-        "star-wipe",
-        "hologram",
-    }
+    skipped = read_template(document).skipped
+    assert {s.value for s in skipped if s.field == "type"} == {"star-wipe", "hologram"}
 
 
 def test_another_problem_next_to_an_unknown_value_still_raises() -> None:

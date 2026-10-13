@@ -11,13 +11,13 @@ GEN_FLAGS = --input-file-type jsonschema --output-model-type pydantic_v2.BaseMod
 	--use-standard-collections --use-union-operator --use-title-as-name --capitalise-enum-members \
 	--use-double-quotes --formatters ruff-check ruff-format --disable-timestamp
 
-# schema/VERSION becomes editrace_schema/version.py (and web/lib/generated/schema-version.ts), so readers know which
+# schema/VERSION and the known track kinds become editrace_schema/constants.py (and web/lib/generated/constants.ts), so readers know which
 # version they support. Pydantic models for workers/ and exporters/. OpenModel keeps unknown fields (docs/schema.md, forward compatibility).
 # models.py is strict, for writers. reader_models.py is the same schema with enums relaxed to strings, for readers
 # (scripts/reader_schema.py): an unknown enum value from a newer minor version must not fail the whole template (#206).
 codegen-python:
 	$(UV) sync --quiet
-	$(UV) run python scripts/schema_version.py schema/VERSION > editrace_schema/version.py
+	$(UV) run python scripts/generated_constants.py schema/VERSION schema/template.schema.json > editrace_schema/constants.py
 	$(UV) run datamodel-codegen $(GEN_FLAGS) --input schema/template.schema.json --output editrace_schema/models.py
 	$(UV) run python scripts/reader_schema.py schema/template.schema.json | \
 		$(UV) run datamodel-codegen $(GEN_FLAGS) --output editrace_schema/reader_models.py
