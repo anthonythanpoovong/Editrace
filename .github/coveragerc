@@ -1,0 +1,17 @@
+# Python coverage for the changed-line gate (#129): pytest --cov --cov-config=.github/coveragerc.
+# `source = .` makes the report's paths relative to the repo root, which is what diff-cover matches against
+# (a per-package --cov=pkg writes paths relative to pkg). include_namespace_packages lists a Python file
+# that no test imports as 0% covered, instead of leaving it out of the report, where it would escape the gate.
+[run]
+source =
+    .
+omit =
+    .venv/*
+    web/*
+    */test_*.py
+    */conftest.py
+    # Generated from schema/template.schema.json (#2).
+    editrace_schema/models.py
+
+[report]
+include_namespace_packages = True
