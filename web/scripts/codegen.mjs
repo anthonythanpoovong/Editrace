@@ -41,4 +41,20 @@ const dereferenced = await $RefParser.dereference(open);
 const zod = jsonSchemaToZod(dereferenced, { module: "esm", name: "templateSchema", type: true });
 writeFileSync(resolve(outDir, "template.zod.ts"), banner("Zod schema.") + zod + "\n");
 
-console.log("Generated web/lib/generated/template.ts and template.zod.ts");
+// Reader variant (#206): the same schema with every `enum` keyword removed, so an unknown enum value from a newer minor
+// version doesn't fail the whole template (docs/schema.md). Nothing else is relaxed. Mirrors scripts/reader_schema.py.
+const withoutEnums = (node) => {
+  if (Array.isArray(node)) return node.map(withoutEnums);
+  if (node && typeof node === "object") {
+    return Object.fromEntries(
+      Object.entries(node)
+        .filter(([key, value]) => !(key === "enum" && Array.isArray(value)))
+        .map(([key, value]) => [key, withoutEnums(value)]),
+    );
+  }
+  return node;
+};
+const reader = jsonSchemaToZod(withoutEnums(dereferenced), { module: "esm", name: "templateReaderSchema", type: true });
+writeFileSync(resolve(outDir, "template.reader.zod.ts"), banner("Zod schema for readers (enums relaxed to strings).") + reader + "\n");
+
+console.log("Generated web/lib/generated/template.ts, template.zod.ts and template.reader.zod.ts");

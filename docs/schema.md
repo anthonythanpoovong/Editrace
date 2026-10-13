@@ -106,7 +106,7 @@ Rules for writers and tools:
 - Workers validate their output before saving. Enums are strict for writers.
 - A tool that reads and rewrites a template **preserves unknown fields** it does not understand, so a template from a newer minor is not silently stripped.
 - When partial templates from several workers are merged, they must share a major version, and the merged `schema_version` is the highest minor among them.
-- Readers must not rely on enum exhaustiveness. Generated union types look exhaustive, but a template from a newer minor can hold a value the reader has never seen.
+- Readers must not rely on enum exhaustiveness. Generated union types look exhaustive, but a template from a newer minor can hold a value the reader has never seen. Load a template you didn't write with `read_template` (Python) or `readTemplate` (TypeScript): they report the elements with an unknown value as skipped (see `schema/README.md`).
 
 Two places use an escape hatch: transition `type` has `"other"` plus `type_detail`, and track `kind` is a free string so unknown kinds are skipped. Objects are open (unknown fields allowed) so a newer minor still passes an older validator. The one exception is `sound_ref`, which is closed so audio fields cannot be added.
 
