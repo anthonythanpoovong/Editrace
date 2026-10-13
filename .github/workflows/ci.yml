@@ -51,6 +51,8 @@ jobs:
       - uses: actions/checkout@v6
       # test-coverage-gate.sh runs the real diff-cover (#129). Same pin as the coverage job.
       - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: false
       - run: |
           uv tool install diff-cover==10.6.0
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
@@ -178,17 +180,19 @@ jobs:
         with:
           fetch-depth: 0 # diff-cover compares with origin/main
       - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: false
       - run: |
           uv tool install diff-cover==10.6.0
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-      # Either job can be skipped (no web/ or no Python code yet), so a missing report is fine.
+      # Either job can be skipped (no web/ or no Python code yet): download only the reports that exist.
       - uses: actions/download-artifact@v4
-        continue-on-error: true
+        if: needs.web.result == 'success'
         with:
           name: coverage-web
           path: coverage-in/web
       - uses: actions/download-artifact@v4
-        continue-on-error: true
+        if: needs.python.result == 'success'
         with:
           name: coverage-python
           path: coverage-in/python
