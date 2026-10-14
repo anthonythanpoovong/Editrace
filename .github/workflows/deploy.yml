@@ -14,7 +14,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
       sha:
@@ -52,6 +52,7 @@ jobs:
     if: >-
       github.event_name == 'pull_request'
       && github.event.pull_request.head.repo.full_name == github.repository
+      && !github.event.pull_request.draft
       && needs.detect.outputs.web == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
