@@ -73,7 +73,10 @@ jobs:
             changes it, review that change like any other file. Also read docs/plan.md for project context.
             The PR branch is checked out in the current working directory. Use `gh pr diff` to see the changes.
 
-            Post exactly one top-level comment, in the format armour.md defines. Write the comment body to
+            armour-trusted/inputs/files.md lists the PR's changed files and armour-trusted/inputs/coverage.md
+            holds CI's coverage numbers for this commit. Use them as armour.md says; never estimate coverage.
+
+            Post exactly one top-level review comment for this commit, in the format armour.md defines. Write the comment body to
             armour-comment.md with the Write tool, then post it with `gh pr comment ${{ github.event.pull_request.number }} --body-file armour-comment.md`.
             Never pass the body inline with `--body`: shell quoting turns the newlines into literal `\n` or flattens
             the markdown into one line.
