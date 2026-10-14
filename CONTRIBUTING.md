@@ -66,6 +66,8 @@ If the grill says "Needs a spike first", use `/spike`. Bugs and spikes have issu
 - Pull requests: `project-intake-pr.yml` assigns the author. A PR never gets a card of its own: only tickets are on the board, and a PR is tracked by the ticket it closes, so open it with `Closes #N`.
 - To backfill open issues that are not on the board: **Actions → Project intake → Run workflow**.
 
+**Carrying over unfinished work.** When a sprint ends, run **Actions → Project carry-over → Run workflow** (tick *dry_run* to preview). It moves every card in the previous sprint whose Status is Backlog or In progress, and whose issue is still open, into the current sprint (or the next upcoming one between sprints). Done and closed cards stay put. Locally: `DRY_RUN=1 PROJECT_OWNER=anthonythanpoovong PROJECT_NUMBER=2 .github/scripts/project-carryover.sh`.
+
 It needs the secret `PROJECT_TOKEN`: a token with the `project` scope, because `GITHUB_TOKEN` cannot write to a user-owned project. It is Anthony's personal token. Note its expiry date when you create it and rotate it before then (**Settings → Secrets and variables → Actions**). A run that fails with "PROJECT_TOKEN expired, revoked or missing the project scope" means it needs replacing. If the repo moves to an organisation or the token owner changes, switch to a GitHub App.
 
 ### Which skill to use
