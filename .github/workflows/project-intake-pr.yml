@@ -1,31 +1,22 @@
 name: Project intake (PRs)
 
-# A new pull request is assigned to its author (unless already assigned or opened by a bot), and
-# gets a card on the Editrace board (Project #2) in the current sprint with Status Backlog only
-# when it closes no issue: a PR that closes an issue is tracked by that issue's card (#178).
+# A new pull request is assigned to its author (unless already assigned or opened by a bot).
+# Pull requests never get a card on the Editrace board (Project #2): only tickets are on the board,
+# and a PR is tracked by the ticket it closes (#178).
 # Not a required check and not part of ci-ok: a failed run shows as a red X.
-# Needs: secret PROJECT_TOKEN (see project-intake.yml).
 #
-# pull_request_target runs this file from the default branch, never the PR's copy, so a PR cannot
-# edit the workflow to read PROJECT_TOKEN. For the same reason nothing here checks out or runs PR
-# code: only the default branch's scripts, and nothing from the PR except its number, node ID, author
-# and assignees (the title and body are never read).
-# "Closes an issue" is read when the PR opens or reopens: a "Closes #N" added later does not remove
-# a card that was already created.
+# pull_request_target runs this file from the default branch, never the PR's copy. For that reason
+# nothing here checks out or runs PR code: only the default branch's scripts, and nothing from the PR
+# except its number, author and assignees (the title and body are never read).
 
 on:
   pull_request_target:
-    types: [opened, reopened]
+    types: [opened]
 
 permissions: {}
 
-env:
-  PROJECT_OWNER: anthonythanpoovong
-  PROJECT_NUMBER: "2"
-
 jobs:
   assign:
-    if: github.event.action == 'opened'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -50,25 +41,3 @@ jobs:
           who=$(.github/scripts/project-intake-assignee.sh)
           [ -z "$who" ] || gh api "repos/$REPO/issues/$PR/assignees" -f "assignees[]=$who" > /dev/null \
             || echo "::warning::Could not assign $who to #$PR"
-
-  board:
-    if: github.event.pull_request.user.type == 'User'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-      pull-requests: read
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          ref: ${{ github.event.repository.default_branch }}
-          sparse-checkout: .github/scripts
-      - name: Add to the board unless it closes an issue
-        env:
-          # The project token only touches the project; reading the PR uses the repo's own token.
-          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
-          LIST_TOKEN: ${{ github.token }}
-          PR_NODE_ID: ${{ github.event.pull_request.node_id }}
-        run: |
-          [ -n "$GH_TOKEN" ] || { echo "::error::PROJECT_TOKEN is not set"; exit 1; }
-          .github/scripts/project-intake-pr.sh

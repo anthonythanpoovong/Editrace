@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # Sends the Discord reminders that are due right now (#184): the weekly sync the day before, the
 # weekly sync when it starts, and "sprint due tomorrow". See discord-reminder-due.sh for the rules.
-# Inputs (env): ROLE_ID, and WEBHOOK unless DRY_RUN is true.
+# Inputs (env): ROLE_ID, and WEBHOOK, GITHUB_REPOSITORY, GITHUB_SHA unless DRY_RUN is true.
+# Each reminder is sent once: before posting, it creates the git ref refs/reminders/<key> (for example
+# meeting_eve-2026-10-14). Creating a ref is atomic and fails if it exists, so a second run that falls in
+# the same window finds it taken and skips. If the post fails the ref is deleted so a later run can retry.
+# GH_TOKEN reads the board; CLAIM_TOKEN (the workflow's GITHUB_TOKEN, contents: write) makes the refs.
 # Optional (env): CONFIG_FILE (default .github/reminders.json), DRY_RUN (true prints the payloads
 # and posts nothing), NOW (a UTC timestamp like 2026-10-13T18:30:00Z to simulate; dry runs only),
 # GH_TOKEN (a token with the "project" scope, needed only when the board is read).
@@ -21,6 +25,7 @@ else
   now_epoch=$(date +%s)
 fi
 if [ "$dry" = false ]; then
+  : "${GITHUB_REPOSITORY:?}" "${GITHUB_SHA:?}" "${CLAIM_TOKEN:?}"
   [[ "${WEBHOOK:?}" =~ ^https://(discord|discordapp)\.com/api/webhooks/ ]] \
     || { echo "The Discord webhook secret is missing or not a Discord webhook URL" >&2; exit 1; }
 fi
@@ -46,7 +51,7 @@ count=$(jq '.due | length' <<<"$result")
 if [ "$count" -eq 0 ]; then echo "No reminder is due now."; exit 0; fi
 
 while read -r item; do
-  kind=$(jq -r .kind <<<"$item")
+  kind=$(jq -r .kind <<<"$item"); key=$(jq -r .key <<<"$item")
   payload=$(KIND="$kind" CONFIG="$config" ROLE_ID="$ROLE_ID" \
     MEETING_EPOCH="$(jq -r '.meeting_epoch // 0' <<<"$item")" \
     SPRINT_TITLE="$(jq -r '.sprint_title // ""' <<<"$item")" \
@@ -54,7 +59,15 @@ while read -r item; do
   if [ "$dry" = true ]; then
     echo "[dry run] $kind:"; jq . <<<"$payload"
   else
-    curl --fail --silent --show-error --max-time 20 -H "Content-Type: application/json" --data "$payload" "$WEBHOOK"
-    echo "Sent $kind"
+    if ! claim=$(GH_TOKEN=$CLAIM_TOKEN gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" \
+          -f ref="refs/reminders/$key" -f sha="$GITHUB_SHA" 2>&1); then
+      if [[ "$claim" == *"Reference already exists"* ]]; then echo "Already sent $key, skipping"; continue; fi
+      echo "Could not record $key as sent: $claim" >&2; exit 1
+    fi
+    if ! curl --fail --silent --show-error --max-time 20 -H "Content-Type: application/json" --data "$payload" "$WEBHOOK"; then
+      GH_TOKEN=$CLAIM_TOKEN gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/reminders/$key" > /dev/null 2>&1 || true
+      echo "Posting $key to Discord failed" >&2; exit 1
+    fi
+    echo "Sent $key"
   fi
 done < <(jq -c '.due[]' <<<"$result")
