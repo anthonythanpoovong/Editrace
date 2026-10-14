@@ -68,6 +68,7 @@ jobs:
       - run: .github/scripts/test-coverage-gate.sh
       - run: .github/scripts/test-coverage-decide.sh
       - run: .github/scripts/test-coverage-comment.sh
+      - run: .github/scripts/test-armour-inputs.sh
       # Armour eval PRs run CI on a base branch without scripts/armour-eval (#128). Skip only there, so a
       # renamed or missing test fails everywhere else.
       - if: "!startsWith(github.head_ref, 'armour-eval/')"
