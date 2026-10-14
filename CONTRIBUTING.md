@@ -63,7 +63,7 @@ If the grill says "Needs a spike first", use `/spike`. Bugs and spikes have issu
 - It gets any **missing labels**: a level (`subtask` if its parent is a story or subtask, otherwise `story`; being under an epic does not make it a subtask), `type:build`, and a domain/area from the issue form's Area answer. With no domain it gets `needs-triage`; set `platform`, `product` or `ml` and the workflow removes it. Labels you set yourself are never changed.
 - It is assigned to whoever opened it, unless it already has an assignee or a bot opened it. Reopening does not reassign.
 - A sprint or status that is already set is never overwritten, so moving a card is safe.
-- Pull requests: `project-intake-pr.yml` assigns the author, and adds a card (current sprint, Backlog) only when the PR closes no issue, since that issue already has a card. A `Closes #N` added after the PR opens does not remove a card that was already created.
+- Pull requests: `project-intake-pr.yml` assigns the author. A PR never gets a card of its own: only tickets are on the board, and a PR is tracked by the ticket it closes, so open it with `Closes #N`.
 - To backfill open issues that are not on the board: **Actions → Project intake → Run workflow**.
 
 It needs the secret `PROJECT_TOKEN`: a token with the `project` scope, because `GITHUB_TOKEN` cannot write to a user-owned project. It is Anthony's personal token. Note its expiry date when you create it and rotate it before then (**Settings → Secrets and variables → Actions**). A run that fails with "PROJECT_TOKEN expired, revoked or missing the project scope" means it needs replacing. If the repo moves to an organisation or the token owner changes, switch to a GitHub App.
@@ -112,3 +112,11 @@ If a PR can't reasonably meet the threshold, a `/.github/` code owner can exempt
 2. The owner **re-runs the failed `ci-ok` job** (`gh run rerun --failed <run-id>`, or from the Actions tab). The gate reads reviews live, so the re-run picks up the exemption.
 
 To withdraw it, the owner submits another review starting `/coverage-revoke`. The latest of the two on the commit wins. Pushing a new commit ends the exemption, because it only applies to the commit it was submitted on. A `coverage-exempt` label does nothing.
+
+### How the gate measures
+
+- **Web:** `npm test -- --coverage` (Vitest, config in `web/vitest.config.ts`) writes `web/coverage/lcov.info`. Every file under `app/`, `lib/` and `components/` is listed, so a new file nobody tests shows as 0%, not as missing. `npm run test:coverage` does the same locally.
+- **Python:** `pytest --cov --cov-config=.github/coveragerc` writes `coverage.xml`. A Python file no test imports also shows as 0%.
+- **Excluded:** generated code (`web/lib/generated/`, `editrace_schema/models.py`) and test files. SQL isn't in any report.
+- **Where it runs:** the `coverage` job measures the lines the PR changed (`diff-cover` against `main`) and posts the comment; it never fails over low coverage. The decision, including the exemption, is made in `ci-ok`, which is why the exemption steps above re-run `ci-ok`.
+- **A bot or an unreadable review leaves the gate on.** If CI can't read the PR's reviews, the head commit or `CODEOWNERS` on `main`, it says so and the gate applies.
