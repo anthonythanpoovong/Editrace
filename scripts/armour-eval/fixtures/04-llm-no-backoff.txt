@@ -17,3 +17,5 @@
 - - 🟠 `web/lib/assistant.ts:6`: no per-user limit or input size cap on `question`/`breakdown`, so LLM cost is unbounded. **Fix:** enforce rate limits and length caps in the caller.
 + 🔴 `while (true)` retries every error forever with no backoff, no attempt cap and no delay. A 400/401/credit error or an outage becomes an infinite, hot loop of paid or rate-limited API calls, and the request never returns. **Fix:** cap attempts (e.g. 3) with exponential backoff, retry only on 429/5xx/network errors, and rethrow otherwise. The SDK already does this: `new Anthropic({ maxRetries: 3 })`, so the loop can simply be removed.
 - 🟠 Errors are swallowed and logged with `console.warn`. The full `err` object may include request details. Rethrow so the caller can return a proper error to the user.
+# From case 05's run (20261012-232528): a finding about another call's retries, which this pattern must not count.
+- - 🟠 `workers/sound/identify.py:13`: `subprocess.run` has no timeout, and the fingerprint call has no limit or backoff. **Fix:** add `timeout=`, and bound retries with backoff on the provider call.
