@@ -11,8 +11,8 @@ concurrency:
 jobs:
   review:
     # Advisory only: never make this a required check. Skips drafts (saves Actions minutes; it runs when the PR is marked
-    # ready) and forks (they can't read the token).
-    if: github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
+    # ready) except armour-eval/ branches (the eval opens its PRs as drafts, #128), and forks (they can't read the token).
+    if: github.event.pull_request.head.repo.full_name == github.repository && (!github.event.pull_request.draft || startsWith(github.head_ref, 'armour-eval/'))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -68,7 +68,7 @@ jobs:
     # It checks for Armour's comment itself, so a review still counts if the review job died after posting.
     # Same fork guard as review: fork PRs get a read-only token, so this would fail with a red check.
     needs: review
-    if: always() && github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
+    if: always() && github.event.pull_request.head.repo.full_name == github.repository && (!github.event.pull_request.draft || startsWith(github.head_ref, 'armour-eval/'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
