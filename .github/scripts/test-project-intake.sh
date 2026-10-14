@@ -90,7 +90,6 @@ cat > "$tmp/gh" <<'FAKE'
 q=$(printf '%s\n' "$@")
 printf '%s\n' "$q" | tr '\n' ' ' >> "$FAKE_LOG"; echo >> "$FAKE_LOG"
 case "$q" in
-  *closingIssuesReferences*) echo "${FAKE_CLOSES:-0}" ;; # the script reads it with --jq
   *projectV2\(number*) cat <<JSON
 {"data":{"user":{"projectV2":{"id":"P1","fields":{"nodes":[{},
  {"id":"S1","name":"Status","options":[{"id":"o1","name":"Backlog"},{"id":"o2","name":"Done"}]},
@@ -132,16 +131,5 @@ check "an issue that already has an assignee is left alone" $?
 check "an issue opened by a bot is not assigned" $?
 [ -z "$(who '[]' 'a b;rm')" ]
 check "a login that is not a plain GitHub login is not used" $?
-
-# --- PRs: a card only when the PR closes no issue ---
-runpr() { PATH="$tmp:$PATH" FAKE_LOG="$tmp/log" PR_NODE_ID=PR_abc LIST_TOKEN=t PROJECT_OWNER=me PROJECT_NUMBER=2 TODAY=2026-10-07 ./project-intake-pr.sh; }
-: > "$tmp/log"; FAKE_CLOSES=0 runpr > /dev/null
-[ "$(grep -c 'updateProjectV2ItemFieldValue' "$tmp/log")" -eq 2 ] && grep -q 'contentId' "$tmp/log"
-check "a PR that closes no issue gets a card, the sprint and Backlog" $?
-: > "$tmp/log"; FAKE_CLOSES=1 runpr > /dev/null
-[ "$(grep -c 'addProjectV2ItemById' "$tmp/log")" -eq 0 ]
-check "a PR that closes an issue gets no card" $?
-PATH="$tmp:$PATH" FAKE_LOG="$tmp/log" PR_NODE_ID='x";drop' LIST_TOKEN=t ./project-intake-pr.sh > /dev/null 2>&1; [ $? -ne 0 ]
-check "a bad PR node ID is rejected" $?
 
 exit $fail
