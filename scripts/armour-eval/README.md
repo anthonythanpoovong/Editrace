@@ -16,14 +16,14 @@ scripts/armour-eval/run.sh --cleanup     # close eval PRs and delete eval branch
 
 Run it on your own machine, logged in with `gh auth login`. It needs `git`, `gh` and `jq`, plus push access to the repo. It refuses to run in GitHub Actions: PRs opened with `GITHUB_TOKEN` don't trigger other workflows, so Armour would never review them. No token is created or stored anywhere.
 
-It takes 5–15 minutes. A valid score is appended to [`RESULTS.md`](RESULTS.md): commit that file with the rules or model change. **Target: at least 80% caught (4 of 5 today).** If Armour didn't review a case (usage limit, error or a timeout after 30 minutes) or a case couldn't be scored, the score is marked not valid, nothing is recorded, and the script exits with code 2. Re-run it later.
+It takes 5–15 minutes. A valid score is appended to [`RESULTS.md`](RESULTS.md): commit that file with the rules or model change. **Target: at least 80% caught (4 of 5 today).** If Armour didn't review a case (usage limit, error or a timeout after 30 minutes) or a case couldn't be scored, the score is marked not valid, nothing is recorded, and the script exits with code 2. Re-run it later. A valid score below the target is recorded and exits with code 1.
 
 ## How it works
 
 - **Eval PRs can't reach `main`.** They target a temporary base branch: `main` with this folder removed. The script never merges, and on every exit (success, error or Ctrl-C) it closes the PRs and deletes the branches. Deleting the base branch would also close any PR still open.
-- **Armour never sees the answers.** The base branch drops `scripts/armour-eval/` and the epic that lists the seeded bugs (`HIDE` in `run.sh`), so neither the PR diff nor the files Armour can browse name them. Branches are named `armour-eval/<run>/c1`, `c2`, ..., not after the case, and the PRs have no body. The bait code has no comments pointing at the bug.
+- **Armour never sees the answers.** The base branch drops `scripts/armour-eval/` and the epic that lists the seeded bugs (`HIDE` in `run.sh`), so neither the PR diff nor the files Armour can browse name them. Branches are named `armour-eval/<run>/c1`, `c2`, ..., not after the case, and the PRs have no body. The bait code has no comments pointing at the bug. Armour *can* tell these PRs are a test (the `armour-eval/` branch prefix, and `docs/plan.md` mentions the eval set), so it may look harder than on a normal PR. It can't tell which bug each one holds.
 - **Scoring** (`score.sh`, tested by `test-score.sh` in CI): a case is **caught** only when a 🔴 or 🟠 finding, in Armour's summary or inline on that commit, matches the case's `expect` pattern (case-insensitive). A 🟢 "consider" mention of a security or cost bug doesn't count.
-- Side effects per eval PR: CI runs (it skips this folder's tests, which aren't on the base branch). The Deploy workflow skips the Vercel preview for `armour-eval/` branches, since a preview of deliberately buggy code would outlive the PR. Drafts closed by their author send no Discord pings.
+- Side effects per eval PR: CI runs (it skips this folder's tests, which aren't on the base branch). The Deploy workflow skips the Vercel preview for `armour-eval/` branches, since a preview of deliberately buggy code would outlive the PR, and project intake doesn't add them to the board. Drafts closed by their author send no Discord pings.
 
 ## Cases
 

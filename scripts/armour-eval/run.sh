@@ -6,6 +6,7 @@
 #                                                 also comment the summary on issue or PR <n>
 #        scripts/armour-eval/run.sh --cleanup     close leftover eval PRs and delete leftover eval branches
 # A valid score is appended to scripts/armour-eval/RESULTS.md: commit it with the rules or model change.
+# Exits 0 when the score meets the target (80%), 1 when it's below, 2 when it isn't valid.
 #
 # Run it on your own machine with your own `gh` login, never in Actions: PRs opened with GITHUB_TOKEN
 # don't trigger other workflows, so Armour would never review them. No token is stored anywhere.
@@ -164,14 +165,18 @@ rows="" missed=""
 set -- $items
 for c in $cases; do
   n=${1%%:*} sha=${1#*:}; shift
-  json=$(jq -n \
-    --argjson i "$(gh api "repos/$REPO/issues/$n/comments" --paginate | jq -s 'add // []')" \
-    --argjson r "$(gh api "repos/$REPO/pulls/$n/comments" --paginate | jq -s 'add // []')" \
-    '{issue_comments: $i, review_comments: $r}')
   code=0 result=""
   case " $timed_out " in
     *" $sha "*) code=2 ;;
-    *) result=$(printf '%s' "$json" | "$here/score.sh" "$sha" "$(cat "$here/cases/$c/expect")") || code=$? ;;
+    *)
+      # A failed fetch (e.g. a GitHub 502) is a scoring error for this case, not the end of the run.
+      if ic=$(gh api "repos/$REPO/issues/$n/comments" --paginate | jq -s 'add // []') \
+        && rc=$(gh api "repos/$REPO/pulls/$n/comments" --paginate | jq -s 'add // []') \
+        && json=$(jq -n --argjson i "$ic" --argjson r "$rc" '{issue_comments: $i, review_comments: $r}'); then
+        result=$(printf '%s' "$json" | "$here/score.sh" "$sha" "$(cat "$here/cases/$c/expect")") || code=$?
+      else
+        code=3 result="couldn't fetch #$n's comments"
+      fi ;;
   esac
   total=$((total + 1))
   case $code in
@@ -213,3 +218,4 @@ if [ -n "$post" ]; then
   gh api "repos/$REPO/issues/$post/comments" -f body="$summary" --jq .html_url
 fi
 [ "$invalid" -eq 0 ] || exit 2
+[ "$caught" -ge "$target" ] || { log "below target: $caught/$total caught, target $target"; exit 1; }

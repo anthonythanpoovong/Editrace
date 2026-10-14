@@ -51,8 +51,11 @@ jobs:
           [ -z "$who" ] || gh api "repos/$REPO/issues/$PR/assignees" -f "assignees[]=$who" > /dev/null \
             || echo "::warning::Could not assign $who to #$PR"
 
+  # Armour eval PRs (#128) are throwaway drafts that close no issue: no card for them.
   board:
-    if: github.event.pull_request.user.type == 'User'
+    if: >-
+      github.event.pull_request.user.type == 'User'
+      && !startsWith(github.event.pull_request.head.ref, 'armour-eval/')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
