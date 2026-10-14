@@ -68,6 +68,7 @@ jobs:
       - run: .github/scripts/test-coverage-gate.sh
       - run: .github/scripts/test-coverage-decide.sh
       - run: .github/scripts/test-coverage-comment.sh
+      - run: .github/scripts/test-armour-inputs.sh
 
   schema:
     needs: detect

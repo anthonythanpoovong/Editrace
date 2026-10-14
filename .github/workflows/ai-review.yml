@@ -13,25 +13,50 @@ jobs:
     # Advisory only: never make this a required check. Runs on drafts; skips forks (they can't read the token).
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Up to 10 minutes waiting for CI's coverage, then the review itself.
+    timeout-minutes: 25
     permissions:
       contents: read
       pull-requests: write
       id-token: write
+      checks: read # CI's coverage check on this commit (#125)
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
       # Armour's rules come from the base commit, not from the PR: a PR must not be able to edit
-      # the rules it is reviewed under. Only this one file is fetched, into a separate directory.
+      # the rules it is reviewed under, or the script that gathers its inputs. Only these files are
+      # fetched, into a separate directory.
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           path: armour-trusted
-          sparse-checkout: .github/armour.md
+          sparse-checkout: |
+            .github/armour.md
+            .github/scripts/armour-inputs.sh
           sparse-checkout-cone-mode: false
           fetch-depth: 1
+
+      # The PR's changed files, and CI's coverage numbers for this commit once CI's coverage job finishes
+      # (waits up to 10 minutes), for Armour to quote rather than estimate (#125). The base branch's copy of
+      # the script runs, so a PR can't plant numbers. Never blocks the review: on any problem Armour says
+      # coverage is pending.
+      - name: Changed files and CI coverage for Armour
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          OUT: armour-trusted/inputs
+        run: |
+          script=armour-trusted/.github/scripts/armour-inputs.sh
+          if [ -f "$script" ]; then
+            bash "$script"
+          else
+            echo "The base branch has no armour-inputs.sh yet; Armour reviews without it."
+          fi
 
       - uses: anthropics/claude-code-action@v1
         with:
