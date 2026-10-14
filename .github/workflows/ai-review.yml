@@ -90,6 +90,10 @@ jobs:
           claude_args: |
             --model claude-sonnet-5-5
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Edit(armour-comment.md),Read,Glob,Grep"
+          # Temporary (#233): Armour sometimes ends without posting after a denied tool call, and the log hides
+          # which one. Full output shows every tool call in the run log (private repo: team only). Turn off once
+          # the cause is fixed.
+          show_full_output: true
 
   notice:
     name: Armour skip notice
