@@ -69,6 +69,9 @@ jobs:
       - run: .github/scripts/test-coverage-decide.sh
       - run: .github/scripts/test-coverage-comment.sh
       - run: .github/scripts/test-armour-inputs.sh
+      # Armour eval PRs run CI on a base branch without scripts/armour-eval (#128).
+      - if: hashFiles('scripts/armour-eval/test-score.sh') != ''
+        run: scripts/armour-eval/test-score.sh
 
   schema:
     needs: detect
@@ -106,12 +109,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+      - uses: astral-sh/setup-uv@v6
+      - run: npm ci
+        working-directory: web
       - run: make codegen
+      # Also fails on a generated file that was never committed, which `git diff` alone misses.
       - name: Generated code is up to date
-        run: git diff --exit-code || { echo "::error::Generated code is stale. Run 'make codegen' and commit."; exit 1; }
+        run: test -z "$(git status --porcelain)" || { git status --short; git diff --stat; echo "::error::Generated code is stale. Run 'make codegen' and commit."; exit 1; }
 
   web:
     needs: detect
@@ -212,7 +216,8 @@ jobs:
           COMPARE_BRANCH: origin/main
           FAIL_UNDER: "80"
           # Generated from schema/template.schema.json (#2). Patterns must start with a wildcard.
-          EXCLUDES: "**/lib/generated/** **/editrace_schema/models.py"
+          # scripts/armour-eval/cases: the Armour eval's bait code (#128), never run, so never tested.
+          EXCLUDES: "**/lib/generated/** **/editrace_schema/models.py **/scripts/armour-eval/cases/**"
           BASELINE_JSON: coverage-base/summary.json
           EVENT_NAME: ${{ github.event_name }}
         run: .github/scripts/coverage-gate.sh
