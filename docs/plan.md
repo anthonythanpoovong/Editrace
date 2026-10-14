@@ -230,7 +230,7 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 - **Trending / discovery feed:** parked. No scraping, because it conflicts with upload-first and platform terms. An embed-only (oEmbed) feed is the option to revisit, with no user evidence yet. Virality scoring was rejected (no legitimate ground truth); the niche format benchmark (#103) replaces it.
 - **Marketing beyond Phase A:** paid ads wait for the MVP, billing (#19) and a budget (#121). Premiere/Resolve/FCP editors as a primary audience, Product Hunt, a newsletter and affiliate/referral programs are deferred (see `docs/epics/marketing-launch.md`).
 - **Repo hardening, deferred:** Dependabot, dependency/security scanning (pip-audit, npm audit, Semgrep) and pinning actions to SHAs wait until dependencies exist; CodeQL needs a paid plan for private repos; 👍/👎 tracking of Armour findings is deferred (see `docs/epics/repo-hardening-phase-0.md`).
-- **Eval token storage (#128):** environment protection on private repos may need a paid GitHub plan; otherwise the Armour eval runs from a local script. Generated code paths to exclude from coverage are confirmed when codegen (#2) lands.
+- **Eval token storage (#128):** environment protection on private repos may need a paid GitHub plan; otherwise the Armour eval runs from a local script. Generated code paths are excluded from coverage: `web/lib/generated/` and `editrace_schema/models.py` (codegen, #2).
 
 ## Links
 

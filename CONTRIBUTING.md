@@ -112,3 +112,11 @@ If a PR can't reasonably meet the threshold, a `/.github/` code owner can exempt
 2. The owner **re-runs the failed `ci-ok` job** (`gh run rerun --failed <run-id>`, or from the Actions tab). The gate reads reviews live, so the re-run picks up the exemption.
 
 To withdraw it, the owner submits another review starting `/coverage-revoke`. The latest of the two on the commit wins. Pushing a new commit ends the exemption, because it only applies to the commit it was submitted on. A `coverage-exempt` label does nothing.
+
+### How the gate measures
+
+- **Web:** `npm test -- --coverage` (Vitest, config in `web/vitest.config.ts`) writes `web/coverage/lcov.info`. Every file under `app/`, `lib/` and `components/` is listed, so a new file nobody tests shows as 0%, not as missing. `npm run test:coverage` does the same locally.
+- **Python:** `pytest --cov --cov-config=.github/coveragerc` writes `coverage.xml`. A Python file no test imports also shows as 0%.
+- **Excluded:** generated code (`web/lib/generated/`, `editrace_schema/models.py`) and test files. SQL isn't in any report.
+- **Where it runs:** the `coverage` job measures the lines the PR changed (`diff-cover` against `main`) and posts the comment; it never fails over low coverage. The decision, including the exemption, is made in `ci-ok`, which is why the exemption steps above re-run `ci-ok`.
+- **A bot or an unreadable review leaves the gate on.** If CI can't read the PR's reviews, the head commit or `CODEOWNERS` on `main`, it says so and the gate applies.
