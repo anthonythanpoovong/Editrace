@@ -49,6 +49,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      # test-coverage-gate.sh runs the real diff-cover (#129). Same pin as the coverage job.
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: false
+      - run: |
+          uv tool install diff-cover==10.6.0
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - run: .github/scripts/test-discord-review-payload.sh
       - run: .github/scripts/test-discord-review-ack.sh
       - run: .github/scripts/test-discord-review-comment.sh
@@ -57,6 +64,10 @@ jobs:
       - run: .github/scripts/test-discord-pr-status.sh
       - run: .github/scripts/test-discord-reminders.sh
       - run: .github/scripts/test-vercel-deploy.sh
+      - run: .github/scripts/test-coverage-exemption.sh
+      - run: .github/scripts/test-coverage-gate.sh
+      - run: .github/scripts/test-coverage-decide.sh
+      - run: .github/scripts/test-coverage-comment.sh
 
   schema:
     needs: detect
@@ -118,10 +129,16 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - run: npm ci
       # No --if-present: once web/ exists it must define lint, typecheck and test scripts (#48). Otherwise a
-      # missing script passes silently, and the changed-line coverage gate (repo hardening story 5) gets no data.
+      # missing script passes silently, and the changed-line coverage gate (#129) gets no data.
       - run: npm run lint
       - run: npm run typecheck
-      - run: npm test
+      # The coverage settings are in web/vitest.config.ts; this writes web/coverage/lcov.info for the gate (#129).
+      - run: npm test -- --coverage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-web
+          path: web/coverage/lcov.info
+          retention-days: 7
 
   python:
     needs: detect
@@ -137,7 +154,81 @@ jobs:
       # (e.g. `uv add --dev pyright`), or this step fails. Pyright was picked over mypy because it checks the
       # generated Pydantic models without a plugin or extra config.
       - run: uv run pyright
-      - run: uv run pytest
+      # pytest-cov is added for this run only, so pyproject.toml needn't list it. .github/coveragerc makes the
+      # report's paths relative to the repo root, which is what the changed-line gate matches (#129).
+      - run: uv run --with pytest-cov pytest --cov --cov-config=.github/coveragerc --cov-report=xml:coverage.xml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-python
+          path: coverage.xml
+          retention-days: 7
+
+  # Changed-line coverage (#129): measures the lines this PR changes against the web and Python coverage reports and
+  # publishes the numbers (job summary, one sticky "Coverage" PR comment). It never fails over low coverage: the
+  # decision, with the owner's /coverage-exempt review, is made in ci-ok, because the owner exempts a PR by
+  # re-running the failed ci-ok job and a re-run of ci-ok does not re-run this job. On main it records the overall
+  # number that PRs compare with.
+  coverage:
+    needs: [web, python]
+    if: always() && (needs.web.result == 'success' || needs.python.result == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # the sticky comment (a fork PR's read-only token only gets a warning)
+      actions: read # main's last coverage summary, for "change vs main"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # diff-cover compares with origin/main
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: false
+      - run: |
+          uv tool install diff-cover==10.6.0
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      # Either job can be skipped (no web/ or no Python code yet): download only the reports that exist.
+      - uses: actions/download-artifact@v4
+        if: needs.web.result == 'success'
+        with:
+          name: coverage-web
+          path: coverage-in/web
+      - uses: actions/download-artifact@v4
+        if: needs.python.result == 'success'
+        with:
+          name: coverage-python
+          path: coverage-in/python
+      - name: Main's last coverage, for the change vs main
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          run_id=$(gh run list --workflow ci.yml --branch main --event push --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          [ -n "$run_id" ] && gh run download "$run_id" --name coverage-summary --dir coverage-base
+      - name: Measure changed-line coverage
+        env:
+          WEB_LCOV: coverage-in/web/lcov.info
+          PY_XML: coverage-in/python/coverage.xml
+          COMPARE_BRANCH: origin/main
+          FAIL_UNDER: "80"
+          # Generated from schema/template.schema.json (#2). Patterns must start with a wildcard.
+          EXCLUDES: "**/lib/generated/** **/editrace_schema/models.py"
+          BASELINE_JSON: coverage-base/summary.json
+          EVENT_NAME: ${{ github.event_name }}
+        run: .github/scripts/coverage-gate.sh
+      - name: Update the Coverage comment
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          COMMENT_FILE: coverage-out/summary.md
+        run: .github/scripts/coverage-comment.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-summary
+          path: coverage-out/summary.json
+          retention-days: 30
 
   # Lints the workflow files themselves (syntax, expressions, shellcheck on run: steps). Added with deploy.yml (#48).
   actionlint:
@@ -155,8 +246,33 @@ jobs:
   # Single required check for branch protection: fails if any job failed, ignores skipped ones.
   ci-ok:
     if: always()
-    needs: [detect, secrets-scan, scripts, actionlint, schema, codegen, web, python]
+    needs: [detect, secrets-scan, scripts, actionlint, schema, codegen, web, python, coverage]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # to show the final result in the Coverage comment
     steps:
       - run: |
           echo '${{ toJSON(needs) }}' | jq -e 'all(.[]; .result == "success" or .result == "skipped")'
+      # The coverage decision (#129). To exempt an under-covered PR the owner submits a review starting
+      # `/coverage-exempt <reason>` and then re-runs this failed job (gh run rerun --failed <run-id>). The script
+      # reads the PR's head commit, reviews and main's CODEOWNERS live, so the re-run sees the new review without
+      # a new push. See .github/scripts/coverage-exemption.sh for the rules.
+      - name: Check out the gate scripts
+        if: github.event_name == 'pull_request' && needs.coverage.result == 'success'
+        uses: actions/checkout@v6
+      - name: Fetch the coverage summary
+        if: github.event_name == 'pull_request' && needs.coverage.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-summary
+          path: coverage-summary
+      - name: Apply the coverage gate
+        if: github.event_name == 'pull_request' && needs.coverage.result == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          BASE_BRANCH: ${{ github.event.repository.default_branch }}
+          SUMMARY_JSON: coverage-summary/summary.json
+        run: .github/scripts/coverage-decide.sh
