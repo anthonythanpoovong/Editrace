@@ -215,7 +215,8 @@ jobs:
           COMPARE_BRANCH: origin/main
           FAIL_UNDER: "80"
           # Generated from schema/template.schema.json (#2). Patterns must start with a wildcard.
-          EXCLUDES: "**/lib/generated/** **/editrace_schema/models.py"
+          # scripts/armour-eval/cases: the Armour eval's bait code (#128), never run, so never tested.
+          EXCLUDES: "**/lib/generated/** **/editrace_schema/models.py **/scripts/armour-eval/cases/**"
           BASELINE_JSON: coverage-base/summary.json
           EVENT_NAME: ${{ github.event_name }}
         run: .github/scripts/coverage-gate.sh
