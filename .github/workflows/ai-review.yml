@@ -20,6 +20,7 @@ jobs:
       pull-requests: write
       id-token: write
       checks: read # CI's coverage check on this commit (#125)
+      actions: read # CI's coverage-summary artifact for this commit (#125)
     steps:
       - uses: actions/checkout@v6
         with:
@@ -35,12 +36,14 @@ jobs:
           sparse-checkout: |
             .github/armour.md
             .github/scripts/armour-inputs.sh
+            .github/scripts/coverage-render.sh
           sparse-checkout-cone-mode: false
           fetch-depth: 1
 
       # The PR's changed files, and CI's coverage numbers for this commit once CI's coverage job finishes
-      # (waits up to 10 minutes), for Armour to quote rather than estimate (#125). The base branch's copy of
-      # the script runs, so a PR can't plant numbers. Never blocks the review: on any problem Armour says
+      # (waits up to 10 minutes): its coverage-summary artifact, rendered as CI's Coverage comment is. Armour
+      # quotes them rather than estimating (#125). The base branch's copies of the scripts run, so a PR can't
+      # plant numbers. Never blocks the review: on any problem Armour says
       # coverage is pending.
       - name: Changed files and CI coverage for Armour
         continue-on-error: true
