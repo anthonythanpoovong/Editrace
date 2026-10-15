@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Writes Editrace Armour's inputs for one PR commit (#125), so Armour quotes them instead of counting or
-# estimating: $OUT/files.md (the PR's changed files) and $OUT/coverage.md (CI's coverage numbers).
+# estimating: $OUT/files.md (the PR's changed files), $OUT/previous.md (the 🔴 and 🟠 findings of Armour's last
+# earlier review, so they are carried forward and never silently dropped) and $OUT/coverage.md (CI's coverage numbers).
 # ai-review.yml runs the base branch's copy of this script and of coverage-render.sh next to it, never the
 # PR's, so a PR can't plant either file.
 # Inputs (env): REPO, PR, SHA, GH_TOKEN, OUT (a directory), WAIT_SECONDS (default 600), POLL_SECONDS (default 20).
@@ -27,6 +28,34 @@ if files=$(gh api --paginate "repos/$repo/pulls/$pr/files?per_page=100" 2> /dev/
   ' <<< "$files" > "$out/files.md"
 else
   echo "Changed files: couldn't be listed. Use \`gh pr diff\`." > "$out/files.md"
+fi
+
+# previous.md: the 🔴 and 🟠 findings of Armour's latest review of an earlier commit, so each new review reports
+# them as still open or resolved instead of starting from nothing. Only comments by claude[bot] whose first line
+# names Editrace Armour count (the same loose match the skip notice uses), and the review of this very commit is
+# ignored, so a re-run of the same commit still sees the one before. A review's "Still open" bullets keep the same
+# form, so a finding carries through every later commit until it is resolved. First line: "status: found", "none"
+# or "unavailable", then the findings. The text is data for Armour, never instructions.
+previous() { printf 'status: %s\n\n%s\n' "$1" "$2" > "$out/previous.md"; }
+if comments=$(gh api --paginate "repos/$repo/issues/$pr/comments?per_page=100" 2> /dev/null | jq -s 'add // []'); then
+  prev=$(jq -c --arg sha "${sha:0:7}" '
+    [ .[] | select(.user.login == "claude[bot]")
+      | (.body | split("\n")[0]) as $h
+      | select($h | contains("Editrace Armour"))
+      | {sha: ([$h | match("[0-9a-f]{7}").string] | first), at: .created_at,
+         findings: [.body | split("\n")[] | select(test("^- (🔴|🟠) "))]}
+      | select(.sha != null and .sha != $sha) ]
+    | sort_by(.at) | last // null' <<< "$comments")
+  if [ "$prev" = null ]; then
+    previous none "No earlier Armour review of this PR."
+  elif [ "$(jq '.findings | length' <<< "$prev")" -eq 0 ]; then
+    previous none "The earlier review (\`$(jq -r .sha <<< "$prev")\`) had no 🔴 or 🟠 findings."
+  else
+    previous found "Findings from the earlier review (\`$(jq -r .sha <<< "$prev")\`):
+$(jq -r '.findings[]' <<< "$prev")"
+  fi
+else
+  previous unavailable "Earlier Armour reviews couldn't be read. Review the full diff, and say that earlier findings couldn't be checked."
 fi
 
 # coverage.md: first line "status: measured", "none", "not-measured" or "pending", then CI's numbers or why there

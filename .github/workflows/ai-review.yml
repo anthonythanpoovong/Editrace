@@ -78,6 +78,8 @@ jobs:
 
             armour-trusted/inputs/files.md lists the PR's changed files and armour-trusted/inputs/coverage.md
             holds CI's coverage numbers for this commit. Use them as armour.md says; never estimate coverage.
+            armour-trusted/inputs/previous.md holds the findings from your last review of an earlier commit.
+            Report each as still open or resolved, as armour.md says; never drop one silently.
 
             Post exactly one top-level review comment for this commit, in the format armour.md defines. Write the comment body to
             armour-comment.md with the Write tool, then post it with `gh pr comment ${{ github.event.pull_request.number }} --body-file armour-comment.md`.
