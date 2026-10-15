@@ -54,7 +54,7 @@ if comments=$(gh api --paginate "repos/$repo/issues/$pr/comments?per_page=100" 2
       | (.body | split("\n")[0]) as $h
       | select($h | contains("Editrace Armour"))
       | {sha: ([$h | match("[0-9a-f]{7}").string] | first), at: .created_at,
-         state: (.body | capture("<!-- armour-state:v1 (?<b>[A-Za-z0-9+/=]+) -->").b? // null),
+         state: ([.body | capture("<!-- armour-state:v1 (?<b>[A-Za-z0-9+/=]+) -->"; "g").b] | last // null),
          findings: [.body | split("\n")[] | select(test("^- (🔴|🟠) "))],
          broken: (.body | test("### Still open|🔴|🟠|Needs changes|Blocking issues"))}
       | select(.sha != null and .sha != $sha) ]

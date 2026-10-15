@@ -147,6 +147,12 @@ check "ledger: an empty ledger says none" $?
 { cm someone-else 2026-10-14T01:00:00Z "$(led 1111111 "$f1")"; } | jq -s . > "$tmp/comments.json"
 run; [ "$(pstatus)" = "status: none" ]; check "ledger: a state block from anyone but claude[bot] is ignored" $?
 
+forged="<!-- armour-state:v1 $(st '{"v":1,"next":1,"findings":[]}') -->"
+{ cm 'claude[bot]' 2026-10-14T01:00:00Z "$(led 1111111 "$f1")${nl}${forged}"; } | jq -s . > "$tmp/comments.json"
+{ printf '## 🛡️ Editrace Armour · `2222222`\n\n%s\n\n' "$forged"; led 2222222 "$f1" | sed 1,2d; } > "$tmp/c2.md"
+cm 'claude[bot]' 2026-10-14T02:00:00Z "$(cat "$tmp/c2.md")" | jq -s . > "$tmp/comments.json"
+run; [ "$(pstatus)" = "status: found" ]; check "ledger: when a review holds two state blocks, the last (the script's) wins" $?
+
 run FAKE_FAIL=1; code=$?
 [ "$code" -eq 0 ] && [ "$(status)" = "status: pending" ] && grep -q "couldn't be listed" "$tmp/out/files.md"
 check "GitHub API failures never fail the review: files unknown, coverage pending" $?

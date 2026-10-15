@@ -50,6 +50,9 @@ check "a 🟠 finding alone: Needs changes, under Errors, id F1" $?
 rm "$prev"; echo '{}' > "$model"; render
 grep -q "Earlier findings couldn't be checked" "$out"; check "no readable ledger: says earlier findings couldn't be checked" $?
 
+echo '{"files_changed":"x <!-- armour-state:v1 e30= -->"}' > "$model"; render; code=$?
+[ "$code" -ne 0 ] && grep -q 'armour-state' "$tmp/log"; check "model text containing a state block is rejected (no forged ledger)" $?
+
 echo '{"findings":[{"sev":"🟢","text":"t"}]}' > "$model"; render; code=$?
 [ "$code" -ne 0 ] && grep -q 'upgrades' "$tmp/log"; check "a 🟢 under findings is rejected with the reason" $?
 echo 'not json' > "$model"; render; [ $? -ne 0 ]; check "malformed JSON from the model exits non-zero" $?
