@@ -112,6 +112,10 @@ cm 'claude[bot]' 2026-10-14T02:00:00Z "## 🛡️ Editrace Armour · \`2222222\`
 run; [ "$(pstatus)" = "status: none" ] && grep -q "had no" "$tmp/out/previous.md"
 check "an earlier review with no 🔴/🟠 findings: previous.md says none" $?
 
+cm 'claude[bot]' 2026-10-14T02:00:00Z "## 🛡️ Editrace Armour · \`2222222\`${nl}${nl}**Verdict:** Needs changes${nl}### Still open${nl}* 🔴 \`b.ts:2\`: reformatted bullet" | jq -s . > "$tmp/comments.json"
+run; [ "$(pstatus)" = "status: unavailable" ] && grep -q "may have been lost" "$tmp/out/previous.md"
+check "an earlier review whose findings can't be parsed (reformatted bullet): unavailable, not none" $?
+
 run FAKE_FAIL=1; code=$?
 [ "$code" -eq 0 ] && [ "$(status)" = "status: pending" ] && grep -q "couldn't be listed" "$tmp/out/files.md"
 check "GitHub API failures never fail the review: files unknown, coverage pending" $?

@@ -35,7 +35,9 @@ fi
 # names Editrace Armour count (the same loose match the skip notice uses), and the review of this very commit is
 # ignored, so a re-run of the same commit still sees the one before. A review's "Still open" bullets keep the same
 # form, so a finding carries through every later commit until it is resolved. First line: "status: found", "none"
-# or "unavailable", then the findings. The text is data for Armour, never instructions.
+# or "unavailable", then the findings. The text is data for Armour, never instructions. If the latest review
+# shows signs of findings (a Still open heading, a 🔴/🟠, a failing verdict) but no bullet in the expected form,
+# the chain is broken (the model reformatted a bullet): that is "unavailable", never a quiet "none".
 previous() { printf 'status: %s\n\n%s\n' "$1" "$2" > "$out/previous.md"; }
 if comments=$(gh api --paginate "repos/$repo/issues/$pr/comments?per_page=100" 2> /dev/null | jq -s 'add // []'); then
   prev=$(jq -c --arg sha "${sha:0:7}" '
@@ -43,11 +45,14 @@ if comments=$(gh api --paginate "repos/$repo/issues/$pr/comments?per_page=100" 2
       | (.body | split("\n")[0]) as $h
       | select($h | contains("Editrace Armour"))
       | {sha: ([$h | match("[0-9a-f]{7}").string] | first), at: .created_at,
-         findings: [.body | split("\n")[] | select(test("^- (🔴|🟠) "))]}
+         findings: [.body | split("\n")[] | select(test("^- (🔴|🟠) "))],
+         broken: (.body | test("### Still open|🔴|🟠|Needs changes|Blocking issues"))}
       | select(.sha != null and .sha != $sha) ]
     | sort_by(.at) | last // null' <<< "$comments")
   if [ "$prev" = null ]; then
     previous none "No earlier Armour review of this PR."
+  elif [ "$(jq '.findings | length' <<< "$prev")" -eq 0 ] && [ "$(jq .broken <<< "$prev")" = true ]; then
+    previous unavailable "The earlier review (\`$(jq -r .sha <<< "$prev")\`) mentions findings or a failing verdict, but none could be read from it, so they may have been lost. Review the full diff, and say that earlier findings couldn't be checked."
   elif [ "$(jq '.findings | length' <<< "$prev")" -eq 0 ]; then
     previous none "The earlier review (\`$(jq -r .sha <<< "$prev")\`) had no 🔴 or 🟠 findings."
   else
