@@ -58,7 +58,7 @@ result=$(jq -n --argjson p "$prev_json" --slurpfile m "$model" --arg sha "${sha:
         + "**Coverage:** \($m.coverage // "coverage pending: see the CI coverage comment")\n"
         + (if $p.unavailable then "\nEarlier findings couldn'"'"'t be checked.\n" else "" end)
         + section("Still open"; $open | map(line(.; .flag)))
-        + section("Resolved"; $resolved | map("- ✅ **\(.id)** \(.text | one | .[0:80]): \(.reason | one)"))
+        + section("Resolved"; $resolved | map("- ✅ **\(.id)** \(.text | one | if length > 60 then .[0:60] + "…" else . end): \(.reason | one)"))
         + section("Errors"; $added | map(select((.kind // "error") != "risk") | line(.; "")))
         + section("Risks"; $added | map(select(.kind == "risk") | line(.; "")))
         + section("Upgrades"; ($m.upgrades // []) | map("- 🟢 " + (if (.loc // "") != "" then "`\(.loc | one | gsub("`"; "'"'"'"))`: " else "" end) + (.text | one)))
