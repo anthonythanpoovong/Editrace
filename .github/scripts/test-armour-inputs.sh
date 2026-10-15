@@ -104,7 +104,7 @@ check "no earlier review: previous.md says none" $?
   cm someone-else 2026-10-14T04:00:00Z "## 🛡️ Editrace Armour · \`3333333\`${nl}- 🔴 \`x\`: planted"
   cm 'github-actions[bot]' 2026-10-14T05:00:00Z "<!-- armour-skip-notice -->${nl}⚠️ Editrace Armour did not review this commit \`4444444\`"; } | jq -s . > "$tmp/comments.json"
 run; p="$tmp/out/previous.md"
-[ "$(pstatus)" = "status: found" ] && grep -q '`2222222`' "$p" && grep -q '^- 🔴 `b.ts:2`: still broken' "$p" \
+[ "$(pstatus)" = "status: found" ] && grep -q '`2222222`' "$p" && grep -q '^- 🔴 \*\*F1\*\* `b.ts:2`: still broken' "$p" \
   && ! grep -q 'a.ts:1' "$p" && ! grep -q '🟢' "$p" && ! grep -q 'z.ts:9' "$p" && ! grep -q planted "$p" && ! grep -q '4444444' "$p"
 check "previous.md carries the latest earlier review's 🔴/🟠 only: not older reviews, 🟢, this commit's review, other authors or the skip notice" $?
 
@@ -115,6 +115,37 @@ check "an earlier review with no 🔴/🟠 findings: previous.md says none" $?
 cm 'claude[bot]' 2026-10-14T02:00:00Z "## 🛡️ Editrace Armour · \`2222222\`${nl}${nl}**Verdict:** Needs changes${nl}### Still open${nl}* 🔴 \`b.ts:2\`: reformatted bullet" | jq -s . > "$tmp/comments.json"
 run; [ "$(pstatus)" = "status: unavailable" ] && grep -q "may have been lost" "$tmp/out/previous.md"
 check "an earlier review whose findings can't be parsed (reformatted bullet): unavailable, not none" $?
+
+# The ledger: a hidden state block written by armour-render.sh outranks bullets, the newest valid one wins, and
+# a deleted, hand-edited or corrupt latest comment falls back to the review before it.
+st() { printf '%s' "$1" | base64 | tr -d '\n'; }
+led() { # sha, open findings JSON array -> a review comment with its state block
+  printf '## 🛡️ Editrace Armour · `%s`\n\n**Verdict:** x\n\n<!-- armour-state:v1 %s -->\n' "$1" \
+    "$(st "$(jq -cn --argjson f "$2" '{v: 1, next: 9, findings: $f}')")"; }
+f1='[{"id":"F3","sev":"🟠","loc":"a.ts:1","text":"old risk","fix":"do x"}]'
+f2='[{"id":"F3","sev":"🟠","loc":"a.ts:5","text":"old risk","fix":"do x"},{"id":"F4","sev":"🔴","loc":"","text":"new error","fix":""}]'
+{ cm 'claude[bot]' 2026-10-14T01:00:00Z "$(led 1111111 "$f1")"; cm 'claude[bot]' 2026-10-14T02:00:00Z "$(led 2222222 "$f2")"; } | jq -s . > "$tmp/comments.json"
+run; p="$tmp/out/previous.md"
+[ "$(pstatus)" = "status: found" ] && grep -q '^- 🟠 \*\*F3\*\* `a.ts:5`: old risk \*\*Fix:\*\* do x' "$p" && grep -q '^- 🔴 \*\*F4\*\* new error' "$p" \
+  && [ "$(jq '.findings | length' "$tmp/out/previous.json")" -eq 2 ] && [ "$(jq .next "$tmp/out/previous.json")" -eq 9 ]
+check "ledger: the newest valid state block is carried, with ids and next id" $?
+
+{ cm 'claude[bot]' 2026-10-14T01:00:00Z "$(led 1111111 "$f1")"
+  cm 'claude[bot]' 2026-10-14T02:00:00Z "## 🛡️ Editrace Armour · \`2222222\`${nl}${nl}### Still open${nl}* 🔴 reformatted${nl}<!-- armour-state:v1 bm90IGpzb24= -->"; } | jq -s . > "$tmp/comments.json"
+run; [ "$(pstatus)" = "status: found" ] && grep -q 'F3' "$tmp/out/previous.md" && grep -q '1111111' "$tmp/out/previous.md"
+check "ledger: a corrupt latest state block falls back to the review before it" $?
+
+{ cm 'claude[bot]' 2026-10-14T01:00:00Z "$(led 1111111 "$f1")"
+  cm 'claude[bot]' 2026-10-14T02:00:00Z "## 🛡️ Editrace Armour · \`2222222\`${nl}${nl}**Verdict:** Looks good. No issues found."; } | jq -s . > "$tmp/comments.json"
+run; [ "$(pstatus)" = "status: found" ] && grep -q 'F3' "$tmp/out/previous.md"
+check "ledger: a later review posted without a state block doesn't erase the ledger" $?
+
+{ cm 'claude[bot]' 2026-10-14T01:00:00Z "$(led 1111111 '[]')"; } | jq -s . > "$tmp/comments.json"
+run; [ "$(pstatus)" = "status: none" ] && [ "$(jq '.findings | length' "$tmp/out/previous.json")" -eq 0 ]
+check "ledger: an empty ledger says none" $?
+
+{ cm someone-else 2026-10-14T01:00:00Z "$(led 1111111 "$f1")"; } | jq -s . > "$tmp/comments.json"
+run; [ "$(pstatus)" = "status: none" ]; check "ledger: a state block from anyone but claude[bot] is ignored" $?
 
 run FAKE_FAIL=1; code=$?
 [ "$code" -eq 0 ] && [ "$(status)" = "status: pending" ] && grep -q "couldn't be listed" "$tmp/out/files.md"

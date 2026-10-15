@@ -69,6 +69,7 @@ jobs:
       - run: .github/scripts/test-coverage-decide.sh
       - run: .github/scripts/test-coverage-comment.sh
       - run: .github/scripts/test-armour-inputs.sh
+      - run: .github/scripts/test-armour-render.sh
       # Armour eval PRs run CI on a base branch without scripts/armour-eval (#128).
       - if: hashFiles('scripts/armour-eval/test-score.sh') != ''
         run: scripts/armour-eval/test-score.sh
