@@ -41,7 +41,7 @@ check "everything resolved, nothing new: Looks good, empty ledger, coverage defa
 
 echo '{"v":1,"next":2,"findings":[{"id":"F1","sev":"🟠","loc":"","text":"a very long finding text that goes on and on and on past sixty characters, easily","fix":""}]}' > "$prev"
 echo '{"statuses":{"F1":{"status":"resolved","reason":"gone"}}}' > "$model"; render
-grep -q '^- ✅ \*\*F1\*\* a very long finding text that goes on and on and on past sixt…: gone$' "$out"
+grep -q '^- ✅ \*\*F1\*\* a very long finding text that goes on and on and on past six…: gone$' "$out"
 check "a long resolved finding is cut at 60 characters with an ellipsis" $?
 
 echo '{"v":1,"next":1,"findings":[]}' > "$prev"; echo '{}' > "$model"; render
