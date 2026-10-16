@@ -16,7 +16,7 @@ scripts/armour-eval/run.sh --cleanup     # close eval PRs and delete eval branch
 
 Run it on your own machine, logged in with `gh auth login`. It needs `git`, `gh` and `jq`, plus push access to the repo. It refuses to run in GitHub Actions: PRs opened with `GITHUB_TOKEN` don't trigger other workflows, so Armour would never review them. No token is created or stored anywhere.
 
-It takes 5–15 minutes. A valid score is appended to [`RESULTS.md`](RESULTS.md): commit that file with the rules or model change. **Target: at least 80% caught (4 of 5 today).** If Armour didn't review a case (usage limit, error or a timeout after 30 minutes) or a case couldn't be scored, the score is marked not valid, nothing is recorded, and the script exits with code 2. Re-run it later. A valid score below the target is recorded and exits with code 1.
+It refuses to start while `scripts/armour-eval/` has uncommitted changes, so every score names the commit its cases came from. It takes 5–15 minutes. A valid score is appended to [`RESULTS.md`](RESULTS.md), with the model, the `armour.md` and cases commits and `main`: commit that file with the rules or model change. **Target: at least 80% caught (4 of 5 today).** If Armour didn't review a case (usage limit, error or a timeout after 30 minutes) or a case couldn't be scored, the score is marked not valid, nothing is recorded, and the script exits with code 2. Re-run it later. A valid score below the target is recorded and exits with code 1.
 
 ## How it works
 
@@ -39,5 +39,5 @@ To add a case, create `cases/<nn-name>/` with:
 
 - `title`: the PR title Armour sees. Keep it neutral, so it doesn't name the bug. If a doc Armour can read describes the bug, add that file to `HIDE` in `run.sh`.
 - `expect`: a regex (case-insensitive) that a 🔴/🟠 finding about the bug must match. It must match only findings about *this* bug: Armour also reports unrelated problems in the same code, and a loose pattern (such as just `audio`) scores those as catches.
-- After its first run, add `fixtures/<nn-name>.txt` with Armour's real 🔴/🟠 findings on that PR: `+ ` before the ones about the seeded bug, `- ` before the rest. `test-score.sh` checks `expect` matches every `+` line and no `-` line.
+- `fixtures/<nn-name>.txt`, from a run on your branch: Armour's real 🔴/🟠 findings on that PR, `+ ` before the ones about the seeded bug, `- ` before the rest. `test-score.sh` (in CI) checks `expect` matches every `+` line and no `-` line, and fails a case with no fixture or no `+` line.
 - `files/`: the files to add, at their paths in the repo.

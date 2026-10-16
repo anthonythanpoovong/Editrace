@@ -20,6 +20,7 @@ jobs:
       web: ${{ steps.d.outputs.web }}
       python: ${{ steps.d.outputs.python }}
       codegen: ${{ steps.d.outputs.codegen }}
+      supabase: ${{ steps.d.outputs.supabase }}
     steps:
       - uses: actions/checkout@v6
       # Jobs switch on as each part of the monorepo gains real code.
@@ -30,6 +31,7 @@ jobs:
           flag web web/package.json
           flag python pyproject.toml
           flag codegen Makefile
+          flag supabase supabase/config.toml
 
   secrets-scan:
     runs-on: ubuntu-latest
@@ -61,9 +63,11 @@ jobs:
       - run: .github/scripts/test-discord-review-comment.sh
       - run: .github/scripts/test-sync-docs-paths.sh
       - run: .github/scripts/test-project-intake.sh
+      - run: .github/scripts/test-project-carry-over.sh
       - run: .github/scripts/test-discord-pr-status.sh
       - run: .github/scripts/test-discord-reminders.sh
       - run: .github/scripts/test-vercel-deploy.sh
+      - run: .github/scripts/test-check-rls-tests.sh
       - run: .github/scripts/test-coverage-exemption.sh
       - run: .github/scripts/test-coverage-gate.sh
       - run: .github/scripts/test-coverage-decide.sh
@@ -72,6 +76,9 @@ jobs:
       - run: .github/scripts/test-armour-render.sh
       # Armour eval PRs run CI on a base branch without scripts/armour-eval (#128).
       - if: hashFiles('scripts/armour-eval/test-score.sh') != ''
+      # Armour eval PRs run CI on a base branch without scripts/armour-eval (#128). Skip only there, so a
+      # renamed or missing test fails everywhere else.
+      - if: "!startsWith(github.head_ref, 'armour-eval/')"
         run: scripts/armour-eval/test-score.sh
 
   schema:
@@ -249,10 +256,27 @@ jobs:
           tar xzf actionlint.tar.gz actionlint
       - run: ./actionlint -color
 
+  # Applies every migration to a fresh local database, loads the seed, and runs the RLS tests (#49). Only Postgres is
+  # started: RLS lives in the database, and the API services would just add image pulls.
+  supabase:
+    needs: detect
+    if: needs.detect.outputs.supabase == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.120.0
+      - run: supabase start -x gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+      - run: supabase db reset
+      - run: supabase test db
+      - run: .github/scripts/check-rls-tests.sh
+
   # Single required check for branch protection: fails if any job failed, ignores skipped ones.
   ci-ok:
     if: always()
-    needs: [detect, secrets-scan, scripts, actionlint, schema, codegen, web, python, coverage]
+    needs: [detect, secrets-scan, scripts, actionlint, schema, codegen, web, python, coverage, supabase]
     runs-on: ubuntu-latest
     permissions:
       contents: read

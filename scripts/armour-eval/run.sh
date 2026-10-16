@@ -65,6 +65,11 @@ if [ "${1:-}" = "--post" ]; then
 fi
 [ $# -eq 0 ] || die "unknown argument: $1 (use --post <n> or --cleanup)"
 
+# The cases come from this checkout, so refuse uncommitted edits: every score must map to a commit.
+[ -z "$(git -C "$here" status --porcelain -- .)" ] \
+  || die "scripts/armour-eval has uncommitted changes; commit them first, so the score names the cases it used"
+cases_sha=$(git -C "$here" log -1 --format=%h -- cases)
+
 [ -z "$(gh api "repos/$REPO/git/matching-refs/heads/$PREFIX" --jq '.[].ref')" ] \
   || die "eval branches from an earlier run still exist; run: $0 --cleanup"
 
@@ -101,7 +106,9 @@ push_quiet() {
 git -C "$here" fetch -q origin main
 git -C "$here" worktree add -q --detach "$wt" origin/main
 main_sha=$(git -C "$wt" rev-parse HEAD)
-model=$(grep -o -- '--model [^ ]*' "$wt/.github/workflows/ai-review.yml" | head -n1 | cut -d' ' -f2)
+# Only labels the score, so a changed --model line must not stop the run.
+model=$(grep -o -- '--model [^ ]*' "$wt/.github/workflows/ai-review.yml" | head -n1 | cut -d' ' -f2) || true
+model=${model:-unknown}
 rules=$(git -C "$wt" log -1 --format=%h -- .github/armour.md)
 
 gh api "repos/$REPO/labels" -f name="$LABEL" -f color=8a8a8a \
@@ -194,7 +201,7 @@ done
 target=$(( (total * 4 + 4) / 5 ))   # at least 80%, rounded up: 4 of 5
 summary="### Armour eval: $caught/$total caught
 
-Run \`$run\` · model \`$model\` · rules \`.github/armour.md\` at \`$rules\` · main \`${main_sha:0:7}\` · target ≥ $target/$total
+Run \`$run\` · model \`$model\` · rules \`.github/armour.md\` at \`$rules\` · cases at \`$cases_sha\` · main \`${main_sha:0:7}\` · target ≥ $target/$total
 
 | Case | PR | Result | Matching finding |
 |---|---|---|---|
@@ -208,9 +215,9 @@ if [ "$invalid" -eq 0 ]; then
   results=$here/RESULTS.md
   [ -f "$results" ] || printf '%s\n' "# Armour eval results" "" \
     "One row per valid run of \`run.sh\`. Target: at least 80% caught (4 of 5)." "" \
-    "| Date (UTC) | Score | Model | \`armour.md\` | main | Missed |" "|---|---|---|---|---|---|" > "$results"
+    "| Date (UTC) | Score | Model | \`armour.md\` | Cases | main | Missed |" "|---|---|---|---|---|---|---|" > "$results"
   missed=${missed#, }
-  echo "| $(date -u +%Y-%m-%d) | $caught/$total | \`$model\` | \`$rules\` | \`${main_sha:0:7}\` | ${missed:-none} |" >> "$results"
+  echo "| $(date -u +%Y-%m-%d) | $caught/$total | \`$model\` | \`$rules\` | \`$cases_sha\` | \`${main_sha:0:7}\` | ${missed:-none} |" >> "$results"
   log "recorded in ${results#"$(git -C "$here" rev-parse --show-toplevel)/"}"
 fi
 
