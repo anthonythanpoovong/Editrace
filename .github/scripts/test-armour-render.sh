@@ -46,8 +46,8 @@ check "a long resolved finding is cut at 60 characters with an ellipsis" $?
 
 echo '{"v":1,"next":4,"findings":[{"id":"F2","sev":"🔴","loc":"a.ts:1","text":"false alarm","fix":"x"},{"id":"F3","sev":"🟠","loc":"b.ts:2","text":"real","fix":"y"}]}' > "$prev"
 echo '{"statuses":{"F2":{"status":"dismissed","reason":"`a.ts:1` is only reached after the guard at `a.ts:`"},"F3":{"status":"resolved","reason":"fixed"}}}' > "$model"; render
-grep -q '^- ➖ \*\*F2\*\* false alarm: doesn.t apply on re-check: ' "$out" && grep -q '^- ✅ \*\*F3\*\* real: fixed$' "$out" \
-  && grep -q '^\*\*Verdict:\*\* Looks good. Earlier findings resolved.$' "$out" && [ "$(state | jq '.findings | length')" -eq 0 ]
+grep -q '^- ➖ 🔴 \*\*F2\*\* false alarm: doesn.t apply on re-check: ' "$out" && grep -q '^- ✅ \*\*F3\*\* real: fixed$' "$out" \
+  && grep -q '^\*\*Verdict:\*\* Looks good. Earlier findings resolved. 1 dismissed on re-check: read the reasons.$' "$out" && [ "$(state | jq '.findings | length')" -eq 0 ]
 check "a finding dismissed on re-check with a reason is shown as such, closes, and leaves the ledger" $?
 echo '{"statuses":{"F2":{"status":"dismissed"},"F3":{"status":"dismissed","reason":""}}}' > "$model"; render
 [ "$(state | jq '.findings | length')" -eq 2 ] && grep -q 'dismissed without a reason; kept open' "$out"

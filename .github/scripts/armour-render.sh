@@ -48,7 +48,9 @@ result=$(jq -n --argjson p "$prev_json" --slurpfile m "$model" --arg sha "${sha:
   | ($open + $added) as $live
   | (if any($live[]; .sev == "🔴") then "Blocking issues"
      elif any($live[]; .sev == "🟠") then "Needs changes"
-     elif ($resolved | length) > 0 then "Looks good. Earlier findings resolved."
+     elif ($resolved | length) > 0 then
+       "Looks good. Earlier findings resolved."
+       + (([$resolved[] | select(.dismissed)] | length) as $d | if $d > 0 then " \($d) dismissed on re-check: read the reasons." else "" end)
      else "Looks good. No issues found." end) as $verdict
   | def section($title; $items): if ($items | length) > 0 then "\n### \($title)\n" + ($items | join("\n")) + "\n" else "" end;
     {
@@ -59,7 +61,7 @@ result=$(jq -n --argjson p "$prev_json" --slurpfile m "$model" --arg sha "${sha:
         + "**Coverage:** \($m.coverage // "coverage pending: see the CI coverage comment")\n"
         + (if $p.unavailable then "\nEarlier findings couldn'"'"'t be checked.\n" else "" end)
         + section("Still open"; $open | map(line(.; .flag)))
-        + section("Resolved"; $resolved | map("- \(if .dismissed then "➖" else "✅" end) **\(.id)** \(.text | one | if length > 60 then .[0:60] + "…" else . end): \(if .dismissed then "doesn'"'"'t apply on re-check: " else "" end)\(.reason | one)"))
+        + section("Resolved"; $resolved | map("- \(if .dismissed then "➖ \(.sev)" else "✅" end) **\(.id)** \(.text | one | if length > 60 then .[0:60] + "…" else . end): \(if .dismissed then "doesn'"'"'t apply on re-check: " else "" end)\(.reason | one)"))
         + section("Errors"; $added | map(select((.kind // "error") != "risk") | line(.; "")))
         + section("Risks"; $added | map(select(.kind == "risk") | line(.; "")))
         + section("Upgrades"; ($m.upgrades // []) | map("- 🟢 " + (if (.loc // "") != "" then "`\(.loc | one | gsub("`"; "'"'"'"))`: " else "" end) + (.text | one)))
