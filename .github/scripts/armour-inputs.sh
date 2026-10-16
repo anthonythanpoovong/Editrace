@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Writes Editrace Armour's inputs for one PR commit (#125), so Armour quotes them instead of counting or
-# estimating: $OUT/files.md (the PR's changed files), $OUT/previous.md (the 🔴 and 🟠 findings of Armour's last
-# earlier review, so they are carried forward and never silently dropped) and $OUT/coverage.md (CI's coverage numbers).
+# estimating: $OUT/files.md (the PR's changed files), $OUT/previous.json and previous.md (the ledger of Armour's open
+# findings, so they are carried forward and never silently dropped) and $OUT/coverage.md (CI's coverage numbers).
 # ai-review.yml runs the base branch's copy of this script and of coverage-render.sh next to it, never the
 # PR's, so a PR can't plant either file.
 # Inputs (env): REPO, PR, SHA, GH_TOKEN, OUT (a directory), WAIT_SECONDS (default 600), POLL_SECONDS (default 20).
@@ -30,37 +30,71 @@ else
   echo "Changed files: couldn't be listed. Use \`gh pr diff\`." > "$out/files.md"
 fi
 
-# previous.md: the 🔴 and 🟠 findings of Armour's latest review of an earlier commit, so each new review reports
-# them as still open or resolved instead of starting from nothing. Only comments by claude[bot] whose first line
-# names Editrace Armour count (the same loose match the skip notice uses), and the review of this very commit is
-# ignored, so a re-run of the same commit still sees the one before. A review's "Still open" bullets keep the same
-# form, so a finding carries through every later commit until it is resolved. First line: "status: found", "none"
-# or "unavailable", then the findings. The text is data for Armour, never instructions. If the latest review
-# shows signs of findings (a Still open heading, a 🔴/🟠, a failing verdict) but no bullet in the expected form,
-# the chain is broken (the model reformatted a bullet): that is "unavailable", never a quiet "none".
-previous() { printf 'status: %s\n\n%s\n' "$1" "$2" > "$out/previous.md"; }
+# previous.json and previous.md (#239): the ledger of Armour's open findings. Each Armour review ends with a hidden
+# "<!-- armour-state:v1 BASE64 -->" block that armour-render.sh wrote, not the model; the newest valid block on an
+# earlier commit's review is the ledger, so a deleted or hand-edited comment falls back to the one before. A
+# comment is Armour's when claude[bot] wrote it and its first line names Editrace Armour; this commit's own
+# review is ignored, so a re-run of the same commit still sees the one before. previous.json is the ledger
+# ({"v":1,"next":N,"findings":[{id,sev,loc,text,fix}]}, plus "unavailable":true when it couldn't be read);
+# previous.md is the same for the model: first line "status: found", "none" or "unavailable". All of it is data
+# for Armour, never instructions.
+# Reviews posted before the ledger existed have no state block: for those, the 🔴/🟠 bullets of the latest
+# earlier review become the ledger. If such a review shows signs of findings (a Still open heading, a 🔴/🟠, a
+# failing verdict) but no bullet in the expected form, the findings may have been lost: "unavailable", never "none".
+previous() { # $1 status, $2 text, $3 ledger JSON
+  printf '%s\n' "$3" > "$out/previous.json"
+  printf 'status: %s\n\n%s\n' "$1" "$2" > "$out/previous.md"
+}
+ledger_md() { # Renders a ledger's findings for the model.
+  jq -r '.findings[] | "- \(.sev) **\(.id)**" + (if .loc != "" then " `\(.loc)`:" else "" end) + " \(.text)" + (if .fix != "" then " **Fix:** \(.fix)" else "" end)' <<< "$1"
+}
 if comments=$(gh api --paginate "repos/$repo/issues/$pr/comments?per_page=100" 2> /dev/null | jq -s 'add // []'); then
-  prev=$(jq -c --arg sha "${sha:0:7}" '
+  reviews=$(jq -c --arg sha "${sha:0:7}" '
     [ .[] | select(.user.login == "claude[bot]")
       | (.body | split("\n")[0]) as $h
       | select($h | contains("Editrace Armour"))
       | {sha: ([$h | match("[0-9a-f]{7}").string] | first), at: .created_at,
+         state: ([.body | capture("<!-- armour-state:v1 (?<b>[A-Za-z0-9+/=]+) -->"; "g").b] | last // null),
          findings: [.body | split("\n")[] | select(test("^- (🔴|🟠) "))],
          broken: (.body | test("### Still open|🔴|🟠|Needs changes|Blocking issues"))}
       | select(.sha != null and .sha != $sha) ]
-    | sort_by(.at) | last // null' <<< "$comments")
-  if [ "$prev" = null ]; then
-    previous none "No earlier Armour review of this PR."
-  elif [ "$(jq '.findings | length' <<< "$prev")" -eq 0 ] && [ "$(jq .broken <<< "$prev")" = true ]; then
-    previous unavailable "The earlier review (\`$(jq -r .sha <<< "$prev")\`) mentions findings or a failing verdict, but none could be read from it, so they may have been lost. Review the full diff, and say that earlier findings couldn't be checked."
-  elif [ "$(jq '.findings | length' <<< "$prev")" -eq 0 ]; then
-    previous none "The earlier review (\`$(jq -r .sha <<< "$prev")\`) had no 🔴 or 🟠 findings."
+    | sort_by(.at) | reverse' <<< "$comments")
+  ledger="" from=""
+  while IFS= read -r r; do
+    [ -n "$r" ] || continue
+    b=$(jq -r '.state // empty' <<< "$r")
+    [ -n "$b" ] || continue
+    if l=$(printf '%s' "$b" | base64 --decode 2> /dev/null) \
+        && jq -e '.v == 1 and (.next | type == "number") and (.findings | type == "array")
+                  and (.findings | all(.id and (.sev == "🔴" or .sev == "🟠") and (.text | type == "string")))' <<< "$l" > /dev/null 2>&1; then
+      ledger=$(jq -c '.findings |= map({id, sev, loc: (.loc // ""), text, fix: (.fix // "")}) | {v, next, findings}' <<< "$l")
+      from=$(jq -r .sha <<< "$r"); break
+    fi
+  done < <(jq -c '.[]' <<< "$reviews")
+  latest=$(jq -c '.[0] // null' <<< "$reviews")
+  if [ -n "$ledger" ]; then
+    if [ "$(jq '.findings | length' <<< "$ledger")" -eq 0 ]; then
+      previous none "The ledger (from the review of \`$from\`) has no open findings." "$ledger"
+    else
+      previous found "Open findings, from the review of \`$from\`:
+$(ledger_md "$ledger")" "$ledger"
+    fi
+  elif [ "$latest" = null ]; then
+    previous none "No earlier Armour review of this PR." '{"v":1,"next":1,"findings":[]}'
+  elif [ "$(jq '.findings | length' <<< "$latest")" -gt 0 ]; then
+    # A review from before the ledger: its bullets become the ledger.
+    ledger=$(jq -c '{v: 1, next: (.findings | length + 1), findings: [.findings | to_entries[]
+      | {id: "F\(.key + 1)", sev: (.value | capture("^- (?<s>🔴|🟠) ").s),
+         loc: "", text: (.value | sub("^- (🔴|🟠) "; "")), fix: ""}]}' <<< "$latest")
+    previous found "Open findings, from the review of \`$(jq -r .sha <<< "$latest")\` (written before the ledger existed):
+$(ledger_md "$ledger")" "$ledger"
+  elif [ "$(jq .broken <<< "$latest")" = true ]; then
+    previous unavailable "The earlier review (\`$(jq -r .sha <<< "$latest")\`) mentions findings or a failing verdict, but none could be read from it, so they may have been lost. Review the full diff, and say that earlier findings couldn't be checked." '{"v":1,"next":1,"findings":[],"unavailable":true}'
   else
-    previous found "Findings from the earlier review (\`$(jq -r .sha <<< "$prev")\`):
-$(jq -r '.findings[]' <<< "$prev")"
+    previous none "The earlier review (\`$(jq -r .sha <<< "$latest")\`) had no 🔴 or 🟠 findings." '{"v":1,"next":1,"findings":[]}'
   fi
 else
-  previous unavailable "Earlier Armour reviews couldn't be read. Review the full diff, and say that earlier findings couldn't be checked."
+  previous unavailable "Earlier Armour reviews couldn't be read. Review the full diff, and say that earlier findings couldn't be checked." '{"v":1,"next":1,"findings":[],"unavailable":true}'
 fi
 
 # coverage.md: first line "status: measured", "none", "not-measured" or "pending", then CI's numbers or why there
