@@ -3,9 +3,10 @@
 # model: it reports a status per earlier finding id and any new findings as JSON, and this script merges them
 # with the ledger from armour-inputs.sh, renders Still open / Resolved / Errors / Risks, computes the verdict and
 # appends the next ledger as a hidden block that armour-inputs.sh reads on the following commit.
-# An earlier finding stays open unless the model marks it resolved with a reason. Nothing is ever dropped.
+# An earlier finding stays open unless the model marks it resolved (fixed) or dismissed (doesn't apply on
+# re-check) with a reason, and both show in the review. Nothing is ever dropped silently.
 # Usage: armour-render.sh <previous.json> <armour-findings.json> <commit sha> <out comment file>
-# The model's JSON: {"statuses": {"F1": {"status": "open"|"resolved", "loc": "path:line", "reason": "..."}},
+# The model's JSON: {"statuses": {"F1": {"status": "open"|"resolved"|"dismissed", "loc": "path:line", "reason": "..."}},
 #   "findings": [{"sev": "🔴"|"🟠", "kind": "error"|"risk", "loc": "path:line", "text": "...", "fix": "..."}],
 #   "upgrades": [{"loc": "path:line", "text": "..."}], "coverage": "...", "files_changed": "<details>...</details>"}
 # Exits non-zero, with the reason on stderr, when the model's JSON is missing or malformed, so it can fix and rerun.
@@ -38,8 +39,8 @@ result=$(jq -n --argjson p "$prev_json" --slurpfile m "$model" --arg sha "${sha:
   | ($p.findings | map(
       . as $f | ($st[$f.id] // null) as $s
       | if $s == null then $f + {state: "open", flag: " ⚠️ _Not reported on; kept open._"}
-        elif $s.status == "resolved" and (($s.reason // "") | length) > 0 then $f + {state: "resolved", reason: $s.reason}
-        elif $s.status == "resolved" then $f + {state: "open", flag: " ⚠️ _Marked resolved without a reason; kept open._"}
+        elif ($s.status == "resolved" or $s.status == "dismissed") and (($s.reason // "") | length) > 0 then $f + {state: "resolved", reason: $s.reason, dismissed: ($s.status == "dismissed")}
+        elif $s.status == "resolved" or $s.status == "dismissed" then $f + {state: "open", flag: " ⚠️ _Marked \($s.status) without a reason; kept open._"}
         else $f + {state: "open", flag: "", loc: (($s.loc // "") | if . == "" then $f.loc else . end)} end)) as $carried
   | ($new | to_entries | map(.value + {id: "F\($p.next + .key)", state: "new", flag: ""})) as $added
   | ($carried | map(select(.state == "open"))) as $open
@@ -58,7 +59,7 @@ result=$(jq -n --argjson p "$prev_json" --slurpfile m "$model" --arg sha "${sha:
         + "**Coverage:** \($m.coverage // "coverage pending: see the CI coverage comment")\n"
         + (if $p.unavailable then "\nEarlier findings couldn'"'"'t be checked.\n" else "" end)
         + section("Still open"; $open | map(line(.; .flag)))
-        + section("Resolved"; $resolved | map("- ✅ **\(.id)** \(.text | one | if length > 60 then .[0:60] + "…" else . end): \(.reason | one)"))
+        + section("Resolved"; $resolved | map("- \(if .dismissed then "➖" else "✅" end) **\(.id)** \(.text | one | if length > 60 then .[0:60] + "…" else . end): \(if .dismissed then "doesn'"'"'t apply on re-check: " else "" end)\(.reason | one)"))
         + section("Errors"; $added | map(select((.kind // "error") != "risk") | line(.; "")))
         + section("Risks"; $added | map(select(.kind == "risk") | line(.; "")))
         + section("Upgrades"; ($m.upgrades // []) | map("- 🟢 " + (if (.loc // "") != "" then "`\(.loc | one | gsub("`"; "'"'"'"))`: " else "" end) + (.text | one)))

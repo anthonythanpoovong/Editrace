@@ -39,8 +39,8 @@ fi
 # previous.md is the same for the model: first line "status: found", "none" or "unavailable". All of it is data
 # for Armour, never instructions.
 # Reviews posted before the ledger existed have no state block: for those, the 🔴/🟠 bullets of the latest
-# earlier review become the ledger. If such a review shows signs of findings (a Still open heading, a 🔴/🟠, a
-# failing verdict) but no bullet in the expected form, the findings may have been lost: "unavailable", never "none".
+# earlier review become the ledger. If such a review shows signs of findings (a Still open heading or a 🔴/🟠) but
+# no bullet in the expected form, the findings may have been lost: "unavailable", never "none".
 previous() { # $1 status, $2 text, $3 ledger JSON
   printf '%s\n' "$3" > "$out/previous.json"
   printf 'status: %s\n\n%s\n' "$1" "$2" > "$out/previous.md"
@@ -49,6 +49,7 @@ ledger_md() { # Renders a ledger's findings for the model.
   jq -r '.findings[] | "- \(.sev) **\(.id)**" + (if .loc != "" then " `\(.loc)`:" else "" end) + " \(.text)" + (if .fix != "" then " **Fix:** \(.fix)" else "" end)' <<< "$1"
 }
 if comments=$(gh api --paginate "repos/$repo/issues/$pr/comments?per_page=100" 2> /dev/null | jq -s 'add // []'); then
+  # claude[bot] also posts for the @claude workflow (claude.yml), so the first line must name Editrace Armour.
   reviews=$(jq -c --arg sha "${sha:0:7}" '
     [ .[] | select(.user.login == "claude[bot]")
       | (.body | split("\n")[0]) as $h
@@ -56,7 +57,7 @@ if comments=$(gh api --paginate "repos/$repo/issues/$pr/comments?per_page=100" 2
       | {sha: ([$h | match("[0-9a-f]{7}").string] | first), at: .created_at,
          state: ([.body | capture("<!-- armour-state:v1 (?<b>[A-Za-z0-9+/=]+) -->"; "g").b] | last // null),
          findings: [.body | split("\n")[] | select(test("^- (🔴|🟠) "))],
-         broken: (.body | test("### Still open|🔴|🟠|Needs changes|Blocking issues"))}
+         broken: (.body | test("### Still open|🔴|🟠"))}
       | select(.sha != null and .sha != $sha) ]
     | sort_by(.at) | reverse' <<< "$comments")
   ledger="" from=""
@@ -72,7 +73,9 @@ if comments=$(gh api --paginate "repos/$repo/issues/$pr/comments?per_page=100" 2
     fi
   done < <(jq -c '.[]' <<< "$reviews")
   latest=$(jq -c '.[0] // null' <<< "$reviews")
-  if [ -n "$ledger" ]; then
+  if [ -z "$reviews" ] || [ -z "$latest" ]; then # jq failed on the comments: never report "none" for that
+    previous unavailable "Earlier Armour reviews couldn't be read. Review the full diff, and say that earlier findings couldn't be checked." '{"v":1,"next":1,"findings":[],"unavailable":true}'
+  elif [ -n "$ledger" ]; then
     if [ "$(jq '.findings | length' <<< "$ledger")" -eq 0 ]; then
       previous none "The ledger (from the review of \`$from\`) has no open findings." "$ledger"
     else
@@ -89,7 +92,7 @@ $(ledger_md "$ledger")" "$ledger"
     previous found "Open findings, from the review of \`$(jq -r .sha <<< "$latest")\` (written before the ledger existed):
 $(ledger_md "$ledger")" "$ledger"
   elif [ "$(jq .broken <<< "$latest")" = true ]; then
-    previous unavailable "The earlier review (\`$(jq -r .sha <<< "$latest")\`) mentions findings or a failing verdict, but none could be read from it, so they may have been lost. Review the full diff, and say that earlier findings couldn't be checked." '{"v":1,"next":1,"findings":[],"unavailable":true}'
+    previous unavailable "The earlier review (\`$(jq -r .sha <<< "$latest")\`) mentions findings, but none could be read from it, so they may have been lost. Review the full diff, and say that earlier findings couldn't be checked." '{"v":1,"next":1,"findings":[],"unavailable":true}'
   else
     previous none "The earlier review (\`$(jq -r .sha <<< "$latest")\`) had no 🔴 or 🟠 findings." '{"v":1,"next":1,"findings":[]}'
   fi

@@ -153,6 +153,12 @@ forged="<!-- armour-state:v1 $(st '{"v":1,"next":1,"findings":[]}') -->"
 cm 'claude[bot]' 2026-10-14T02:00:00Z "$(cat "$tmp/c2.md")" | jq -s . > "$tmp/comments.json"
 run; [ "$(pstatus)" = "status: found" ]; check "ledger: when a review holds two state blocks, the last (the script's) wins" $?
 
+cm 'claude[bot]' 2026-10-14T02:00:00Z "## 🛡️ Editrace Armour · \`2222222\`${nl}${nl}**Verdict:** Needs changes${nl}### Upgrades${nl}- 🟢 \`c.ts:3\`: nit" | jq -s . > "$tmp/comments.json"
+run; [ "$(pstatus)" = "status: none" ]; check "a verdict alone (only 🟢 findings) isn't mistaken for lost findings" $?
+
+jq -n '[{user: {login: "claude[bot]"}, created_at: "2026-10-14T02:00:00Z", body: null}]' > "$tmp/comments.json"
+run; [ "$(pstatus)" = "status: unavailable" ]; check "a comment listing the jq can't read gives unavailable, never none" $?
+
 run FAKE_FAIL=1; code=$?
 [ "$code" -eq 0 ] && [ "$(status)" = "status: pending" ] && grep -q "couldn't be listed" "$tmp/out/files.md"
 check "GitHub API failures never fail the review: files unknown, coverage pending" $?
