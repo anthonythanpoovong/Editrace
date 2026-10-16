@@ -49,3 +49,7 @@ htmlcov/
 # Claude Code (skills in .claude/skills/ are shared)
 .claude/worktrees/
 .claude/settings.local.json
+
+# Coverage output (#129)
+coverage/
+coverage.xml

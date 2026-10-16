@@ -20,6 +20,9 @@ See [`docs/plan.md`](docs/plan.md) for the full project plan, architecture and r
 schema/      Template JSON Schema (source of truth) + editor tool ontology
 web/         Next.js + TypeScript app (a placeholder page so far; breakdown UI, assistant and remote MCP server are planned)
 workers/     Python analysis pipeline (Modal)
+editrace_schema/  Python template models generated from the schema (`make codegen`), plus the reader
+supabase/    Supabase config, migrations, seed data and the RLS tests
+scripts/     Codegen helpers and the Armour eval (`scripts/armour-eval/`)
 exporters/   OpenTimelineIO + CapCut adapters
 docs/        Plan, architecture, environments and secrets, decisions (ADRs), epic proposals, customer research
 .claude/     Claude Code skills shared by the team (see Claude Code Skills below)
@@ -59,8 +62,9 @@ The **template JSON Schema** (`schema/template.schema.json`, v0) is the single s
 
 - Setup instructions in each folder's README
 - Environments, deploys and where each secret lives: [`docs/environments.md`](docs/environments.md)
-- Generated code: run type generation before committing schema changes
-- Tests: CI validates schema compliance
+- Generated code: run `make codegen` (needs uv and Node) after changing the schema, and commit the result. CI fails if the generated files are stale. Details in [`schema/README.md`](schema/README.md#generated-types)
+- Local database: `supabase start`, then `supabase db reset` (seed users) and `supabase test db` (RLS tests). See [`docs/environments.md`](docs/environments.md#supabase-locally)
+- Tests: CI validates the schema, runs web and Python tests, requires 80% coverage of changed lines, and runs the RLS tests. See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## Claude Code Skills
 
@@ -106,18 +110,18 @@ These workflows live in `.github/workflows/`:
 
 | Workflow | File | What it does |
 |---|---|---|
-| **CI** | `ci.yml` | Scans for secrets with gitleaks, lints the workflow files (actionlint), unit-tests the CI helper scripts, validates the template schema, and runs web/Python/codegen checks. Each part switches on once its folder has real code. `ci-ok` is the required check. |
-| **Editrace Armour** | `ai-review.yml` | An AI reviewer (Claude **Sonnet 5.5**) that posts one summary comment and inline comments on every PR, including drafts, following the rules in [`.github/armour.md`](.github/armour.md) read from the **base branch**, so a PR can't edit its own reviewer. If it doesn't review a commit (skipped, failed, usage limit), a second job posts a ⚠️ notice on the PR, removed once a later commit is reviewed. It's advisory only, never a required check. |
+| **CI** | `ci.yml` | Scans for secrets with gitleaks, lints the workflow files (actionlint), unit-tests the CI helper scripts, validates the template schema, and runs web/Python/codegen checks, the 80% changed-line coverage gate (with a sticky Coverage comment) and the Supabase RLS tests. Each part switches on once its folder has real code. `ci-ok` is the required check. |
+| **Editrace Armour** | `ai-review.yml` | An AI reviewer (Claude **Sonnet 5.5**) that posts one summary comment and inline comments on every PR, including drafts, following the rules in [`.github/armour.md`](.github/armour.md) read from the **base branch**, so a PR can't edit its own reviewer. Each review lists the changed files and quotes CI's coverage numbers for that commit. Its accuracy is measured by a seeded-bug eval ([`scripts/armour-eval/`](scripts/armour-eval/README.md)), re-run when its rules or model change. If it doesn't review a commit (skipped, failed, usage limit), a second job posts a ⚠️ notice on the PR, removed once a later commit is reviewed. It's advisory only, never a required check. |
 | **Claude Code** | `claude.yml` | Mention `@claude` in an issue, PR comment or review to have Claude respond. It has a timeout and read-only tools. |
-| **Deploy** | `deploy.yml` | Deploys a preview for every same-repo PR, staging on every push to `main`, and production only when run by hand. See [`docs/environments.md`](docs/environments.md). |
+| **Deploy** | `deploy.yml` | Deploys a preview for every same-repo PR, staging on every push to `main`, and production only when run by hand, promoting a commit already live on staging. See [`docs/environments.md`](docs/environments.md). |
 | **Discord review request / ack** | `discord-review-request.yml`, `discord-review-ack.yml` | Posts a review request in Discord when a PR is ready for review, and marks it reviewed when a person reviews. |
 | **Discord review comment / PR status** | `discord-review-comment.yml`, `discord-pr-status.yml` | Pings people in Discord about their PR: comments and requested changes, approvals, merges and closes, a request to review again after new commits or a re-request, and `@mentions` and replies. |
-| **Discord reminders** | `discord-reminders.yml` | Scheduled pings: the day before and the start of the weekly sync, and the day before a sprint ends. The schedule is in `.github/reminders.json`. |
+| **Discord reminders** | `discord-reminders.yml` | Scheduled pings: the day before and the start of the weekly sync, and the day before a sprint ends. The schedule is in `.github/reminders.json`. Each reminder is sent once (tracked as a `refs/reminders/*` git ref), so a late or repeated scheduled run cannot post it twice. |
 | **Ticket sync** | `ticket-sync.yml` | When a PR merges, comments on the issues it references (the `/ticket-sync` skill). |
 | **Sync docs nudge** | `sync-docs-nudge.yml` | When a merged PR touched the schema, an ADR, an epic, skills or CI workflows, comments once reminding the team to run `/sync-docs`. |
 | **Project intake** | `project-intake.yml` | Adds every new issue to the Project Board in the current sprint (Status Backlog), fills in missing level, type and domain/area labels, and assigns it to its author. Needs the secret `PROJECT_TOKEN`; see [CONTRIBUTING.md](CONTRIBUTING.md). |
 
-The Discord workflows are not required checks and never touch the PR's code: they run their scripts from the default branch, so a script change only takes effect once merged. They need the secret `DISCORD_REVIEW_WEBHOOK` and the repo variables `DISCORD_REVIEW_ROLE_ID` and `DISCORD_USER_MAP` (GitHub login to Discord user ID). The reminders also need `PROJECT_TOKEN` to read sprint dates, and can post to another channel through `DISCORD_MEETING_WEBHOOK`.
+The Discord workflows are not required checks and never touch the PR's code: they run their scripts from the default branch, so a script change only takes effect once merged. They need the secret `DISCORD_REVIEW_WEBHOOK` and the repo variables `DISCORD_REVIEW_ROLE_ID` and `DISCORD_USER_MAP` (GitHub login to Discord user ID). The reminders also need `PROJECT_TOKEN` to read sprint dates, and post to their own channel through `DISCORD_MEETING_WEBHOOK` (falling back to `DISCORD_REVIEW_WEBHOOK` when it is unset).
 
 **Authentication:** Armour and `@claude` authenticate with the `CLAUDE_CODE_OAUTH_TOKEN` repo secret, which is billed to the owner's Claude Pro plan. CI runs count against the same Pro usage limits as personal Claude use. A Console API key (`ANTHROPIC_API_KEY`) would need separately purchased API credits, because Pro doesn't include them.
 
