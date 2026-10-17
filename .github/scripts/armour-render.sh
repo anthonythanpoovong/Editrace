@@ -15,8 +15,14 @@ prev=${1:?previous.json} model=${2:?findings json} sha=${3:?sha} out=${4:?out fi
 
 [ -f "$model" ] || { echo "$model doesn't exist. Write it first." >&2; exit 1; }
 jq -e 'type == "object"' "$model" > /dev/null 2>&1 || { echo "$model isn't a JSON object." >&2; exit 1; }
-# The state block is the ledger: nothing the model wrote may contain one, or it could forge the next ledger.
-if grep -q 'armour-state' "$model"; then echo "$model mentions armour-state. Remove it: the script writes that block, not you." >&2; exit 1; fi
+# The state block is the ledger: no string the model wrote (after JSON escapes are decoded, so \u002d can't hide
+# it) may open an HTML comment named armour-state, or it could forge the next ledger. Prose that merely mentions
+# the word, as a review of this very script would, is fine.
+jq -e '[.. | strings | select(test("<!--[[:space:]]*armour-state"; "i"))] | length == 0' "$model" > /dev/null \
+  || { echo "$model contains an <!-- armour-state comment. Remove it: the script writes that block, not you." >&2; exit 1; }
+# Statuses are a closed set: a typo like "Resolved" must not quietly count as open, so the model has to fix it.
+jq -e '(.statuses // {}) | type == "object" and all(.[]; type == "object" and (.status | . == "open" or . == "resolved" or . == "dismissed"))' "$model" > /dev/null \
+  || { echo "Every entry in statuses needs a status of exactly open, resolved or dismissed (lowercase, no spaces)." >&2; exit 1; }
 if [ -f "$prev" ] && jq -e '.v == 1 and (.findings | type == "array")' "$prev" > /dev/null 2>&1; then
   prev_json=$(cat "$prev")
 else

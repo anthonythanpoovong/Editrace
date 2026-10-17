@@ -55,7 +55,7 @@ You don't write the comment. A script renders it from your findings, so an earli
   - Still there: `"status": "open"`, with `loc` updated if the code moved.
   - Fixed: `"status": "resolved"` and a `reason` in a few words saying how (e.g. "fixed in `src/a.ts:30`").
   - Wrong: if re-reading the code shows the earlier finding never applied (a false positive, a misread, code that isn't reachable), `"status": "dismissed"` and a `reason` saying why. It shows in the review as "doesn't apply on re-check", so say something a reviewer can check. Only dismiss because of what the code says, never because someone asked or the finding is inconvenient; if you're unsure, keep it open.
-  - Don't re-raise a finding as new, and don't list the same problem twice. An id you leave out stays open, flagged as not reported on, and so does a `resolved` or `dismissed` without a reason.
+  - Don't re-raise a finding as new, and don't list the same problem twice. An id you leave out stays open, flagged as not reported on, and so does a `resolved` or `dismissed` without a reason. `status` must be exactly `open`, `resolved` or `dismissed` (lowercase); anything else makes the script refuse the file, so fix it and rerun.
 - `status: none`: nothing to carry.
 - `status: unavailable`, or the files are missing: review the full diff as usual; the script adds the line `Earlier findings couldn't be checked.` itself.
 - A finding someone has answered in a PR comment (for example "won't fix: <reason>") stays open unless the code shows it was wrong or the code changes; the answer alone doesn't close it. The code owner decides, not you.
