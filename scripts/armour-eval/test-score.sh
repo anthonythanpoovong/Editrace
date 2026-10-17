@@ -75,20 +75,25 @@ code=0; doc "[$(top "$hdr" "- 🔴 RLS")]" '[]' | ./score.sh "$SHA" 'RLS(' >/dev
 if [ "$code" = 3 ]; then echo "ok   bad expect regex is an error, not a miss"; else echo "FAIL bad regex: exit $code (want 3)"; fail=1; fi
 
 # Each case's expect pattern against Armour's real findings (fixtures/): it must match every finding
-# about the seeded bug ('+') and none of the other findings on that PR ('-').
-for f in fixtures/*.txt; do
-  c=$(basename "$f" .txt)
+# about the seeded bug ('+') and none of the other findings on that PR ('-'). Every case needs a fixture
+# with at least one '+' line, or its pattern was never checked against a real catch.
+for d in cases/*/; do
+  c=$(basename "$d")
+  f=fixtures/$c.txt
+  [ -f "$f" ] || { echo "FAIL $c: no $f (add Armour's real findings from a run, see README)"; fail=1; continue; }
   re=$(cat "cases/$c/expect")
-  case_fail=0
-  while IFS= read -r line; do
+  case_fail=0 plus=0
+  while IFS= read -r line || [ -n "$line" ]; do   # also reads a last line with no newline
     case $line in '#'*|'') continue ;; esac
     want=${line:0:1}
+    [ "$want" != + ] || plus=$((plus + 1))
     got=$(jq -n --arg l "${line:2}" --arg re "$re" '$l | test($re; "i")')
     if { [ "$want" = + ] && [ "$got" != true ]; } || { [ "$want" = - ] && [ "$got" != false ]; }; then
       echo "FAIL $c expect: '$want' line got $got: ${line:2:90}"
       case_fail=1
     fi
   done < "$f"
+  [ "$plus" -gt 0 ] || { echo "FAIL $c: $f has no '+' line (a finding about the seeded bug)"; case_fail=1; }
   if [ "$case_fail" = 0 ]; then echo "ok   $c expect vs real findings"; else fail=1; fi
 done
 
