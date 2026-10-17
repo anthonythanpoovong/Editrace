@@ -138,7 +138,7 @@ All four collaborators are code owners on every path, so any of them can approve
 
 Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and the `epic` / `story` / `subtask` labels. Phases are GitHub milestones. Subtasks exist only where a story has separable, parallel parts (#9, #16, #18, #19, #22, #27, #31, #32); other stories use checklists.
 
-**New work starts as a proposal, not an issue.** New epics and stories are drafted in `docs/epics/` (`/propose-epic`), and technical decisions in `docs/decisions/` as ADRs (`/propose-adr`). Both are questioned first by `/grill`, which looks for customer evidence in `docs/customers/` (logged with `/log-interview`) and sends open unknowns to a time-boxed `/spike`. Code-owner approval and merging the proposal PR is the approval; issues are created only after that. See the [Claude Code Skills](https://github.com/anthonythanpoovong/Editrace/wiki/Claude-Code-Skills) wiki page.
+**New work starts as a proposal, not an issue.** New epics and stories are drafted in `docs/epics/` (`/propose-epic`), and technical decisions in `docs/decisions/` as ADRs (`/propose-adr`). Both are questioned first by `/grill`, which looks for customer evidence in `docs/customers/` (logged with `/log-interview`) and sends open unknowns to a time-boxed `/spike`. Code-owner approval and merging the proposal PR is the approval; issues are created only after that. A few stories added to an existing epic, without changing its Goal or Exit criteria, can skip the proposal: `/draft-stories` drafts them and creates the issues only once the author approves the drafts. See the [Claude Code Skills](https://github.com/anthonythanpoovong/Editrace/wiki/Claude-Code-Skills) wiki page.
 
 | Epic | Stories | Owner |
 |---|---|---|
@@ -156,15 +156,15 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 ### Phase 0: De-risk (spikes & foundation)
 - Template JSON Schema v0 (#1, done), type generation (#2, done), monorepo scaffold (#3, done)
 - Foundations: CI/CD + environments (#48, done: PR previews, staging on merge, manual promotion of a staged commit to prod, on a Vercel Pro team; moving off Vercel was considered and rejected in ADR 0001; Supabase/Modal environments follow in #163), migrations + RLS test harness (#49, done)
-- PR notifications in Discord (#140, #154, #156, #177, done): review request and ack, comment, approval, merge, re-review and `@mention` pings; weekly sync and sprint-due reminders (#184, done); Armour reads its rules from the base branch (#159, done)
-- Repo hardening: Armour skip notice (#126, done), changed files + coverage in reviews (#125, done), sharper rules (#127), eval set (#128, done: 5/5 on its first run); 80% changed-line coverage gate (#129, done); CONTRIBUTING + templates (#130, done), pre-commit hooks (#131, done), teammates + review rules (#132, done)
+- PR notifications in Discord (#140, #154, #156, #177, done): review request and ack, comment, approval, merge, re-review and `@mention` pings; weekly sync and sprint-due reminders (#184, done); unfinished board items carried into the running sprint automatically (#243, done); Armour reads its rules from the base branch (#159, done)
+- Repo hardening: Armour skip notice (#126, done), changed files + coverage in reviews (#125, done), sharper rules (#127), eval set (#128, done: 5/5 on its first run), earlier findings carried forward until resolved (#239, done); 80% changed-line coverage gate (#129, done); CONTRIBUTING + templates (#130, done), pre-commit hooks (#131, done), teammates + review rules (#132, done)
 - Pipeline: golden video dataset (#52), worker framework (#53)
 - CV1: cut detection spike (#4), Resolve rebuild spike (#5), CapCut draft spike (#6)
 - CV1: **live editor control spike (#29)**
 - CV2: beat tracking + sound ID spike (#11)
 - Product: **RAG corpus + retrieval spike (#30)**
 - Product: customer interviews incl. MCP appetite and assistant questions (#20); legal consult incl. docs corpus and editor TOS (#21); landing page + waitlist (#54)
-- Marketing (organic, $0): brand kit (#114), social accounts + attribution (#115), UGC agency outreach (#116), creator/UGC communities (#117)
+- Marketing (organic, $0): brand kit (#114, done: `brand/`), social accounts + attribution (#115), UGC agency outreach (#116), creator/UGC communities (#117)
 
 **Gate:** An editor reviews a detected cut timeline rebuilt in Resolve and confirms it feels like the original. #29 shows at least one editor can be driven live.
 
