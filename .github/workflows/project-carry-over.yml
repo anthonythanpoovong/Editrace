@@ -1,0 +1,53 @@
+name: Sprint carry-over
+
+# Moves unfinished work into the running sprint (#243): every open item on the Editrace project board (Project #2)
+# that is not Done and sits on an earlier sprint. Done items, closed issues and PRs, items with no sprint and items
+# on a later sprint are never touched, and nothing moves between sprints. Idempotent, so a daily run is safe:
+# the first run after a sprint starts does the work and the rest find nothing to do.
+# Manual run: dry_run (on by default) lists what would move without changing the board.
+# Not a required check and not part of ci-ok: a failed move or an unreadable board shows as a red X.
+# Needs: secret PROJECT_TOKEN (a token with the "project" scope; GITHUB_TOKEN cannot write to a user-owned
+# project). It is Anthony's personal token: see CONTRIBUTING.md for expiry and rotation.
+#
+# Scheduled runs always use the default branch; the script is checked out from it too, so a change here only
+# takes effect once merged.
+
+on:
+  schedule:
+    - cron: "0 12 * * *"   # daily, 8:00 AM Eastern in summer, 7:00 AM in winter
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: List what would move instead of moving it
+        type: boolean
+        default: true
+
+permissions: {}
+
+# One run at a time, so two runs close together can't race on the same items.
+concurrency:
+  group: project-carry-over
+  cancel-in-progress: false
+
+env:
+  PROJECT_OWNER: anthonythanpoovong
+  PROJECT_NUMBER: "2"
+
+jobs:
+  carry-over:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: .github/scripts
+      - name: Carry unfinished items into the running sprint
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
+        run: |
+          [ -n "$GH_TOKEN" ] || { echo "::error::PROJECT_TOKEN is not set"; exit 1; }
+          .github/scripts/project-carry-over.sh

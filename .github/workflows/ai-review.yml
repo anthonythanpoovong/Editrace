@@ -13,25 +13,53 @@ jobs:
     # Advisory only: never make this a required check. Runs on drafts; skips forks (they can't read the token).
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Up to 10 minutes waiting for CI's coverage, then the review itself.
+    timeout-minutes: 25
     permissions:
       contents: read
       pull-requests: write
       id-token: write
+      checks: read # CI's coverage check on this commit (#125)
+      actions: read # CI's coverage-summary artifact for this commit (#125)
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
       # Armour's rules come from the base commit, not from the PR: a PR must not be able to edit
-      # the rules it is reviewed under. Only this one file is fetched, into a separate directory.
+      # the rules it is reviewed under, or the script that gathers its inputs. Only these files are
+      # fetched, into a separate directory.
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           path: armour-trusted
-          sparse-checkout: .github/armour.md
+          sparse-checkout: |
+            .github/armour.md
+            .github/scripts/armour-inputs.sh
+            .github/scripts/coverage-render.sh
           sparse-checkout-cone-mode: false
           fetch-depth: 1
+
+      # The PR's changed files, and CI's coverage numbers for this commit once CI's coverage job finishes
+      # (waits up to 10 minutes): its coverage-summary artifact, rendered as CI's Coverage comment is. Armour
+      # quotes them rather than estimating (#125). The base branch's copies of the scripts run, so a PR can't
+      # plant numbers. Never blocks the review: on any problem Armour says
+      # coverage is pending.
+      - name: Changed files and CI coverage for Armour
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          OUT: armour-trusted/inputs
+        run: |
+          script=armour-trusted/.github/scripts/armour-inputs.sh
+          if [ -f "$script" ]; then
+            bash "$script"
+          else
+            echo "The base branch has no armour-inputs.sh yet; Armour reviews without it."
+          fi
 
       - uses: anthropics/claude-code-action@v1
         with:
@@ -48,7 +76,10 @@ jobs:
             changes it, review that change like any other file. Also read docs/plan.md for project context.
             The PR branch is checked out in the current working directory. Use `gh pr diff` to see the changes.
 
-            Post exactly one top-level comment, in the format armour.md defines. Write the comment body to
+            armour-trusted/inputs/files.md lists the PR's changed files and armour-trusted/inputs/coverage.md
+            holds CI's coverage numbers for this commit. Use them as armour.md says; never estimate coverage.
+
+            Post exactly one top-level review comment for this commit, in the format armour.md defines. Write the comment body to
             armour-comment.md with the Write tool, then post it with `gh pr comment ${{ github.event.pull_request.number }} --body-file armour-comment.md`.
             Never pass the body inline with `--body`: shell quoting turns the newlines into literal `\n` or flattens
             the markdown into one line.
@@ -59,6 +90,10 @@ jobs:
           claude_args: |
             --model claude-sonnet-5-5
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Edit(armour-comment.md),Read,Glob,Grep"
+          # Temporary (#233): Armour sometimes ends without posting after a denied tool call, and the log hides
+          # which one. Full output shows every tool call in the run log (private repo: team only). Turn off once
+          # the cause is fixed.
+          show_full_output: true
 
   notice:
     name: Armour skip notice
