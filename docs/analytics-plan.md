@@ -171,10 +171,12 @@ Every event is written by **our server**. The browser and the Bridge never write
 
 **Browser events** (`upload_started`, `breakdown_viewed`, `assistant_feedback`) go to a thin first-party route, e.g. `POST /api/track`. The route:
 1. requires a signed-in Supabase session, and drops the event otherwise;
-2. checks the event name and every property against the typed allowlist, and drops anything that doesn't match;
-3. applies a per-user rate limit (#50), so one client can't flood the metrics;
-4. takes `user_id` from the session, never from the request body, so a user can only ever record events as themselves;
-5. stamps `occurred_at` and passes the event to `track()`.
+2. accepts only the three browser events, and drops everything else. Server-only events such as `upload_completed` or `template_exported` are never accepted here, so nobody can forge the events time to editor depends on;
+3. checks every property against the typed allowlist, and drops the event if anything doesn't match;
+4. checks that any `job_id` or `answer_id` in the body belongs to the signed-in user, so nobody can attach events to someone else's job;
+5. applies a per-user rate limit (#50), so one client can't flood the metrics;
+6. takes `user_id` from the session, never from the request body, so a user can only ever record events as themselves;
+7. stamps `occurred_at` and passes the event to `track()`.
 
 **Server events** (all the others) call `track()` directly from the route or service where the action happens, including the remote MCP server (#27).
 
