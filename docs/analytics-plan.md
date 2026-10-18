@@ -39,7 +39,7 @@ The schema is a starting contract, not a frozen spec. Expect it to change as #15
 
 ## Decision: build in-house, no analytics vendor
 
-Events are stored in a table in our own Supabase Postgres. The dashboard is a set of saved SQL queries over that table. No event data leaves our system.
+Events are stored in a table in our own Supabase Postgres. The dashboard is an admin-only page in the web app, backed by SQL functions over that table. No event data leaves our system.
 
 **Why not a vendor.** PostHog was the leaning candidate, with Amplitude, Mixpanel and GA4 also considered. For the dashboard #51 needs, a vendor saves little work and adds a lot:
 - **The hardest tile is custom SQL either way.** Vendors' built-in funnels measure time per *person*, but time to editor is measured per *job*. Only the funnel and the charting itself come ready-made.
@@ -50,7 +50,11 @@ Events are stored in a table in our own Supabase Postgres. The dashboard is a se
   - another account, set of keys, and eventually a bill.
 - **In-house gets most of that for free.** Events sit inside the existing RLS boundary, account deletion is a cascade, and it costs $0, in line with the plan's "$0 until revenue" constraint.
 
-**What we give up:** point-and-click exploration (ad-hoc funnels, cohorts, retention charts). Asking a new question means writing SQL. That's acceptable while #51 needs fixed metrics. [If we outgrow this](#if-we-outgrow-this) covers the way out.
+**What we give up:**
+- **Ready-made charts.** We build the five charts ourselves, in the dashboard page.
+- **Point-and-click exploration**, such as ad-hoc funnels, cohorts and retention charts. Asking a new question means writing SQL, which the team can run in Supabase Studio.
+
+That's acceptable while #51 needs fixed metrics. [If we outgrow this](#if-we-outgrow-this) covers the way out.
 
 **Why one events table, not queries over product tables.** Some metrics could be read from the tables each flow writes anyway (`jobs`, the export audit log, tokens). But those tables don't exist yet and will keep changing, and two of the events (`upload_started`, `breakdown_viewed`) have no product row at all. One events table keeps the dashboard independent of other stories' schemas, and keeps the whole contract in this doc.
 
@@ -83,7 +87,7 @@ Indexes:
   Either one alone would block the browser. Both together mean a mistaken policy added later still can't expose the table.
 - **Only server code writes to it**, through `track()`, using the service role. The service-role client is imported only from server-only modules (`import 'server-only'`), so a client-side import fails the build rather than leaking the key.
 - **Users can't read it**, not even their own rows.
-- **The dashboard reads it** through views in a separate `analytics` schema. That schema isn't exposed through Supabase's Data API and grants nothing to `anon` or `authenticated`, so the views can't be reached from the browser.
+- **The dashboard reads it** through one SQL function per tile (see [Dashboard](#dashboard)). Postgres lets everyone (`PUBLIC`) execute new functions by default, so each one has `execute` revoked from `public`, `anon` and `authenticated` and granted only to `service_role`. The browser can't call them.
 - **Test:** the migration's two-user access test checks that a signed-in user gets zero rows and can't insert, including for their own `user_id`.
 
 ## Event schema
@@ -200,14 +204,23 @@ Every event is written by **our server**. The browser and the Bridge never write
   The typed allowlist and the closed `properties` values are what enforce this. There's no column a free-text value could land in by accident.
 - **Still personal data.** Events are linked to `user_id`, so under GDPR this is personal data, handled like the rest of the database. It never leaves our Supabase project, so no new data processor is involved. #56's privacy policy should still say that we measure product usage.
 - **What changes in the system:**
-  - **New:** the `analytics_events` table and the `analytics` view schema (migration and RLS test with #15), the `/api/track` route (#15), and the Bridge's apply-report call to the API (#75).
+  - **New:** the `analytics_events` table (migration and RLS test with #15), the `/api/track` route (#15), the Bridge's apply-report call to the API (#75), and the dashboard's SQL functions and admin page (#51).
   - **Unchanged:** `template.schema.json`, existing tables and RLS policies, and every MCP tool's inputs and outputs.
 - **Retention:** events are kept for 1 year, which is long enough to compare cohorts across a year. A daily scheduled job deletes older rows, using `pg_cron` or #56's retention job.
 - **Account deletion:** deleting the user removes all their events through `on delete cascade`. There's no separate step, and nothing outside our database to clean up. Database backups keep deleted rows until the backups expire, like every other table. #56's policy should say so.
 
 ## Dashboard
 
-#51's acceptance criterion is "a dashboard with the metrics from `docs/plan.md`". It's built as saved SQL queries over views in the `analytics` schema, charted in Supabase Studio, which anyone with access to the Supabase project can already open. Before building on Studio's charting, check that it's good enough for the tiles below. If it isn't, the same views back an admin-only `/metrics` page in the web app.
+#51's acceptance criterion is "a dashboard with the metrics from `docs/plan.md`". It's an admin-only page in the web app, e.g. `/admin/metrics`, built by #51.
+
+**How it works:**
+- **One SQL function per tile**, e.g. `analytics_time_to_editor()`, each returning the rows its chart needs. They ship in #51's migration, with the grants described in [Storage](#storage). Keeping the SQL in Postgres means each tile can be tested and run on its own, including from Supabase Studio.
+- **The page is a server component.** It checks that the signed-in user is an admin, calls the functions with the service-role client, and renders the charts. No analytics data or query reaches the browser except the chart values.
+- **Who counts as an admin:** users with `role: "admin"` in their Supabase `app_metadata`. Users can't edit `app_metadata` themselves; only the service role can set it.
+- **Everyone else gets a 404**, so the page's existence isn't advertised. A test covers both cases: a non-admin gets a 404, and an admin sees data.
+- **Charts** use a charting library chosen during implementation. Each tile also shows its numbers as a table, so the values can be checked without reading the chart.
+
+**Tiles:**
 
 | Tile | Shows | Built from |
 |---|---|---|
@@ -218,8 +231,9 @@ Every event is written by **our server**. The browser and the Bridge never write
 | Assistant quality | Weekly thumbs-up rate and citation rate | `assistant_feedback`, `assistant_answered` |
 
 **#51 is done when:**
-- every tile renders from real staging or production events, not seeded data; and
-- the time-to-editor figures for at least 3 jobs have been checked by hand against their `jobs` rows.
+- every tile on the admin page renders from real staging or production events, not seeded data;
+- the time-to-editor figures for at least 3 jobs have been checked by hand against their `jobs` rows; and
+- the access test passes: a non-admin gets a 404, and the browser can't call the dashboard functions.
 
 This PR doesn't close #51; the issue stays open until the dashboard meets that bar.
 
@@ -239,7 +253,7 @@ Each story below adds its own `track()` calls against this contract when it ship
 
 | Story | Adds |
 |---|---|
-| #15 (auth) | The `analytics_events` migration with its RLS test; the `analytics` view schema; the `track()` module; `/api/track`; `signup_completed` |
+| #15 (auth) | The `analytics_events` migration with its RLS test; the `track()` module; `/api/track`; `signup_completed` |
 | #16 (upload flow) | `upload_started`, `upload_completed` |
 | #18 (breakdown page) | `breakdown_viewed` |
 | #64 (export buttons), #72 (`export_template`) | `template_exported` |
@@ -247,13 +261,12 @@ Each story below adds its own `track()` calls against this contract when it ship
 | #75 (Bridge tools) | The apply-report call to the API, which emits `template_applied` |
 | #65 (assistant backend), #66 (chat panel) | `assistant_answered`, `assistant_feedback` |
 | #56 (privacy and retention) | Product analytics in the privacy policy; the 1-year retention job, if it's shared |
-| #51 (this story) | The dashboard views and tiles, built as their events start flowing |
+| #51 (this story) | The admin `/admin/metrics` page, the admin check, and one SQL function per tile, each tile built as its events start flowing |
 
 ## Open questions
 
 | Open question | Owner |
 |---|---|
-| Is Supabase Studio's charting good enough for the five tiles, or does #51 need the admin `/metrics` page? #51 is labelled `area:frontend`, which may mean an in-app page was intended | #51's owner |
 | The exclusion list in [Privacy & data](#privacy--data) needs reconciling with #56, which also defines what we record | Whoever picks up #56 |
 | Is opt-out legally required for product analytics (e.g. under GDPR)? If so, `track()` checks a per-user flag and drops that user's events | Whoever picks up #56 |
 | `template_exported` records an export URL being issued, not the template being opened in an editor | Whoever picks up #64; revisit once the Bridge's `open_export` (#75) could report a real open |
@@ -265,10 +278,10 @@ Each story below adds its own `track()` calls against this contract when it ship
 | Area | Verdict | Note |
 |---|---|---|
 | Problem & evidence | ⚠️ weak | No customer evidence; justified by the MVP gate needing a measurement and by separation of concerns (own story vs. folding into #15) |
-| Smallest valuable version | ✅ | One events table, a typed `track()`, and five saved queries; no vendor |
+| Smallest valuable version | ✅ | One events table, a typed `track()`, and an admin page with five tiles; no vendor |
 | Alternatives | ✅ | PostHog, Amplitude, Mixpanel and GA4 considered; rejected for now because the hardest tile is custom SQL either way, and a vendor adds identity mapping, deletion and processor work |
 | Fit with Key Decisions | ✅ | Uses the existing stack (Supabase, Next.js) and the $0-until-revenue constraint; no ADR needed unless a vendor is added later |
-| Data/schema | ⚠️ | One new table (`analytics_events`) and a view schema, with migration and RLS test in #15; no `template.schema.json` or MCP tool contract changes |
+| Data/schema | ⚠️ | One new table (`analytics_events`), with migration and RLS test in #15, plus service-role-only dashboard functions in #51; no `template.schema.json` or MCP tool contract changes |
 | Security/privacy | ✅ | No data leaves our system; RLS with no policies plus revoked grants; server-side allowlist; 1-year retention; deletion by cascade |
 | Cost | ✅ | $0; one small table in the existing database |
 | Failure modes | ✅ | `track()` never throws or blocks, and dropped events are acceptable; see Reliability |
