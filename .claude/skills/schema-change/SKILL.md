@@ -39,7 +39,7 @@ If you're unsure, treat it as breaking.
 5. Find consumers that need updating: search workers, exporters, web and MCP tools for the changed section and fix them in the same PR, or open follow-up issues.
 
 ## 4. Version
-- Bump the schema's version per its versioning rule (see the wiki `Template-Schema` page). If none is defined yet, flag that as a TODO on #1 rather than inventing a scheme.
+- Bump `schema/VERSION` per the table in `docs/schema.md` ("Versioning"), then run `make codegen` again: readers compare a template's `schema_version` with this file, so a stale one makes them accept or reject the wrong templates. A major bump needs an ADR and a migration (`/propose-adr`).
 - Additive changes: old templates must still validate. Prove it by validating the existing examples unchanged.
 
 ## 5. PR

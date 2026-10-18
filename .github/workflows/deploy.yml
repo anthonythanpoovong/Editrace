@@ -47,11 +47,14 @@ jobs:
   # still blocks it when the commit's author isn't on the team: that ends as a note on the PR, not a failure.
   # Anyone with write access can edit this workflow in their branch and read the secrets, which is already true of
   # every secret in the repo.
+  # Armour eval PRs (#128, scripts/armour-eval) get no preview: they hold deliberately buggy code, and a
+  # preview would outlive the PR.
   preview:
     needs: detect
     if: >-
       github.event_name == 'pull_request'
       && github.event.pull_request.head.repo.full_name == github.repository
+      && !startsWith(github.head_ref, 'armour-eval/')
       && needs.detect.outputs.web == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
