@@ -21,13 +21,32 @@ Review only the lines this PR changes, plus the code they directly affect. Be sp
 - Breaking changes to the template schema, MCP tool contracts or DB migrations without a migration path
 
 **Upgrades**: worthwhile improvements, not style nits.
-- Simpler or more idiomatic approaches, meaningful performance wins, missing tests for risky logic
+- Simpler or more idiomatic approaches, meaningful performance wins, missing tests for other logic
 - Deprecated APIs or outdated dependencies touched by this PR
 
+## Tests and follow-ups
+
+The team's own rules. Each one has a fixed severity.
+
+- **Uncovered risky logic (🟠):** `armour-trusted/inputs/coverage.md` lists, per file, the changed lines CI's tests never ran (`lines 12, 13, 20`, for up to 15 files). If any of those lines is auth or access control, billing or plan limits, time conversion (frames, fps, seconds, timecode) or a cost limit (GPU or LLM budgets, retry caps, quotas), flag it at that line and say which test would cover it. Python and TypeScript only. Use only CI's line numbers: if `coverage.md` isn't `status: measured`, or doesn't list the file, don't raise this.
+- **Migration or RLS change without a two-user test (🔴):** SQL isn't in the coverage report, so check by hand. A PR that adds or changes a table or policy in `supabase/migrations/` needs a test in `supabase/tests/database/` that names that table and proves it (copied from `001_two_user_probe.test.sql`: user A can read and change their own row, user B and anonymous users can't). If there's none, or the test doesn't cover the changed policy, flag it and point to `/db-migration`.
+- **New code without tests (🟠):** a new API route (`web/app/**/route.ts`), MCP tool (remote server or Bridge) or worker (`workers/`) with no test in the PR that calls it. A route or tool test covers the signed-out and other-user cases too. Point to the skill that sets it up: `/mcp-tool` for tools, `/new-detector` for workers, `/db-migration` for migrations.
+- **Large change with no `/sync-docs` note (🟠):** the PR touches something `/sync-docs` documents (`schema/template.schema.json`, `docs/decisions/`, `docs/epics/`, `.claude/skills/`, `.github/workflows/`, `supabase/migrations/`, an MCP tool, a new top-level folder, or new setup: commands, env vars, secrets), and the PR body (`gh pr view`) neither ticks the template's "Run `/sync-docs` after merge" box nor otherwise says to run `/sync-docs` after merge. Flag it at the first such file. A PR that is itself the docs sync doesn't need one.
+
 ## Severity
-- 🔴 **Must fix**: bug, security or data risk
-- 🟠 **Should fix**: likely problem or clear risk
-- 🟢 **Consider**: upgrade or improvement
+- 🔴 **Must fix**: bug, security or data risk. Merging it would break something or expose data.
+- 🟠 **Should fix**: likely problem or clear risk. Fine to merge only with a reason.
+- 🟢 **Consider**: upgrade or improvement. Merging without it is fine.
+
+Examples, to calibrate:
+- 🔴 An RLS policy `using (true)` on a table of user rows: every user reads everyone's rows.
+- 🔴 An MCP token compared in plain text against a column that stores it unhashed.
+- 🔴 An `await` missing on a write, so the API returns success before the row is saved.
+- 🟠 A refund branch in the billing code that CI's coverage shows no test ran.
+- 🟠 A new worker whose GPU minutes have no per-job cap.
+- 🟢 A clearer name, or an extra edge-case test for code that isn't risky.
+
+If the author could merge it now and fix it next week without harm, it's not 🔴. Don't raise a severity to get attention, and don't lower one because the fix is small.
 
 ## Top-level comment
 
