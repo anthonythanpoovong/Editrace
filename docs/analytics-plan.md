@@ -116,7 +116,7 @@ Every event feeds a metric in the [Objective](#objective) table. Nothing is trac
 | `editor_type` | `capcut` \| `resolve` \| `premiere` \| `fcp` |
 | `via` | `web` \| `mcp` |
 | `client_kind` | `remote` \| `bridge` |
-| `client_name` | The MCP client's self-reported name from the `initialize` handshake (e.g. `claude-ai`), or `unknown` |
+| `client_name` | `claude-desktop` \| `claude-code` \| `claude-ai` \| `cursor` \| `other`. The server maps the client's self-reported name from the MCP `initialize` handshake onto this list, and stores anything it doesn't recognise, or a missing name, as `other`. The raw string is never stored, because the client controls it. Add a value when a new client shows up often enough to matter |
 | `file_duration_s` | Number |
 | `had_citation`, `thumbs_up` | Boolean |
 | `answer_id` | The answer's ID from #65 |
