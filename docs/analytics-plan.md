@@ -62,12 +62,16 @@ All events go in one table, created by #15's migration via the `db-migration` sk
 |---|---|---|
 | `id` | `bigint`, generated identity | Primary key |
 | `user_id` | `uuid`, not null | References `auth.users` with `on delete cascade` |
-| `event` | `text`, not null | A `check` constraint limits it to the event names below |
-| `job_id` | `uuid`, nullable | Set on job-related events. Deliberately not a foreign key, so deleting a job doesn't rewrite past metrics. Account deletion still removes the rows, through `user_id` |
+| `event` | `text`, not null | A `check` constraint limits it to the event names below, so adding an event means a migration. That's deliberate: the event list can't grow without review |
+| `job_id` | Same type as `jobs.id` (#16), nullable | Set on job-related events. Deliberately not a foreign key, so deleting a job doesn't rewrite past metrics. Account deletion still removes the rows, through `user_id` |
 | `properties` | `jsonb`, not null, default `'{}'` | The other properties in the Event schema table |
 | `occurred_at` | `timestamptz`, not null | Server time when the event happened, set by `track()` (see [Time to editor](#time-to-editor)) |
 
-Indexes on `(event, occurred_at)` and `(job_id)` cover the dashboard queries.
+Indexes:
+- `(event, occurred_at)` and `(job_id)` serve the dashboard queries.
+- `(user_id, occurred_at)` serves the funnel and active-user queries. It also keeps account deletion fast, since the cascade finds a user's rows through it rather than scanning the table.
+
+**Only what the metrics need is stored.** Each event is one small row: an event name, the user, an optional job, a few closed-value properties and a timestamp. There's no content, no free text, and nothing kept beyond the 1-year retention. A row with no metric to feed doesn't get an event.
 
 **Access:**
 - **RLS is enabled with no policies**, and `anon` and `authenticated` have all privileges revoked:
@@ -77,9 +81,9 @@ Indexes on `(event, occurred_at)` and `(job_id)` cover the dashboard queries.
   ```
 
   Either one alone would block the browser. Both together mean a mistaken policy added later still can't expose the table.
-- **Only server code writes to it**, through `track()`, using the service role.
+- **Only server code writes to it**, through `track()`, using the service role. The service-role client is imported only from server-only modules (`import 'server-only'`), so a client-side import fails the build rather than leaking the key.
 - **Users can't read it**, not even their own rows.
-- **The dashboard reads it** through views in a separate `analytics` schema. That schema isn't exposed through Supabase's Data API, so the views can't be reached from the browser.
+- **The dashboard reads it** through views in a separate `analytics` schema. That schema isn't exposed through Supabase's Data API and grants nothing to `anon` or `authenticated`, so the views can't be reached from the browser.
 - **Test:** the migration's two-user access test checks that a signed-in user gets zero rows and can't insert, including for their own `user_id`.
 
 ## Event schema
@@ -114,6 +118,8 @@ Every event feeds a metric in the [Objective](#objective) table. Nothing is trac
 | `answer_id` | The answer's ID from #65 |
 
 **The Bridge reports applies; it doesn't write events itself.** The Bridge runs on the user's machine and has no database access. After a successful apply, it sends a short summary (template ID, editor) to the Editrace API with the token it already uses. The API looks up the template's `job_id` and calls `track()`. This adds one small API call to #75's scope. It doesn't change any MCP tool's inputs or outputs. If the Bridge is offline when an apply finishes, that event is lost, which [Reliability](#reliability) accepts.
+
+**Repeat events are expected.** A user can start several uploads or open a breakdown many times, and each one is a row. Queries use the first occurrence per user or per job where that's what the metric means, as in the funnel and time to editor.
 
 **Citations are counted per answer, not per rating.** Only some answers get rated, so reading `had_citation` off feedback events would measure the citation rate of rated answers only.
 
@@ -178,6 +184,7 @@ Every event is written by **our server**. The browser and the Bridge never write
 - **It never throws.** Errors are caught, logged as a warning through #50's logging (event name and error only), and the event is dropped.
 - **It never blocks a response.** Server code writes events after the response, e.g. with Next's `after()`, using the `occurred_at` captured at call time. The browser posts to `/api/track` with `fetch(..., { keepalive: true })` and ignores the result.
 - **It has a short timeout and no retries in v1.** Losing an occasional event is acceptable. Slowing down an upload or an export is not.
+- **It can be switched off.** With analytics disabled by an environment flag (unit tests, and any environment without the service-role key), it's a no-op, so tests never depend on the table.
 
 ## Privacy & data
 
@@ -198,7 +205,7 @@ Every event is written by **our server**. The browser and the Bridge never write
 
 ## Dashboard
 
-#51's acceptance criterion is "a dashboard with the metrics from `docs/plan.md`". It's built as saved SQL queries over views in the `analytics` schema, charted in Supabase Studio, which the whole team can already open. Before building on Studio's charting, check that it's good enough for the tiles below. If it isn't, the same views back an admin-only `/metrics` page in the web app.
+#51's acceptance criterion is "a dashboard with the metrics from `docs/plan.md`". It's built as saved SQL queries over views in the `analytics` schema, charted in Supabase Studio, which anyone with access to the Supabase project can already open. Before building on Studio's charting, check that it's good enough for the tiles below. If it isn't, the same views back an admin-only `/metrics` page in the web app.
 
 | Tile | Shows | Built from |
 |---|---|---|
@@ -216,7 +223,7 @@ This PR doesn't close #51; the issue stays open until the dashboard meets that b
 
 ## If we outgrow this
 
-Move to a vendor such as PostHog when the team regularly needs questions the fixed tiles can't answer, or when writing SQL for each question becomes the bottleneck. It's a two-way door, because `track()` is the only code that knows where events go:
+Move to a vendor such as PostHog when the team regularly needs questions the fixed tiles can't answer, when writing SQL for each question becomes the bottleneck, or when event writes start to show up in the production database's load. It's a two-way door, because `track()` is the only code that knows where events go:
 1. **Identity:** add an `analytics_id`, a random UUID per user in a service-role-only mapping table. The vendor gets `analytics_id`, never `user_id`. It's random rather than a hash of `user_id`, so nobody can recompute it, and deleting the mapping row cuts the link for good.
 2. **Collection:** `track()` forwards each event to the vendor's server-side API, in addition to (or instead of) the table. `/api/track` keeps the vendor key and SDK out of the browser and the Bridge.
 3. **Deletion:** account deletion gains a vendor-side step: read the `analytics_id`, ask the vendor to delete its events, then delete the user.
