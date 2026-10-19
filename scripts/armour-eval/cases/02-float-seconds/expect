@@ -1,1 +1,0 @@
-float[- ]?seconds|seconds.{0,80}(but|instead of|not|rather than|while).{0,80}frames?|integer frames|frames? .{0,40}(as|in) seconds
