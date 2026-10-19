@@ -120,6 +120,11 @@ if [ -n "$base_ref" ]; then
   [ "$src" != "$(git -C "$here" rev-parse HEAD)" ] \
     || [ -z "$(git -C "$here" status --porcelain -- :/.github/armour.md :/.github/workflows/ai-review.yml)" ] \
     || die "armour.md or ai-review.yml has uncommitted changes; commit them first, so the score names the rules it used"
+  # claude-code-action skips any PR whose copy of its workflow differs from main's, so every case would come back
+  # "not reviewed". A model change can only be scored once it's on main.
+  [ "$(git -C "$here" rev-parse "$src:.github/workflows/ai-review.yml")" \
+    = "$(git -C "$here" rev-parse origin/main:.github/workflows/ai-review.yml)" ] \
+    || die "--base: $base_ref's ai-review.yml differs from main's, and Armour skips PRs whose workflow differs from main's. Merge main into it first."
 fi
 git -C "$here" worktree add -q --detach "$wt" "$src"
 src_sha=$(git -C "$wt" rev-parse HEAD)

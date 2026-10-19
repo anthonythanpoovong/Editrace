@@ -4,7 +4,7 @@ Measures whether [Editrace Armour](../../.github/armour.md) catches real problem
 
 ## When to run it
 
-Only when `.github/armour.md` or the Armour model (`--model` in `.github/workflows/ai-review.yml`) changes. Armour reviews with its base branch's rules, so by default the eval scores `main`'s. To score a change before it merges, run it from that branch with `--base HEAD`: the eval base is then built from your branch's last commit (commit the rules first). Its score is marked `not main`. Each run costs about one Armour review per case (8 today) from the owner's Claude Pro usage, plus about 20 Actions minutes.
+Only when `.github/armour.md` or the Armour model (`--model` in `.github/workflows/ai-review.yml`) changes. Armour reviews with its base branch's rules, so by default the eval scores `main`'s. To score a change before it merges, run it from that branch with `--base HEAD`: the eval base is then built from your branch's last commit (commit the rules first). Its score is marked `not main`. The branch's `ai-review.yml` must match `main`'s (merge `main` in first): Armour skips any PR whose workflow differs from `main`'s, so a model change can only be scored once it's on `main`. Each run costs about one Armour review per case (8 today) from the owner's Claude Pro usage, plus about 20 Actions minutes.
 
 ## Run it
 
