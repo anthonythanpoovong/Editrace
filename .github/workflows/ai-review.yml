@@ -2,7 +2,7 @@ name: Editrace Armour (AI review)
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
   group: armour-${{ github.event.pull_request.number }}
@@ -10,8 +10,9 @@ concurrency:
 
 jobs:
   review:
-    # Advisory only: never make this a required check. Runs on drafts; skips forks (they can't read the token).
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    # Advisory only: never make this a required check. Skips drafts (saves Actions minutes; it runs when the PR is marked
+    # ready) except armour-eval/ branches (the eval opens its PRs as drafts, #128), and forks (they can't read the token).
+    if: github.event.pull_request.head.repo.full_name == github.repository && (!github.event.pull_request.draft || startsWith(github.head_ref, 'armour-eval/'))
     runs-on: ubuntu-latest
     # Up to 10 minutes waiting for CI's coverage, then the review itself.
     timeout-minutes: 25
@@ -110,7 +111,7 @@ jobs:
     # It checks for Armour's comment itself, so a review still counts if the review job died after posting.
     # Same fork guard as review: fork PRs get a read-only token, so this would fail with a red check.
     needs: review
-    if: always() && github.event.pull_request.head.repo.full_name == github.repository
+    if: always() && github.event.pull_request.head.repo.full_name == github.repository && (!github.event.pull_request.draft || startsWith(github.head_ref, 'armour-eval/'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
