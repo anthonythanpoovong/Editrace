@@ -1,1 +1,1 @@
-no auth|without auth|unauthenticated|no owner|owner (check|filter)|any (caller|user|one)|anyone|other users|cross-user|IDOR
+no auth(entication|orization)?( check)?\b(?! ?tests?)|without (an? )?auth|never checks who|no owner|owner (check|filter)|IDOR|cross-user|(read|fetch|get) any user's
