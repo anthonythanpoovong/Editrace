@@ -4,7 +4,7 @@ Measures whether [Editrace Armour](../../.github/armour.md) catches real problem
 
 ## When to run it
 
-Only when `.github/armour.md` or the Armour model (`--model` in `.github/workflows/ai-review.yml`) changes. Armour reviews with its base branch's rules, so by default the eval scores `main`'s. To score a change before it merges, run it from that branch with `--base HEAD`: the eval base is then built from your branch's last commit (commit the rules first). Its score is marked `not main`. The branch's `ai-review.yml` must match `main`'s (merge `main` in first): Armour skips any PR whose workflow differs from `main`'s, so a model change can only be scored once it's on `main`. Each run costs about one Armour review per case (8 today) from the owner's Claude Pro usage, plus about 20 Actions minutes.
+Only when `.github/armour.md` or the Armour model (`--model` in `.github/workflows/ai-review.yml`) changes. Armour reviews with its base branch's rules, so by default the eval scores `main`'s. To score a change before it merges, run it from that branch with `--base HEAD`: the eval base is then built from your branch's last commit (commit the rules first). Its score is marked `not main`. The branch's `ai-review.yml` must match `main`'s (merge `main` in first): Armour skips any PR whose workflow differs from `main`'s, so a model change can only be scored once it's on `main`. Each run costs about one Armour review per case (9 today) from the owner's Claude Pro usage, plus about 20 Actions minutes.
 
 ## Run it
 
@@ -17,7 +17,7 @@ scripts/armour-eval/run.sh --cleanup     # close eval PRs and delete eval branch
 
 Run it on your own machine, logged in with `gh auth login`. It needs `git`, `gh` and `jq`, plus push access to the repo. It refuses to run in GitHub Actions: PRs opened with `GITHUB_TOKEN` don't trigger other workflows, so Armour would never review them. No token is created or stored anywhere.
 
-It refuses to start while `scripts/armour-eval/` has uncommitted changes, so every score names the commit its cases came from. It takes 5–15 minutes. A valid score is appended to [`RESULTS.md`](RESULTS.md), with the model, the `armour.md` and cases commits and the `main` commit it was built from (or `--base`'s, marked `not main`): commit that file with the rules or model change. **Target: at least 80% caught (7 of 8 today).** If Armour didn't review a case (usage limit, error or a timeout after 30 minutes) or a case couldn't be scored, the score is marked not valid, nothing is recorded, and the script exits with code 2. Re-run it later. A valid score below the target is recorded and exits with code 1.
+It refuses to start while `scripts/armour-eval/` has uncommitted changes, so every score names the commit its cases came from. It takes 5–15 minutes. A valid score is appended to [`RESULTS.md`](RESULTS.md), with the model, the `armour.md` and cases commits and the `main` commit it was built from (or `--base`'s, marked `not main`): commit that file with the rules or model change. **Target: at least 80% caught (8 of 9 today).** If Armour didn't review a case (usage limit, error or a timeout after 30 minutes) or a case couldn't be scored, the score is marked not valid, nothing is recorded, and the script exits with code 2. Re-run it later. A valid score below the target is recorded and exits with code 1.
 
 ## How it works
 
@@ -38,6 +38,7 @@ It refuses to start while `scripts/armour-eval/` has uncommitted changes, so eve
 | `06-untested-timecode` | A timecode helper's drop-frame branch has no test (CI's coverage lists those lines) |
 | `07-route-no-test` | A new API route with no test |
 | `08-skill-no-sync-docs` | A new skill, and the PR doesn't say to run `/sync-docs` after merge |
+| `09-migration-no-rls-test` | A new table with correct owner policies but no two-user RLS test |
 
 To add a case, create `cases/<nn-name>/` with:
 

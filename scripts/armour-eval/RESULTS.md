@@ -1,6 +1,6 @@
 # Armour eval results
 
-One row per valid run of `run.sh`. Target: at least 80% caught (4 of 5 until 2026-10-19, 7 of 8 since).
+One row per valid run of `run.sh`. Target: at least 80% of the cases caught, rounded up (8 of 9 today).
 
 | Date (UTC) | Score | Model | `armour.md` | Cases | main | Missed |
 |---|---|---|---|---|---|---|
