@@ -67,7 +67,7 @@ Each secret lives in **one** place. Don't copy values between systems except thr
 |---|---|---|
 | `VERCEL_TOKEN`, `VERCEL_ORG_ID` | GitHub repo secrets | `deploy.yml` |
 | `VERCEL_PROJECT_ID_NP`, `VERCEL_PROJECT_ID_PROD` | GitHub repo variables | `deploy.yml` |
-| `SUPABASE_ACCESS_TOKEN` | GitHub environment secret, in both `staging` and `Production` (one dedicated token; it is account-wide, so it can reach every project) | `deploy.yml` migration steps |
+| `SUPABASE_ACCESS_TOKEN` | GitHub environment secret, a different token in `staging` and `Production`. Each is a read-only token scoped to that environment's one Supabase project, so the staging token can't reach prod | `deploy.yml` migration steps |
 | `SUPABASE_DB_PASSWORD` | GitHub environment secret, a different value in `staging` and `Production` | `deploy.yml` migration steps |
 | `SUPABASE_PROJECT_REF` | GitHub environment variable, a different value in `staging` and `Production` | `deploy.yml` migration steps |
 | `STAGING_ALIAS` | GitHub repo variable | `deploy.yml` (staging host shown on the environment and in the commit status) |
@@ -80,5 +80,6 @@ Each secret lives in **one** place. Don't copy values between systems except thr
 Rules:
 
 - Real values never go in git. `.env`, `.env.local` and `.env.*.local` are ignored, and gitleaks runs on every PR.
+- The `staging` environment only accepts deployments from `main` (Settings → Environments → staging → Deployment branches), like `Production` accepts protected branches. A branch workflow can't read the staging secrets.
 - Staging and prod use different Supabase projects, Stripe keys (test vs live) and Modal environments, so a staging mistake can't touch production data.
 - Rotate a token by creating the new one first, updating the secret, then revoking the old one. If a token shows up in a chat, log or commit, revoke it straight away.
