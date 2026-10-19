@@ -1,0 +1,5 @@
+# Armour's real 🔴/🟠 findings on this case, from each eval run.
+# '+' lines are about the seeded bug and must match expect; '-' lines are other findings and must not.
+# Eval run 20261019-165528 (#127, this branch's rules).
++ - 🟠 **F1** `web/lib/timecode.ts:16`: CI's tests never ran the drop-frame branch (lines 16–21), which is time conversion. A wrong frame skip gives off-by-N timecodes. **Fix:** Add tests in `web/lib/timecode.test.ts` for 29.97 and 59.94, e.g. frame 1800 → `00:01:00;02`, frame 17982 → `00:10:00;00`, and 59.94 at the minute boundary.
+- - 🟠 **F2** `web/lib/timecode.ts:14`: `fps === 29.97 || fps === 59.94` takes float fps, but the plan says rational fps. The real NTSC rate 30000/1001 (≈29.97003) fails the check and is silently formatted as non-drop 30 fps, so timecodes drift. **Fix:** Take fps as {num, den} per the schema (ADR 0002) and detect drop-frame as den === 1001, or compare with a tolerance.

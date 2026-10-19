@@ -1,0 +1,4 @@
+# Armour's real 🔴/🟠 findings on this case, from each eval run.
+# '+' lines are about the seeded bug and must match expect; '-' lines are other findings and must not.
+# Eval run 20261019-165528 (#127, this branch's rules).
++ - 🟠 **F1** `.claude/skills/release-notes/SKILL.md:1`: This PR adds a skill under `.claude/skills/`, which `/sync-docs` documents. The PR body doesn't tick "Run `/sync-docs` after merge" or say to run it. **Fix:** Add "Run `/sync-docs` after merge" to the PR body.

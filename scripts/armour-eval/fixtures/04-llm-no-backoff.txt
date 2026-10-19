@@ -19,3 +19,6 @@
 - 🟠 Errors are swallowed and logged with `console.warn`. The full `err` object may include request details. Rethrow so the caller can return a proper error to the user.
 # From case 05's run (20261012-232528): a finding about another call's retries, which this pattern must not count.
 - - 🟠 `workers/sound/identify.py:13`: `subprocess.run` has no timeout, and the fingerprint call has no limit or backoff. **Fix:** add `timeout=`, and bound retries with backoff on the provider call.
+# Eval run 20261019-165528 (#127, this branch's rules).
++ - 🟠 **F1** `web/lib/assistant.ts:7`: `while (true)` retries every failure immediately, with no cap or backoff. A 400/401/429 or a bad key loops forever, burning LLM calls and hanging the request. **Fix:** Cap attempts (e.g. 3), back off exponentially, and rethrow non-retryable errors (4xx other than 429). The SDK's built-in `maxRetries` may be enough.
+- - 🟠 **F2** `web/lib/assistant.ts:6`: No per-user/plan message quota and no limit on `breakdown` size, though the plan requires a per-plan quota for the assistant. Unbounded input tokens means unbounded cost. **Fix:** Enforce the quota in the caller before this function runs, and cap the breakdown length.
