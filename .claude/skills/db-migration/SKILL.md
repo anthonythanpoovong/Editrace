@@ -48,3 +48,4 @@ Then run `supabase db reset` and the test suite locally.
 - No table without RLS enabled and a two-user test. No exceptions without a written reason in the migration.
 - Never use the service-role key for requests made on a user's behalf.
 - Never edit an applied migration. Add a new one.
+- **Backward compatible with the previous release.** `deploy.yml` applies migrations before the app deploys, and a rollback redeploys the old app against the newer database. So add before you remove: a new column is nullable or has a default, and a column or table the old app still reads is dropped only in a later release.
