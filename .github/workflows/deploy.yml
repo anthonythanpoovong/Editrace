@@ -21,6 +21,10 @@ on:
         description: Commit to promote to production (blank = the newest commit live on staging)
         type: string
         default: ""
+      migrate:
+        description: Apply the commit's Supabase migrations to the prod database first. Untick for a rollback to an older commit, so the old app runs against the newer database
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -28,6 +32,8 @@ permissions:
 env:
   # Pinned: these jobs hold VERCEL_TOKEN, so bump the CLI deliberately in a PR, never via @latest.
   VERCEL_CLI_VERSION: 62.2.0
+  # Pinned for the same reason: the migration steps hold the database password.
+  SUPABASE_CLI_VERSION: 2.120.0
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
 
@@ -129,6 +135,25 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      # Migrations go first: if one fails, the job stops before any deploy, so no `deployed/staging` status is posted
+      # and the commit can't be promoted. Inline here (not a script in the repo) so a rollback never runs an old
+      # commit's copy of this with the database password. `db push` skips seed.sql, so dev users never reach a cloud project.
+      - uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+      - name: Apply Supabase migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+        run: |
+          if [ -z "$SUPABASE_PROJECT_REF" ] || [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$SUPABASE_DB_PASSWORD" ]; then
+            echo "::error::SUPABASE_PROJECT_REF, SUPABASE_ACCESS_TOKEN and SUPABASE_DB_PASSWORD must be set on this GitHub environment (docs/environments.md)."
+            exit 1
+          fi
+          supabase link --project-ref "$SUPABASE_PROJECT_REF"
+          supabase db push --dry-run # the pending list stays in the log, for audit
+          supabase db push
       - run: npm install --global "vercel@$VERCEL_CLI_VERSION"
       # Staging is a custom environment in editrace-np with its own env vars; the staging domain follows its latest deploy.
       - run: vercel pull --yes --environment=staging --token="$VERCEL_TOKEN"
@@ -225,6 +250,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      # Migrations come from the promoted commit and run before the build, so a failed one stops the job before any deploy.
+      # A rollback unticks `migrate`: the old app then runs against the newer database, which is why migrations must be
+      # backward compatible with the previous release (/db-migration). Inline, like staging, for the same reason.
+      - uses: supabase/setup-cli@v1
+        if: inputs.migrate
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+      - name: Apply Supabase migrations
+        if: inputs.migrate
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+        run: |
+          if [ -z "$SUPABASE_PROJECT_REF" ] || [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$SUPABASE_DB_PASSWORD" ]; then
+            echo "::error::SUPABASE_PROJECT_REF, SUPABASE_ACCESS_TOKEN and SUPABASE_DB_PASSWORD must be set on this GitHub environment (docs/environments.md)."
+            exit 1
+          fi
+          supabase link --project-ref "$SUPABASE_PROJECT_REF"
+          supabase db push --dry-run # the pending list stays in the log, for audit
+          supabase db push
       - run: npm install --global "vercel@$VERCEL_CLI_VERSION"
       - run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
       - run: vercel build --prod --token="$VERCEL_TOKEN"
