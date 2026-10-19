@@ -154,10 +154,10 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 ## Roadmap
 
 ### Phase 0: De-risk (spikes & foundation)
-- Template JSON Schema v0 (#1, done), type generation (#2), monorepo scaffold (#3, done)
-- Foundations: CI/CD + environments (#48, done: PR previews, staging on merge, manual promotion of a staged commit to prod, on a Vercel Pro team; moving off Vercel was considered and rejected in ADR 0001; Supabase/Modal environments follow in #163), migrations + RLS test harness (#49)
+- Template JSON Schema v0 (#1, done), type generation (#2, done), monorepo scaffold (#3, done)
+- Foundations: CI/CD + environments (#48, done: PR previews, staging on merge, manual promotion of a staged commit to prod, on a Vercel Pro team; moving off Vercel was considered and rejected in ADR 0001; Supabase/Modal environments follow in #163), migrations + RLS test harness (#49, done)
 - PR notifications in Discord (#140, #154, #156, #177, done): review request and ack, comment, approval, merge, re-review and `@mention` pings; weekly sync and sprint-due reminders (#184, done); Armour reads its rules from the base branch (#159, done)
-- Repo hardening: Armour skip notice (#126, done), changed files + coverage in reviews (#125), sharper rules (#127), eval set (#128); 80% changed-line coverage gate (#129); CONTRIBUTING + templates (#130, done), pre-commit hooks (#131, done), teammates + review rules (#132, done)
+- Repo hardening: Armour skip notice (#126, done), changed files + coverage in reviews (#125, done), sharper rules (#127), eval set (#128, done: 5/5 on its first run); 80% changed-line coverage gate (#129, done); CONTRIBUTING + templates (#130, done), pre-commit hooks (#131, done), teammates + review rules (#132, done)
 - Pipeline: golden video dataset (#52), worker framework (#53)
 - CV1: cut detection spike (#4), Resolve rebuild spike (#5), CapCut draft spike (#6)
 - CV1: **live editor control spike (#29)**
@@ -205,9 +205,9 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 | Copyright strike or account ban from marketing content | Only owned, licensed or permitted footage and audio in posts and demos; sources recorded (#118, #119) |
 | Marketing over-promises features (e.g. MCP for CapCut before Phase 2) | "Preview" labels before the MVP; lead with the breakdown + CapCut export (#10), not the Bridge (#36) |
 | One person can't sustain marketing alongside product work | Organic, 2 posts/week max, batch-produced (#119); revisit if the cadence slips |
-| Armour skips silently (workflow-change PRs, errors, usage limits), and its accuracy is unmeasured | Visible skip notice from an always-run job (#126); eval set of seeded bugs, target ≥ 4/5, re-run when rules or model change (#128) |
+| Armour skips silently (workflow-change PRs, errors, usage limits), and its accuracy is unmeasured | Visible skip notice from an always-run job (#126, done); eval set of seeded bugs, target ≥ 4/5, re-run when rules or model change (#128, done); reviews that end without posting are being investigated (#233) |
 | Untested code merges, or the coverage gate is bypassed | 80% changed-line coverage gate in `ci-ok` (#129). An exemption is only a `/coverage-exempt` PR review from a `/.github/` code owner (all four collaborators) on the current head commit; labels and statuses have no effect; fails closed. Write access is treated as trusted. |
-| Armour eval token exposed to collaborators' branch workflows | Stored as a `main`-only environment secret with owner approval, or the eval runs from a local script with no stored token (#128) |
+| Armour eval token exposed to collaborators' branch workflows | The eval runs from a local script on a team member's machine, with no stored token (#128) |
 
 ## Metrics
 
@@ -230,7 +230,6 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 - **Trending / discovery feed:** parked. No scraping, because it conflicts with upload-first and platform terms. An embed-only (oEmbed) feed is the option to revisit, with no user evidence yet. Virality scoring was rejected (no legitimate ground truth); the niche format benchmark (#103) replaces it.
 - **Marketing beyond Phase A:** paid ads wait for the MVP, billing (#19) and a budget (#121). Premiere/Resolve/FCP editors as a primary audience, Product Hunt, a newsletter and affiliate/referral programs are deferred (see `docs/epics/marketing-launch.md`).
 - **Repo hardening, deferred:** Dependabot, dependency/security scanning (pip-audit, npm audit, Semgrep) and pinning actions to SHAs wait until dependencies exist; CodeQL needs a paid plan for private repos; 👍/👎 tracking of Armour findings is deferred (see `docs/epics/repo-hardening-phase-0.md`).
-- **Eval token storage (#128):** environment protection on private repos may need a paid GitHub plan; otherwise the Armour eval runs from a local script. Generated code paths are excluded from coverage: `web/lib/generated/` and `editrace_schema/models.py` (codegen, #2).
 
 ## Links
 

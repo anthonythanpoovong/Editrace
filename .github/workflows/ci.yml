@@ -63,6 +63,7 @@ jobs:
       - run: .github/scripts/test-discord-review-comment.sh
       - run: .github/scripts/test-sync-docs-paths.sh
       - run: .github/scripts/test-project-intake.sh
+      - run: .github/scripts/test-project-carry-over.sh
       - run: .github/scripts/test-discord-pr-status.sh
       - run: .github/scripts/test-discord-reminders.sh
       - run: .github/scripts/test-vercel-deploy.sh
@@ -71,6 +72,12 @@ jobs:
       - run: .github/scripts/test-coverage-gate.sh
       - run: .github/scripts/test-coverage-decide.sh
       - run: .github/scripts/test-coverage-comment.sh
+      - run: .github/scripts/test-armour-inputs.sh
+      - run: .github/scripts/test-armour-render.sh
+      # Armour eval PRs run CI on a base branch without scripts/armour-eval (#128). Skip only there, so a
+      # renamed or missing test fails everywhere else.
+      - if: "!startsWith(github.head_ref, 'armour-eval/')"
+        run: scripts/armour-eval/test-score.sh
 
   schema:
     needs: detect
@@ -215,7 +222,8 @@ jobs:
           COMPARE_BRANCH: origin/main
           FAIL_UNDER: "80"
           # Generated from schema/template.schema.json (#2). Patterns must start with a wildcard.
-          EXCLUDES: "**/lib/generated/** **/editrace_schema/models.py"
+          # scripts/armour-eval/cases: the Armour eval's bait code (#128), never run, so never tested.
+          EXCLUDES: "**/lib/generated/** **/editrace_schema/models.py **/scripts/armour-eval/cases/**"
           BASELINE_JSON: coverage-base/summary.json
           EVENT_NAME: ${{ github.event_name }}
         run: .github/scripts/coverage-gate.sh
