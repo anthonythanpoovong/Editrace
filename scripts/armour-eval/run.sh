@@ -225,7 +225,7 @@ for c in $cases; do
 "
 done
 
-target=$(( (total * 4 + 4) / 5 ))   # at least 80%, rounded up: 4 of 5
+target=$(( (total * 4 + 4) / 5 ))   # at least 80%, rounded up: 7 of 8
 summary="### Armour eval: $caught/$total caught
 
 Run \`$run\` · model \`$model\` · rules \`.github/armour.md\` at \`$rules\` · cases at \`$cases_sha\` · $src_label · target ≥ $target/$total
@@ -241,7 +241,7 @@ printf '%s\n' "$summary"
 if [ "$invalid" -eq 0 ]; then
   results=$here/RESULTS.md
   [ -f "$results" ] || printf '%s\n' "# Armour eval results" "" \
-    "One row per valid run of \`run.sh\`. Target: at least 80% caught (4 of 5)." "" \
+    "One row per valid run of \`run.sh\`. Target: at least 80% caught, rounded up." "" \
     "| Date (UTC) | Score | Model | \`armour.md\` | Cases | main | Missed |" "|---|---|---|---|---|---|---|" > "$results"
   missed=${missed#, }
   echo "| $(date -u +%Y-%m-%d) | $caught/$total | \`$model\` | \`$rules\` | \`$cases_sha\` | $src_col | ${missed:-none} |" >> "$results"
