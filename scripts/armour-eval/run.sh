@@ -70,7 +70,7 @@ while [ $# -gt 0 ]; do
       base_ref=${2:-}
       [ -n "$base_ref" ] || die "--base needs a branch or commit"
       shift 2 ;;
-    *) die "unknown argument: $1 (use --post <n>, --base <ref> or --cleanup)" ;;
+    *) die "unknown argument: $1 (use --post <n> and --base <ref>, or --cleanup on its own)" ;;
   esac
 done
 
@@ -118,8 +118,8 @@ if [ -n "$base_ref" ]; then
   src=$(git -C "$here" rev-parse -q --verify "$base_ref^{commit}") || die "--base: no branch or commit named $base_ref"
   # Only committed rules are scored: uncommitted edits to them would be silently left out.
   [ "$src" != "$(git -C "$here" rev-parse HEAD)" ] \
-    || [ -z "$(git -C "$here" status --porcelain -- :/.github/armour.md :/.github/workflows/ai-review.yml)" ] \
-    || die "armour.md or ai-review.yml has uncommitted changes; commit them first, so the score names the rules it used"
+    || [ -z "$(git -C "$here" status --porcelain -- :/.github/armour.md :/.github/scripts :/.github/workflows/ai-review.yml)" ] \
+    || die "armour.md, .github/scripts or ai-review.yml has uncommitted changes; commit them first, so the score names what it used"
   # claude-code-action skips any PR whose copy of its workflow differs from main's, so every case would come back
   # "not reviewed". A model change can only be scored once it's on main.
   [ "$(git -C "$here" rev-parse "$src:.github/workflows/ai-review.yml")" \
@@ -225,7 +225,7 @@ for c in $cases; do
 "
 done
 
-target=$(( (total * 4 + 4) / 5 ))   # at least 80%, rounded up: 7 of 8
+target=$(( (total * 4 + 4) / 5 ))   # at least 80%, rounded up: 8 of 9
 summary="### Armour eval: $caught/$total caught
 
 Run \`$run\` · model \`$model\` · rules \`.github/armour.md\` at \`$rules\` · cases at \`$cases_sha\` · $src_label · target ≥ $target/$total
