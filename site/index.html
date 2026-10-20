@@ -4,17 +4,30 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Editrace: coming soon</title>
-    <meta name="description" content="Editrace turns any video's editing style into a reusable template, applied in Premiere Pro, DaVinci Resolve, Final Cut Pro and CapCut." />
+    <meta name="description" content="Editrace turns a video's editing style into a reusable template, applied in Premiere Pro, DaVinci Resolve, Final Cut Pro and CapCut." />
+    <meta property="og:title" content="Editrace: coming soon" />
+    <meta property="og:description" content="Editrace turns a video's editing style into a reusable template, applied in the editor you already use." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="theme-color" content="#fbf9f5" />
+    <link rel="icon" type="image/png" href="images/brand/favicon-32.png" />
+    <link rel="apple-touch-icon" href="images/brand/apple-touch-icon-180.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
     <style>
       :root {
-        --bg: #0a0a0a;
-        --fg: #ededed;
-        --muted: #a1a1a1;
-        --line: #262626;
-        --field: #141414;
-        --accent: #ffffff;
-        --focus: #62a8ff;
-        --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        --bg: #fbf9f5;
+        --ink: #141412;
+        --stone: #6e6a62;
+        --rule: #d3cdc0;
+        --field: #ffffff;
+        --red: #d8432e;
+        --red-ui: #c23a26;
+        --white: #ffffff;
+        --sans: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+        color-scheme: light;
       }
 
       *,
@@ -31,7 +44,7 @@
         margin: 0;
         min-height: 100vh;
         background: var(--bg);
-        color: var(--fg);
+        color: var(--ink);
         font-family: var(--sans);
         font-size: 1rem;
         line-height: 1.6;
@@ -39,8 +52,8 @@
       }
 
       ::selection {
-        background: var(--fg);
-        color: var(--bg);
+        background: var(--red-ui);
+        color: var(--white);
       }
 
       .page {
@@ -59,127 +72,297 @@
         padding: 1.5rem 0;
       }
 
-      .wordmark {
-        font-weight: 600;
-        letter-spacing: -0.02em;
-        color: var(--fg);
-        text-decoration: none;
+      .logo {
+        display: block;
+        width: clamp(7.5rem, 24vw, 10rem);
+        height: auto;
       }
 
       .status {
-        font-size: 0.875rem;
-        color: var(--muted);
-        border: 1px solid var(--line);
+        font-family: var(--mono);
+        font-size: 0.8125rem;
+        letter-spacing: 0.02em;
+        color: var(--stone);
+        border: 1px solid var(--stone);
         border-radius: 999px;
-        padding: 0.25rem 0.75rem;
+        padding: 0.3rem 0.75rem;
       }
 
       main {
         flex: 1;
         display: flex;
         flex-direction: column;
-        justify-content: center;
-        padding: 4rem 0 5rem;
+        padding: 6.4rem 0 8rem;
       }
 
       h1 {
         margin: 0;
-        font-size: clamp(2.5rem, 7vw, 4.5rem);
+        font-family: var(--sans);
+        font-size: clamp(2.5rem, 5vw, 4.5rem);
         font-weight: 600;
-        line-height: 1.02;
+        line-height: 1;
         letter-spacing: -0.04em;
         text-wrap: balance;
-        max-width: 14ch;
+        max-width: none;
+      }
+
+      h1 .accent {
+        color: var(--red);
       }
 
       .lede {
-        margin: 1.5rem 0 0;
+        margin: 0.75rem 0 0;
         font-size: 1.125rem;
-        color: var(--muted);
+        line-height: 1.5;
+        color: var(--stone);
         max-width: 42ch;
       }
 
-      .signup {
-        margin-top: 2.5rem;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        max-width: 30rem;
+      .hero {
+        display: grid;
+        column-gap: 3rem;
+        grid-template-areas:
+          "heading"
+          "lede"
+          "tools"
+          "visual"
+          "cta";
       }
 
-      .signup input {
-        flex: 1 1 14rem;
-        min-width: 0;
-        height: 2.75rem;
-        padding: 0 1rem;
-        border: 1px solid var(--line);
+      .hero h1 {
+        grid-area: heading;
+      }
+
+      .hero .lede {
+        grid-area: lede;
+      }
+
+      .hero .tools {
+        grid-area: tools;
+      }
+
+      .hero .hero-visual {
+        grid-area: visual;
+      }
+
+      .hero .signup-block {
+        grid-area: cta;
+      }
+
+      .hero-visual {
+        margin: 3rem 0 0;
+        max-width: 26rem;
+        aspect-ratio: 5 / 6;
+        overflow: hidden;
+      }
+
+      .hero-visual img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: right center;
+      }
+
+      @media (min-width: 48rem) {
+        .hero {
+          grid-template-columns: 1fr 20rem;
+          column-gap: 3rem;
+          align-items: start;
+          grid-template-areas:
+            "heading visual"
+            "lede    visual"
+            "tools   visual"
+            "cta     visual";
+        }
+
+        .hero-visual {
+          margin-top: 0;
+          max-width: none;
+        }
+      }
+
+      .signup-block {
+        margin: 4rem 0 0;
+      }
+
+      .btn {
+        height: 4.25rem;
+        padding: 0 2rem;
         border-radius: 0.5rem;
-        background: var(--field);
-        color: var(--fg);
-        font: inherit;
-      }
-
-      .signup input::placeholder {
-        color: var(--muted);
-      }
-
-      .signup button {
-        height: 2.75rem;
-        padding: 0 1.25rem;
-        border: 0;
-        border-radius: 0.5rem;
-        background: var(--accent);
-        color: var(--bg);
-        font: inherit;
-        font-weight: 500;
+        font-family: var(--sans);
+        font-weight: 600;
+        font-size: 1rem;
         cursor: pointer;
       }
 
-      .signup button:hover {
+      .btn-primary {
+        border: 0;
+        background: var(--red-ui);
+        color: var(--white);
+      }
+
+      .btn-primary:hover {
         opacity: 0.88;
       }
 
-      .visually-hidden {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        overflow: hidden;
-        clip: rect(0 0 0 0);
-        white-space: nowrap;
+      .btn-secondary {
+        border: 0;
+        background: var(--ink);
+        color: var(--bg);
+      }
+
+      .btn-secondary:hover {
+        opacity: 0.88;
+      }
+
+      .signup-trigger {
+        width: 100%;
+        max-width: 18rem;
+      }
+
+      .signup-panel {
+        margin: 4rem 0 0;
+        max-width: 56rem;
+      }
+
+      .field-label {
+        display: block;
+        margin: 0 0 0.5rem;
+        font-family: var(--mono);
+        font-size: 0.8125rem;
+        letter-spacing: 0.02em;
+        color: var(--stone);
+      }
+
+      .signup {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        font-size: 1rem;
+      }
+
+      @media (min-width: 30rem) {
+        .signup {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .field-full {
+          grid-column: 1 / -1;
+        }
+      }
+
+      .signup input,
+      .signup select {
+        width: 100%;
+        height: 4.25rem;
+        padding: 0 1.25rem;
+        border: 1px solid var(--rule);
+        border-radius: 0.5rem;
+        background: var(--field);
+        color: var(--ink);
+        font: inherit;
+        font-family: var(--sans);
+      }
+
+      .signup select {
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 5.5 8 10l4.5-4.5' fill='none' stroke='%236E6A62' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1.25rem center;
+        background-size: 0.75rem;
+        padding-right: 2.75rem;
+      }
+
+      .signup select:invalid {
+        color: var(--stone);
+      }
+
+      .signup input::placeholder {
+        color: var(--stone);
+      }
+
+      .signup input[aria-invalid="true"],
+      .signup select[aria-invalid="true"] {
+        border-color: var(--red-ui);
+      }
+
+      .signup-actions {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+      }
+
+      .signup-cancel {
+        border: 0;
+        background: none;
+        padding: 0.5rem 0;
+        color: var(--stone);
+        font: inherit;
+        font-family: var(--mono);
+        font-size: 0.8125rem;
+        text-decoration: underline;
+        text-decoration-color: transparent;
+        cursor: pointer;
+      }
+
+      .signup-cancel:hover,
+      .signup-cancel:focus-visible {
+        text-decoration-color: var(--stone);
       }
 
       input:focus-visible,
+      select:focus-visible,
       button:focus-visible,
       a:focus-visible {
-        outline: 2px solid var(--focus);
+        outline: 2px solid var(--red-ui);
         outline-offset: 2px;
       }
 
       .signup-note {
         margin: 0.75rem 0 0;
         font-size: 0.875rem;
-        color: var(--muted);
+        color: var(--stone);
         min-height: 1.5em;
+        text-align: center;
+      }
+
+      .signup-note[data-state="error"] {
+        color: var(--red-ui);
+      }
+
+      .signup-note[data-state="success"] {
+        color: var(--ink);
+      }
+
+      .field-error {
+        margin: 0.375rem 0 0;
+        font-size: 0.875rem;
+        color: var(--red-ui);
       }
 
       .tools {
-        margin: 3rem 0 0;
-        font-size: 0.875rem;
-        color: var(--muted);
+        margin: 1.5rem 0 0;
+        font-size: 0.9375rem;
+        color: var(--stone);
       }
 
       .features {
-        margin: 5rem 0 0;
+        margin: 8rem 0 0;
         padding: 0;
         list-style: none;
         display: grid;
-        gap: 2.5rem;
-        border-top: 1px solid var(--line);
+        gap: 4rem;
+        border-top: 1px solid var(--rule);
         padding-top: 2.5rem;
       }
 
       .features h2 {
         margin: 0;
+        font-family: var(--sans);
         font-size: 1rem;
         font-weight: 600;
         letter-spacing: -0.01em;
@@ -187,32 +370,44 @@
 
       .features p {
         margin: 0.375rem 0 0;
-        color: var(--muted);
-        max-width: 36ch;
+        color: var(--stone);
+        font-size: 1rem;
+        max-width: none;
       }
 
       footer {
-        border-top: 1px solid var(--line);
+        border-top: 1px solid var(--rule);
         padding: 1.5rem 0;
-        font-size: 0.875rem;
-        color: var(--muted);
         display: flex;
+        align-items: center;
         justify-content: space-between;
         flex-wrap: wrap;
         gap: 0.5rem;
       }
 
+      .footer-wordmark {
+        display: block;
+        width: 7.5rem;
+        height: auto;
+      }
+
+      footer .copyright {
+        font-family: var(--mono);
+        font-size: 0.8125rem;
+        color: var(--stone);
+      }
+
       @media (min-width: 40rem) {
         .features {
           grid-template-columns: repeat(3, 1fr);
-          gap: 2rem;
+          gap: 4rem;
         }
       }
 
       @media (prefers-reduced-motion: no-preference) {
         h1,
         .lede,
-        .signup {
+        .signup-block {
           animation: rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
@@ -220,8 +415,28 @@
           animation-delay: 0.08s;
         }
 
-        .signup {
-          animation-delay: 0.16s;
+        .signup-block {
+          animation-delay: 0.2s;
+        }
+
+        .hero-visual img {
+          animation: reveal-down 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation-delay: 0.14s;
+        }
+
+        .signup-panel:not([hidden]) {
+          animation: rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+      }
+
+      @keyframes reveal-down {
+        from {
+          opacity: 0;
+          clip-path: inset(0 0 100% 0);
+        }
+        to {
+          opacity: 1;
+          clip-path: inset(0 0 0% 0);
         }
       }
 
@@ -236,24 +451,34 @@
   <body>
     <div class="page">
       <header>
-        <a class="wordmark" href="#">Editrace</a>
+        <a href="/" aria-label="Editrace">
+          <img class="logo" src="images/brand/logo-horizontal-light.svg" width="386" height="60" alt="Editrace" />
+        </a>
         <span class="status">Coming soon</span>
       </header>
 
       <main>
-        <h1>Rebuild the edit in minutes.</h1>
-        <p class="lede">
-          Editrace turns the editing style of any short video into a reusable template, then applies it in the editor you already use.
-        </p>
+        <div class="hero">
+          <h1>Rebuild the edit in minutes<span class="accent">.</span></h1>
+          <p class="lede">Editrace reverse-engineers a video's cuts, pacing and transitions, then rebuilds a faithful version in your own editor.</p>
 
-        <form class="signup" id="signup" novalidate>
-          <label class="visually-hidden" for="email">Email address</label>
-          <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
-          <button type="submit">Notify me at launch</button>
-        </form>
-        <p class="signup-note" id="signup-note" role="status" aria-live="polite"></p>
+          <p class="tools">Planned for Premiere Pro, DaVinci Resolve, Final Cut Pro and CapCut.</p>
 
-        <p class="tools">Works with Premiere Pro, DaVinci Resolve, Final Cut Pro and CapCut.</p>
+          <div class="hero-visual">
+            <img
+              src="images/Cinematic_Video_Analysis_Interface_1-transparent.png?v=2"
+              width="1774"
+              height="887"
+              alt="A video's edit broken into the layers Editrace extracts: music, camera angles, editing and transitions, color grading, and other elements like location, objects and effects."
+            />
+          </div>
+
+          <div class="signup-block">
+            <button type="button" class="signup-trigger btn btn-secondary" id="signup-toggle" aria-expanded="false" aria-controls="signup-panel">
+              Get notified
+            </button>
+          </div>
+        </div>
 
         <ul class="features">
           <li>
@@ -269,25 +494,204 @@
             <p>Lower thirds and captions you can change after they are applied.</p>
           </li>
         </ul>
+
+        <div class="signup-panel" id="signup-panel" hidden>
+          <form class="signup" id="signup" novalidate>
+            <div class="field">
+              <label class="field-label" for="first-name">First name</label>
+              <input id="first-name" name="firstName" type="text" autocomplete="given-name" required aria-describedby="first-name-error" />
+              <p class="field-error" id="first-name-error" hidden></p>
+            </div>
+            <div class="field">
+              <label class="field-label" for="last-name">Last name</label>
+              <input id="last-name" name="lastName" type="text" autocomplete="family-name" required aria-describedby="last-name-error" />
+              <p class="field-error" id="last-name-error" hidden></p>
+            </div>
+            <div class="field field-full">
+              <label class="field-label" for="role">Role</label>
+              <select id="role" name="role" required aria-describedby="role-error">
+                <option value="" disabled selected>Select one</option>
+                <option value="creator">Creator</option>
+                <option value="editor">Editor</option>
+                <option value="hobbyist">Hobbyist</option>
+                <option value="agency">Agency</option>
+              </select>
+              <p class="field-error" id="role-error" hidden></p>
+            </div>
+            <div class="field field-full">
+              <label class="field-label" for="email">Email address</label>
+              <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required aria-describedby="email-error signup-note" />
+              <p class="field-error" id="email-error" hidden></p>
+            </div>
+            <div class="field field-full">
+              <label class="field-label" for="source">How did you hear about us?</label>
+              <select id="source" name="source" required aria-describedby="source-error">
+                <option value="" disabled selected>Select one</option>
+                <option value="instagram">Instagram</option>
+                <option value="tiktok">TikTok</option>
+                <option value="facebook">Facebook</option>
+                <option value="linkedin">LinkedIn</option>
+                <option value="word-of-mouth">Word of mouth</option>
+                <option value="other">Other</option>
+              </select>
+              <p class="field-error" id="source-error" hidden></p>
+            </div>
+            <div class="field field-full" aria-hidden="true" style="position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden">
+              <label for="hp-field">Leave this field blank</label>
+              <input id="hp-field" name="hpField" type="text" tabindex="-1" autocomplete="off" />
+            </div>
+            <div class="field field-full signup-actions">
+              <button type="submit" class="btn btn-primary">Notify me at launch</button>
+              <button type="button" class="signup-cancel" id="signup-cancel">Cancel</button>
+            </div>
+          </form>
+          <p class="signup-note" id="signup-note" role="status" aria-live="polite"></p>
+        </div>
       </main>
 
       <footer>
-        <span>© Editrace</span>
-        <span>Launching soon</span>
+        <img class="footer-wordmark" src="images/brand/wordmark-light.svg" width="292" height="59" alt="Editrace" />
+        <span class="copyright">© Editrace</span>
       </footer>
     </div>
 
     <script>
       (function () {
+        var toggle = document.getElementById("signup-toggle");
+        var cancel = document.getElementById("signup-cancel");
+        var panel = document.getElementById("signup-panel");
         var form = document.getElementById("signup");
         var note = document.getElementById("signup-note");
-        var email = document.getElementById("email");
+        var firstName = document.getElementById("first-name");
+        var submitButton = form.querySelector('button[type="submit"]');
+        var SUPABASE_URL = "https://jtatqfhkrimzqzfilxss.supabase.co";
+        var SUPABASE_ANON_KEY =
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0YXRxZmhrcmltenF6ZmlseHNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE4Mzk5NDEsImV4cCI6MjEwNzQxNTk0MX0.D2AaDjXMKZ3PYO5Nudgsjl3kPeAq4B0XE2rXCBShz-I";
+        var fields = [
+          firstName,
+          document.getElementById("last-name"),
+          document.getElementById("role"),
+          document.getElementById("email"),
+          document.getElementById("source"),
+        ];
+        var fieldErrors = {
+          "first-name": "Enter your first name.",
+          "last-name": "Enter your last name.",
+          role: "Select your role.",
+          email: "Enter a valid email, like you@example.com.",
+          source: "Select how you heard about us.",
+        };
+
+        function clearFieldState(field) {
+          field.removeAttribute("aria-invalid");
+          var errorEl = document.getElementById(field.id + "-error");
+          if (errorEl) {
+            errorEl.hidden = true;
+            errorEl.textContent = "";
+          }
+        }
+
+        toggle.addEventListener("click", function () {
+          panel.hidden = false;
+          toggle.setAttribute("aria-expanded", "true");
+          panel.scrollIntoView({ behavior: "smooth", block: "start" });
+          firstName.focus({ preventScroll: true });
+        });
+
+        cancel.addEventListener("click", function () {
+          form.reset();
+          fields.forEach(clearFieldState);
+          note.dataset.state = "";
+          note.textContent = "";
+          panel.hidden = true;
+          toggle.setAttribute("aria-expanded", "false");
+          toggle.focus({ preventScroll: true });
+        });
+
+        function submitSignup(payload) {
+          return fetch(SUPABASE_URL + "/rest/v1/rpc/join_waitlist", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: SUPABASE_ANON_KEY,
+              Authorization: "Bearer " + SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify({
+              p_first_name: payload.first_name,
+              p_last_name: payload.last_name,
+              p_email: payload.email,
+              p_role: payload.role,
+              p_source: payload.source,
+            }),
+          });
+        }
 
         form.addEventListener("submit", function (event) {
           event.preventDefault();
-          note.textContent = email.checkValidity()
-            ? "Sign-up is not open yet. We will email you at launch."
-            : "Enter a valid email address.";
+          var valid = form.checkValidity();
+          var firstInvalid = null;
+          fields.forEach(function (field) {
+            var fieldValid = field.checkValidity();
+            field.setAttribute("aria-invalid", fieldValid ? "false" : "true");
+            var errorEl = document.getElementById(field.id + "-error");
+            if (errorEl) {
+              errorEl.hidden = fieldValid;
+              errorEl.textContent = fieldValid ? "" : fieldErrors[field.id];
+            }
+            if (!fieldValid && !firstInvalid) {
+              firstInvalid = field;
+            }
+          });
+
+          if (!valid) {
+            note.dataset.state = "error";
+            note.textContent = "Error: fix the highlighted fields below.";
+            if (firstInvalid) {
+              firstInvalid.focus();
+            }
+            return;
+          }
+
+          var formData = new FormData(form);
+
+          if (formData.get("hpField")) {
+            // Honeypot tripped: pretend success without making a request.
+            form.reset();
+            fields.forEach(clearFieldState);
+            note.dataset.state = "success";
+            note.textContent = "Not open yet — but we'll make sure you hear from us the moment it is.";
+            return;
+          }
+
+          submitButton.disabled = true;
+          note.dataset.state = "";
+          note.textContent = "Submitting…";
+
+          submitSignup({
+            first_name: formData.get("firstName"),
+            last_name: formData.get("lastName"),
+            email: formData.get("email"),
+            role: formData.get("role"),
+            source: formData.get("source"),
+          })
+            .then(function (response) {
+              if (response.ok) {
+                form.reset();
+                fields.forEach(clearFieldState);
+                note.dataset.state = "success";
+                note.textContent = "Not open yet — but we'll make sure you hear from us the moment it is.";
+              } else {
+                note.dataset.state = "error";
+                note.textContent = "Something went wrong. Please try again in a moment.";
+              }
+            })
+            .catch(function () {
+              note.dataset.state = "error";
+              note.textContent = "Something went wrong. Please try again in a moment.";
+            })
+            .finally(function () {
+              submitButton.disabled = false;
+            });
         });
       })();
     </script>
