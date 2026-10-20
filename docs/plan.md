@@ -155,9 +155,9 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 
 ### Phase 0: De-risk (spikes & foundation)
 - Template JSON Schema v0 (#1, done), type generation (#2, done), monorepo scaffold (#3, done)
-- Foundations: CI/CD + environments (#48, done: PR previews, staging on merge, manual promotion of a staged commit to prod, on a Vercel Pro team; moving off Vercel was considered and rejected in ADR 0001; Supabase/Modal environments follow in #163), migrations + RLS test harness (#49, done)
+- Foundations: CI/CD + environments (#48, done: PR previews, staging on merge, manual promotion of a staged commit to prod, on a Vercel Pro team; moving off Vercel was considered and rejected in ADR 0001; `deploy.yml` applies Supabase migrations before the staging and prod deploys (#163; Modal environments still to come), migrations + RLS test harness (#49, done)
 - PR notifications in Discord (#140, #154, #156, #177, done): review request and ack, comment, approval, merge, re-review and `@mention` pings; weekly sync and sprint-due reminders (#184, done); unfinished board items carried into the running sprint automatically (#243, done); Armour reads its rules from the base branch (#159, done)
-- Repo hardening: Armour skip notice (#126, done), changed files + coverage in reviews (#125, done), sharper rules (#127), eval set (#128, done: 5/5 on its first run), earlier findings carried forward until resolved (#239, done); 80% changed-line coverage gate (#129, done); CONTRIBUTING + templates (#130, done), pre-commit hooks (#131, done), teammates + review rules (#132, done)
+- Repo hardening: Armour skip notice (#126, done), changed files + coverage in reviews (#125, done), sharper rules (#127, done: untested risky code, missing tests or two-user RLS tests, missing `/sync-docs` notes), eval set (#128, done: 9 seeded bugs since #127, 9/9 with its rules), earlier findings carried forward until resolved (#239, done), reviews that ended without posting fixed (#233, done); 80% changed-line coverage gate (#129, done); CONTRIBUTING + templates (#130, done), pre-commit hooks (#131, done), teammates + review rules (#132, done)
 - Pipeline: golden video dataset (#52), worker framework (#53)
 - CV1: cut detection spike (#4), Resolve rebuild spike (#5), CapCut draft spike (#6)
 - CV1: **live editor control spike (#29)**
@@ -172,7 +172,7 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 **Visual timeline (CV1):** cut-detection worker (#7), motion estimation (#8), Resolve/Premiere/FCP exporter (#9), CapCut exporter (#10)
 **Signals (CV2):** captions (#12), OCR (#13), beat + sound (#14)
 **Ontology:** editor tool ontology (#31)
-**Product:** auth (#15), upload + job queue (#16), history (#17), breakdown page with the Tools used panel (#18), Stripe Solo + trial (#19)
+**Product:** auth (#15, done: email sign-up, login, logout and password reset, Google sign-in built, `profiles` table), upload + job queue (#16), history (#17), breakdown page with the Tools used panel (#18), Stripe Solo + trial (#19)
 **MCP:** remote MCP server v1 (#27), settings page (#37), Editrace Bridge (#32), Resolve adapter (#33), FCP adapter (#34)
 **Foundations:** observability + cost guardrails (#50), product analytics (#51)
 **GTM:** design partner program (#55), terms/privacy/retention (#56), launch demo video (#118), content engine (#119), Meta Business + Pixel with no spend (#120)
@@ -205,7 +205,7 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 | Copyright strike or account ban from marketing content | Only owned, licensed or permitted footage and audio in posts and demos; sources recorded (#118, #119) |
 | Marketing over-promises features (e.g. MCP for CapCut before Phase 2) | "Preview" labels before the MVP; lead with the breakdown + CapCut export (#10), not the Bridge (#36) |
 | One person can't sustain marketing alongside product work | Organic, 2 posts/week max, batch-produced (#119); revisit if the cadence slips |
-| Armour skips silently (workflow-change PRs, errors, usage limits), and its accuracy is unmeasured | Visible skip notice from an always-run job (#126, done); eval set of seeded bugs, target ≥ 4/5, re-run when rules or model change (#128, done); reviews that end without posting are being investigated (#233) |
+| Armour skips silently (workflow-change PRs, errors, usage limits), and its accuracy is unmeasured | Visible skip notice from an always-run job (#126, done); eval set of seeded bugs, target ≥ 80% caught, re-run when rules or model change and scored before merge with `run.sh --base` (#128, #127, done); reviews that ended without posting (a permission rule broken by a `cd`) fixed (#233, done) |
 | Untested code merges, or the coverage gate is bypassed | 80% changed-line coverage gate in `ci-ok` (#129). An exemption is only a `/coverage-exempt` PR review from a `/.github/` code owner (all four collaborators) on the current head commit; labels and statuses have no effect; fails closed. Write access is treated as trusted. |
 | Armour eval token exposed to collaborators' branch workflows | The eval runs from a local script on a team member's machine, with no stored token (#128) |
 
@@ -219,7 +219,7 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 - **Assistant quality:** #39 scores; thumbs-up rate; % of answers with citations
 - **Editor satisfaction:** qualitative feedback on template accuracy
 - **Marketing (Phase A):** 10 qualified conversations (creators or UGC agencies) and 5 design partners sourced from marketing channels, by the Phase 1 gate; attributed by UTM + waitlist source (#115)
-- **Repo hardening (Phase 0):** Armour's eval catches ≥ 4/5 seeded bugs, re-checked when its rules or model change (#128), and the first 5 code PRs pass the 80% changed-line coverage gate with no bypass, each Armour review showing the changed files and coverage (#125, #129), by the Phase 0 gate
+- **Repo hardening (Phase 0):** Armour's eval catches ≥ 80% of its seeded bugs (≥ 4/5 at first, 9 cases since #127: 9/9 on 2026-10-19), re-checked when its rules or model change (#128), and the first 5 code PRs pass the 80% changed-line coverage gate with no bypass, each Armour review showing the changed files and coverage (#125, #129), by the Phase 0 gate
 
 ## Open Questions
 
