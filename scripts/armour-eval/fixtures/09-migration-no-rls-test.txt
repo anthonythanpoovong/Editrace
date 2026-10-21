@@ -1,0 +1,5 @@
+# Armour's real 🔴/🟠 findings on this case, from each eval run.
+# '+' lines are about the seeded bug and must match expect; '-' lines are other findings and must not.
+# Eval run 20261019-180743 (#127, revised rules, valid 9/9).
++ - 🔴 **F1** `supabase/migrations/20261019120000_create_projects.sql:2`: New table `public.projects` with RLS policies has no two-user test in `supabase/tests/database/` (nothing there names `projects`). **Fix:** Add `supabase/tests/database/<nnn>_projects.test.sql`, copied from `001_two_user_probe.test.sql`: user A can select/insert/update/delete their own row; user B and anon can't read or change it. Use `/db-migration`.
+- - 🟠 **F2** `supabase/migrations/20261019120000_create_projects.sql:1`: PR touches `supabase/migrations/` but the PR body doesn't tick the "Run `/sync-docs` after merge" box or say to run it. **Fix:** Add the `/sync-docs` after-merge note to the PR description.

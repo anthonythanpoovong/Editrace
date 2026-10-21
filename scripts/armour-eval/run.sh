@@ -2,8 +2,10 @@
 # Armour eval (#128): opens each seeded-bug case as a draft PR, waits for Armour, scores caught / missed,
 # then closes the PRs and deletes the branches.
 #
-# Usage: scripts/armour-eval/run.sh [--post <n>]  run every case in scripts/armour-eval/cases/; with --post,
-#                                                 also comment the summary on issue or PR <n>
+# Usage: scripts/armour-eval/run.sh [--post <n>] [--base <ref>]
+#          run every case in scripts/armour-eval/cases/. --post also comments the summary on issue or PR <n>.
+#          --base builds the eval base branch from <ref> (a branch or commit, e.g. HEAD) instead of origin/main,
+#          so Armour reviews with that ref's rules: use it to score an armour.md change before it merges.
 #        scripts/armour-eval/run.sh --cleanup     close leftover eval PRs and delete leftover eval branches
 # A valid score is appended to scripts/armour-eval/RESULTS.md: commit it with the rules or model change.
 # Exits 0 when the score meets the target (80%), 1 when it's below, 2 when it isn't valid.
@@ -13,7 +15,7 @@
 # Each run costs about one Armour review per case from the owner's Claude Pro usage, so run it only
 # when .github/armour.md or the Armour model changes.
 #
-# The PRs target a temporary base branch: origin/main without the files that name the seeded bugs (HIDE).
+# The PRs target a temporary base branch: origin/main (or --base) without the files that name the seeded bugs (HIDE).
 # The PR diff then holds only the seeded files, and the checkout Armour can browse holds no expected
 # answers. Branch names and PR bodies are neutral too. Deleting that base branch at the end also closes
 # any eval PR that's still open, so none can ever reach main.
@@ -57,13 +59,20 @@ if [ "${1:-}" = "--cleanup" ]; then
   cleanup_leftovers
   exit 0
 fi
-post=""
-if [ "${1:-}" = "--post" ]; then
-  post=${2:-}
-  case $post in ''|*[!0-9]*) die "--post needs an issue or PR number" ;; esac
-  shift 2
-fi
-[ $# -eq 0 ] || die "unknown argument: $1 (use --post <n> or --cleanup)"
+post="" base_ref=""
+while [ $# -gt 0 ]; do
+  case $1 in
+    --post)
+      post=${2:-}
+      case $post in ''|*[!0-9]*) die "--post needs an issue or PR number" ;; esac
+      shift 2 ;;
+    --base)
+      base_ref=${2:-}
+      [ -n "$base_ref" ] || die "--base needs a branch or commit"
+      shift 2 ;;
+    *) die "unknown argument: $1 (use --post <n> and --base <ref>, or --cleanup on its own)" ;;
+  esac
+done
 
 # The cases come from this checkout, so refuse uncommitted edits: every score must map to a commit.
 [ -z "$(git -C "$here" status --porcelain -- .)" ] \
@@ -104,8 +113,26 @@ push_quiet() {
 }
 
 git -C "$here" fetch -q origin main
-git -C "$here" worktree add -q --detach "$wt" origin/main
-main_sha=$(git -C "$wt" rev-parse HEAD)
+src=origin/main
+if [ -n "$base_ref" ]; then
+  src=$(git -C "$here" rev-parse -q --verify "$base_ref^{commit}") || die "--base: no branch or commit named $base_ref"
+  # Only committed rules are scored: uncommitted edits to them would be silently left out.
+  [ "$src" != "$(git -C "$here" rev-parse HEAD)" ] \
+    || [ -z "$(git -C "$here" status --porcelain -- :/.github/armour.md :/.github/scripts :/.github/workflows/ai-review.yml)" ] \
+    || die "armour.md, .github/scripts or ai-review.yml has uncommitted changes; commit them first, so the score names what it used"
+  # claude-code-action skips any PR whose copy of its workflow differs from main's, so every case would come back
+  # "not reviewed". A model change can only be scored once it's on main.
+  [ "$(git -C "$here" rev-parse "$src:.github/workflows/ai-review.yml")" \
+    = "$(git -C "$here" rev-parse origin/main:.github/workflows/ai-review.yml)" ] \
+    || die "--base: $base_ref's ai-review.yml differs from main's, and Armour skips PRs whose workflow differs from main's. Merge main into it first."
+fi
+git -C "$here" worktree add -q --detach "$wt" "$src"
+src_sha=$(git -C "$wt" rev-parse HEAD)
+# Every score says what it was built from; a base other than main is marked, so it's never mistaken for main's.
+src_label="main \`${src_sha:0:7}\`" src_col="\`${src_sha:0:7}\`"
+if [ -n "$base_ref" ] && [ "$src_sha" != "$(git -C "$here" rev-parse origin/main)" ]; then
+  src_label="base \`${src_sha:0:7}\` (\`$base_ref\`, not main)" src_col="\`${src_sha:0:7}\` (not main)"
+fi
 # Only labels the score, so a changed --model line must not stop the run.
 model=$(grep -o -- '--model [^ ]*' "$wt/.github/workflows/ai-review.yml" | head -n1 | cut -d' ' -f2) || true
 model=${model:-unknown}
@@ -114,7 +141,7 @@ rules=$(git -C "$wt" log -1 --format=%h -- .github/armour.md)
 gh api "repos/$REPO/labels" -f name="$LABEL" -f color=8a8a8a \
   -f description="Armour eval PR (#128): never merge, closed automatically" >/dev/null 2>&1 || true
 
-# Base branch: main without the eval set or anything naming its bugs.
+# Base branch: main (or --base) without the eval set or anything naming its bugs.
 # --ignore-unmatch and --allow-empty: before this lands on main, some of it may not exist.
 # shellcheck disable=SC2086 # HIDE is a list of paths
 git -C "$wt" rm -r -q --ignore-unmatch $HIDE
@@ -198,10 +225,10 @@ for c in $cases; do
 "
 done
 
-target=$(( (total * 4 + 4) / 5 ))   # at least 80%, rounded up: 4 of 5
+target=$(( (total * 4 + 4) / 5 ))   # at least 80%, rounded up: 8 of 9
 summary="### Armour eval: $caught/$total caught
 
-Run \`$run\` · model \`$model\` · rules \`.github/armour.md\` at \`$rules\` · cases at \`$cases_sha\` · main \`${main_sha:0:7}\` · target ≥ $target/$total
+Run \`$run\` · model \`$model\` · rules \`.github/armour.md\` at \`$rules\` · cases at \`$cases_sha\` · $src_label · target ≥ $target/$total
 
 | Case | PR | Result | Matching finding |
 |---|---|---|---|
@@ -214,10 +241,10 @@ printf '%s\n' "$summary"
 if [ "$invalid" -eq 0 ]; then
   results=$here/RESULTS.md
   [ -f "$results" ] || printf '%s\n' "# Armour eval results" "" \
-    "One row per valid run of \`run.sh\`. Target: at least 80% caught (4 of 5)." "" \
+    "One row per valid run of \`run.sh\`. Target: at least 80% caught, rounded up." "" \
     "| Date (UTC) | Score | Model | \`armour.md\` | Cases | main | Missed |" "|---|---|---|---|---|---|---|" > "$results"
   missed=${missed#, }
-  echo "| $(date -u +%Y-%m-%d) | $caught/$total | \`$model\` | \`$rules\` | \`$cases_sha\` | \`${main_sha:0:7}\` | ${missed:-none} |" >> "$results"
+  echo "| $(date -u +%Y-%m-%d) | $caught/$total | \`$model\` | \`$rules\` | \`$cases_sha\` | $src_col | ${missed:-none} |" >> "$results"
   log "recorded in ${results#"$(git -C "$here" rev-parse --show-toplevel)/"}"
 fi
 

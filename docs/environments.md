@@ -59,6 +59,15 @@ Rules:
 - Schema changes go through the `/db-migration` skill, which writes the migration together with its RLS policies and its two-user test.
 - A deployed PR preview can't reach the database on your laptop. If a preview needs a database, see the Preview limitation above.
 
+## Auth settings per Supabase project
+
+The web app's sign-in (#15) needs these in the Supabase dashboard of **each** hosted project, because `supabase/config.toml` only configures the local stack. Missing redirect URLs don't error: Supabase quietly sends the user to the Site URL instead, so a reset link lands on the home page.
+
+- **Authentication → URL Configuration → Site URL:** the environment's own URL.
+- **Redirect URLs:** add `<that URL>/auth/callback**`. The `**` matters: the app adds `?next=...` to the callback, and the list matches exactly otherwise.
+- **Authentication → Sign In / Providers → Email:** minimum password length 8, to match the app's own check.
+- **Google:** turn the provider on with a Google OAuth client ID and secret, and add Supabase's callback URL to that Google client's authorised redirect URIs. Keep the Google client secret in Supabase only, never in this repo or Vercel.
+
 ## Where each secret lives
 
 Each secret lives in **one** place. Don't copy values between systems except through the deploy workflow.
