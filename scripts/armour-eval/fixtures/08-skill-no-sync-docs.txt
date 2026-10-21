@@ -1,0 +1,8 @@
+# Armour's real 🔴/🟠 findings on this case, from each eval run.
+# '+' lines are about the seeded bug and must match expect; '-' lines are other findings and must not.
+# Eval run 20261019-165528 (#127, this branch's rules).
++ - 🟠 **F1** `.claude/skills/release-notes/SKILL.md:1`: This PR adds a skill under `.claude/skills/`, which `/sync-docs` documents. The PR body doesn't tick "Run `/sync-docs` after merge" or say to run it. **Fix:** Add "Run `/sync-docs` after merge" to the PR body.
+# Eval run 20261019-175743 (#127, this branch's rules, valid 8/8).
++ - 🟠 **F1** `.claude/skills/release-notes/SKILL.md:1`: This PR adds a skill under `.claude/skills/`, which `/sync-docs` documents. The PR body is empty and doesn't tick "Run `/sync-docs` after merge" or say to run it. **Fix:** Add the "Run `/sync-docs` after merge" line to the PR body so the README, plan and wiki skill list pick up `release-notes`.
+# Eval run 20261019-180743 (#127, revised rules, valid 9/9).
++ - 🟠 **F1** `.claude/skills/release-notes/SKILL.md:1`: This PR adds a skill under `.claude/skills/`, which `/sync-docs` documents, but the PR body doesn't tick "Run `/sync-docs` after merge" or say to run it. **Fix:** Tick the box in the PR body, or add a line saying to run `/sync-docs` after merge.
