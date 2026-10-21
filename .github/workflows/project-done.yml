@@ -1,0 +1,48 @@
+name: Project done
+
+# When a PR merges, every ticket it closes (closing keywords in the body, or GitHub's own links) is set to
+# Status Done on the Editrace board (Project #2). It works for any base branch, unlike GitHub's own
+# close-on-merge, which only fires on the default branch. Idempotent: a ticket already Done is left alone.
+# Not a required check and not part of ci-ok: a failed run shows as a red X.
+# Needs: secret PROJECT_TOKEN (a token with the "project" scope; GITHUB_TOKEN cannot write to a user-owned
+# project). It is Anthony's personal token: see CONTRIBUTING.md for expiry and rotation.
+#
+# pull_request_target runs this file from the default branch, never the PR's copy. Nothing here checks out
+# or runs PR code; the PR body is untrusted and only reaches the scripts through env, where it is grepped.
+
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions: {}
+
+env:
+  PROJECT_OWNER: anthonythanpoovong
+  PROJECT_NUMBER: "2"
+
+jobs:
+  done:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: .github/scripts
+      - name: Set the closed tickets to Done
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          LIST_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          [ -n "$GH_TOKEN" ] || { echo "::error::PROJECT_TOKEN is not set"; exit 1; }
+          CLOSING=$(GH_TOKEN="$LIST_TOKEN" gh pr view "$PR" --repo "$REPO" \
+            --json closingIssuesReferences --jq '.closingIssuesReferences[].number')
+          export CLOSING
+          ISSUES=$(.github/scripts/project-done-issues.sh) REPO="$REPO" .github/scripts/project-done.sh

@@ -66,6 +66,8 @@ If the grill says "Needs a spike first", use `/spike`. Bugs and spikes have issu
 - Pull requests: `project-intake-pr.yml` assigns the author. A PR never gets a card of its own: only tickets are on the board, and a PR is tracked by the ticket it closes, so open it with `Closes #N`.
 - To backfill open issues that are not on the board: **Actions → Project intake → Run workflow**.
 
+**Marking tickets Done.** `project-done.yml` runs when a PR merges and sets Status Done for every ticket the PR closes (`Closes`/`Fixes`/`Resolves #n` at the start of a line in the PR body, or a link GitHub already shows), whatever the base branch. `Part of #n` does not count. A re-run changes nothing.
+
 **Carrying over unfinished work.** `project-carry-over.yml` (Sprint carry-over) runs daily and, while a sprint is running, moves every open card that is not Done from an earlier sprint into the running one. Done cards, closed issues and PRs, cards with no sprint and cards on a later sprint stay put, and nothing moves between sprints. A re-run changes nothing. To preview: **Actions → Sprint carry-over → Run workflow** (*dry_run* is on by default). Locally: `DRY_RUN=true PROJECT_OWNER=anthonythanpoovong PROJECT_NUMBER=2 .github/scripts/project-carry-over.sh`.
 
 It needs the secret `PROJECT_TOKEN`: a token with the `project` scope, because `GITHUB_TOKEN` cannot write to a user-owned project. It is Anthony's personal token. Note its expiry date when you create it and rotate it before then (**Settings → Secrets and variables → Actions**). A run that fails with "PROJECT_TOKEN expired, revoked or missing the project scope" means it needs replacing. If the repo moves to an organisation or the token owner changes, switch to a GitHub App.
