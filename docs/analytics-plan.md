@@ -1,7 +1,7 @@
 # Product analytics plan (#51)
 
 - **Status:** Planning — part of #51; no instrumentation code lands with this doc
-- **Date:** 2026-10-05 (revised 2026-10-18 after review)
+- **Date:** 2026-10-05 (revised 2026-10-18 after review; 2026-10-21 after #15 merged)
 - **Author:** @calvinkafaiyuen
 - **Related:** #15, #16, #18, #27, #37, #39, #50, #56, #64, #65, #66, #70, #72, #73, #75
 
@@ -39,7 +39,7 @@ Events go in one table in our Supabase Postgres, and the dashboard is an admin p
 
 ## Storage
 
-`analytics_events`, created by #15's migration:
+`analytics_events`, created by #51's first migration (#15 shipped before this plan, so it doesn't include it):
 
 | Column | Type | Notes |
 |---|---|---|
@@ -54,17 +54,17 @@ Indexes: `(event, occurred_at)` and `(job_id)` for the dashboard; `(user_id, occ
 
 **Access:**
 - **Nobody reads or writes it from the browser.** RLS is on with no policies, and all privileges are revoked from `anon` and `authenticated`. With both, a policy added by mistake still can't expose the table.
-- **Only server code writes**, through `track()` with the service-role client. That client lives in `server-only` modules, so importing it into browser code fails the build.
+- **Only server code writes**, through `track()` with the service-role client, plus the signup trigger (see [Event schema](#event-schema)). There's no service-role client yet: #51 adds one in a `server-only` module (e.g. `web/lib/supabase/admin.ts`), so importing it into browser code fails the build. It writes analytics rows and runs the dashboard functions only. The user's own request still uses the existing session client in `web/lib/supabase/server.ts`, whose rule "never use the service-role key for a user's request" stands.
 - **The dashboard reads** through SQL functions whose `execute` is revoked from `public`, `anon` and `authenticated` and granted only to `service_role`. Postgres grants `execute` to everyone by default, so the revoke is required.
 - **Test:** the two-user access test checks that a signed-in user can't read or insert any row, including their own.
 
 ## Event schema
 
-`track(event, properties)` lives in one module, e.g. `web/lib/analytics/` (created by #15). It adds `user_id` and `occurred_at` to every event; the table lists what call sites supply. Every event feeds a metric above.
+`track(event, properties)` lives in one module, e.g. `web/lib/analytics/` (created by #51). It adds `user_id` and `occurred_at` to every event; the table lists what call sites supply. Every event feeds a metric above.
 
 | Event | Fires when | From | Properties |
 |---|---|---|---|
-| `signup_completed` | First time the auth callback sees a user | Server (#15) | `signup_method` |
+| `signup_completed` | A user row is created in `auth.users` (email signup, or first Google sign-in) | Database: #15's `handle_new_user` trigger (#51 adds the insert) | `signup_method` |
 | `upload_started` | A file is selected or dropped, before validation | Browser (#16) | — |
 | `upload_completed` | The job is queued. **Starts the clock** | Server (#16) | `job_id`, `file_duration_s` |
 | `breakdown_viewed` | The breakdown page first renders with data | Browser (#18) | `job_id` |
@@ -78,7 +78,7 @@ Indexes: `(event, occurred_at)` and `(job_id)` for the dashboard; `(user_id, occ
 
 | Property | Values |
 |---|---|
-| `signup_method` | Whatever #15 ships, e.g. `email` \| `google` |
+| `signup_method` | `email` \| `google`, the two methods #15 shipped, read from `auth.users.raw_app_meta_data->>'provider'` |
 | `editor_type` | `capcut` \| `resolve` \| `premiere` \| `fcp` |
 | `via` | `web` \| `mcp` |
 | `client_kind` | `remote` \| `bridge` |
@@ -88,6 +88,7 @@ Indexes: `(event, occurred_at)` and `(job_id)` for the dashboard; `(user_id, occ
 | `job_id`, `answer_id` | Opaque database IDs |
 
 Notes:
+- **Signup is recorded by the database, not the auth callback.** `/auth/callback` also handles email confirmations and password resets, so it can't tell a first sign-in from a later one, and an email signup with confirmation turned off never passes through it. #15's `handle_new_user` trigger already runs exactly once per new user, so #51 adds the event insert there. The insert sits in its own `begin … exception when others` block, so a failed event can never fail the signup. An email signup counts when the account is created, before the email is confirmed.
 - **The Bridge reports applies; it never writes events.** After a real apply, it sends a short summary (template ID, editor) to the Editrace API with its existing token, and the API emits `template_applied`. This adds one API call to #75, with no MCP tool contract change. If the Bridge is offline, the event is lost.
 - **Repeat events are normal.** For example, a breakdown can be viewed many times. Queries use the first occurrence where that's what the metric means.
 - **Citations are counted per answer.** Reading them off feedback would only cover rated answers.
@@ -128,7 +129,7 @@ order by 1;
 Every event is written by our server. Server events call `track()` where the action happens, including in the remote MCP server (#27).
 
 Browser events go to `POST /api/track`, which:
-1. requires a signed-in session, and takes `user_id` from it, never from the request body;
+1. requires a signed-in session, and takes `user_id` from it, never from the request body. `proxy.ts` already redirects signed-out requests to `/login`, but it's a first check only, so the route checks the session itself;
 2. accepts only the three browser events (`upload_started`, `breakdown_viewed`, `assistant_feedback`), so server-side events like `upload_completed` can't be forged;
 3. checks every property against the allowlist, and that any `job_id` or `answer_id` belongs to the user;
 4. applies a per-user rate limit (#50);
@@ -157,7 +158,7 @@ Anything that fails a check is dropped.
 An admin-only page in the web app, e.g. `/admin/metrics`, built by #51:
 - **Data:** one SQL function per tile, e.g. `analytics_time_to_editor()`, with the grants in [Storage](#storage). Each one can also be run on its own in Supabase Studio.
 - **Page:** a server component. It checks the user is an admin, calls the functions with the service-role client, and sends only the chart values to the browser.
-- **Admins:** users with `role: "admin"` in Supabase `app_metadata`, which users can't edit themselves. Everyone else gets a 404.
+- **Admins:** users with `role: "admin"` in Supabase `app_metadata`, which users can't edit themselves. A signed-in non-admin gets a 404. A signed-out visitor is sent to `/login` by `proxy.ts`, as for every private page.
 - **Charts:** use a library chosen during implementation. Each tile also shows its numbers as a table.
 
 | Tile | Shows |
@@ -185,7 +186,8 @@ Add a vendor (e.g. PostHog) when the fixed tiles can't answer the team's questio
 
 | Story | Adds |
 |---|---|
-| #15 (auth) | `analytics_events` migration and RLS test, `track()`, `/api/track`, `signup_completed` |
+| #15 (auth, merged) | Nothing; it shipped before this plan. Its `handle_new_user` trigger is where #51 adds `signup_completed` |
+| #51, first PR | `analytics_events` migration and RLS test, the service-role client, `track()`, `/api/track`, `signup_completed`. Lands before #16, so the flows below have `track()` to call |
 | #16 (upload) | `upload_started`, `upload_completed` |
 | #18 (breakdown page) | `breakdown_viewed` |
 | #64 (export), #72 (`export_template`) | `template_exported` |
@@ -193,7 +195,7 @@ Add a vendor (e.g. PostHog) when the fixed tiles can't answer the team's questio
 | #75 (Bridge tools) | The apply-report call, which emits `template_applied` |
 | #65 (assistant backend), #66 (chat panel) | `assistant_answered`, `assistant_feedback` |
 | #56 (privacy) | Analytics in the privacy policy; the retention job, if shared |
-| #51 (this story) | The admin page, the admin check and the tile functions, each tile built as its events start flowing |
+| #51, later PRs | The admin page, the admin check and the tile functions, each tile built as its events start flowing |
 
 ## Open questions
 
@@ -213,13 +215,13 @@ Add a vendor (e.g. PostHog) when the fixed tiles can't answer the team's questio
 | Smallest valuable version | ✅ | One table, a typed `track()`, an admin page with five tiles |
 | Alternatives | ✅ | Vendors considered; custom SQL is needed either way, and a vendor adds identity, deletion and processor work |
 | Fit with Key Decisions | ✅ | Existing stack, $0; an ADR only if a vendor is added |
-| Data/schema | ⚠️ | One new table (#15) and service-role-only functions (#51); no template schema or MCP contract changes |
+| Data/schema | ⚠️ | One new table, an insert in #15's signup trigger, and service-role-only functions, all in #51; no template schema or MCP contract changes |
 | Security/privacy | ✅ | Nothing leaves our system; no browser access; allowlist; 1-year retention; cascade deletion |
 | Cost | ✅ | $0 |
 | Failure modes | ✅ | `track()` never throws or blocks |
 | Reversibility | ✅ | Two-way door via `track()` |
 | Observability | ✅ | Allowlist rejects bad events; drops log a warning via #50 |
 | Success metric | ✅ | Tiles render from real events; time to editor checked by hand |
-| Effort & ownership | ✅ | Each story adds its own events (see Rollout) |
+| Effort & ownership | ✅ | #51 builds the foundation first; each later story adds its own events (see Rollout) |
 
 </details>
