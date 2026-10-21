@@ -1,0 +1,28 @@
+{
+  "schema_version": "0.1.0",
+  "source": {
+    "duration": 1052,
+    "fps": {
+      "num": 30,
+      "den": 1
+    },
+    "resolution": {
+      "width": 720,
+      "height": 1280
+    },
+    "aspect_ratio": {
+      "num": 9,
+      "den": 16
+    },
+    "content_hash": "sha256:951a998d42fa12abd9e5aa5d6682527d5c8c24594862053ca9b00675036d8c1e"
+  },
+  "tracks": [
+    {
+      "id": "video-1",
+      "kind": "video",
+      "slots": [],
+      "cuts": [],
+      "transitions": []
+    }
+  ]
+}
