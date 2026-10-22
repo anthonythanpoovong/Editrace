@@ -123,6 +123,7 @@ These workflows live in `.github/workflows/`:
 | **Sync docs nudge** | `sync-docs-nudge.yml` | When a merged PR touched the schema, an ADR, an epic, skills or CI workflows, comments once reminding the team to run `/sync-docs`. |
 | **Project intake** | `project-intake.yml` | Adds every new issue to the Project Board in the current sprint (Status Backlog), fills in missing level, type and domain/area labels, and assigns it to its author. Needs the secret `PROJECT_TOKEN`; see [CONTRIBUTING.md](CONTRIBUTING.md). |
 | **Sprint carry-over** | `project-carry-over.yml` | Daily, moves open board items that aren't Done from an earlier sprint into the running sprint (only the Sprint field changes). A manual run is a dry run by default. Needs `PROJECT_TOKEN`. |
+| **Project done** | `project-done.yml` | When a PR merges, sets Status Done on the board for every ticket it closes (closing keywords in the PR body or GitHub's own links), on any base branch. Needs the secret `PROJECT_TOKEN`. |
 
 The Discord workflows are not required checks and never touch the PR's code: they run their scripts from the default branch, so a script change only takes effect once merged. They need the secret `DISCORD_REVIEW_WEBHOOK` and the repo variables `DISCORD_REVIEW_ROLE_ID` and `DISCORD_USER_MAP` (GitHub login to Discord user ID). The reminders also need `PROJECT_TOKEN` to read sprint dates, and post to their own channel through `DISCORD_MEETING_WEBHOOK` (falling back to `DISCORD_REVIEW_WEBHOOK` when it is unset).
 

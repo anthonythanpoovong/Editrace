@@ -94,6 +94,7 @@ jobs:
       - run: .github/scripts/test-sync-docs-paths.sh
       - run: .github/scripts/test-project-intake.sh
       - run: .github/scripts/test-project-carry-over.sh
+      - run: .github/scripts/test-project-done.sh
       - run: .github/scripts/test-discord-pr-status.sh
       - run: .github/scripts/test-discord-reminders.sh
       - run: .github/scripts/test-vercel-deploy.sh
