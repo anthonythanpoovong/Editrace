@@ -2,7 +2,8 @@ name: Discord review request
 
 # When a PR is ready for review, ask the team for a review in Discord (#140). Drafts never post.
 # Deterministic: title, author, link, size and a 1-2 line excerpt of the PR body. No model involved.
-# Not a required check and not part of ci-ok: a failed post shows as a red X and comments on the PR.
+# Not a required check and not part of ci-ok: a failed post, or a failure to save its marker, shows as a red X and
+# comments on the PR.
 # The Discord message id is saved in a PR comment so discord-review-ack.yml can mark it reviewed.
 # Needs: secret DISCORD_REVIEW_WEBHOOK (webhook URL), variable DISCORD_REVIEW_ROLE_ID (role to ping).
 #
@@ -34,10 +35,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
+      contents: read
       pull-requests: read
     outputs:
       post: ${{ steps.seen.outputs.post }}
     steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          # Trusted scripts only: the default branch, not the PR merge ref.
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: .github/scripts
       - id: seen
         env:
           GH_TOKEN: ${{ github.token }}
@@ -46,12 +53,21 @@ jobs:
           ACTION: ${{ github.event.action }}
         run: |
           if [ "$ACTION" != synchronize ]; then echo "post=true" >> "$GITHUB_OUTPUT"; exit 0; fi
-          if gh pr view "$PR" --repo "$REPO" --json comments --jq '.comments[].body' \
-            | grep -q 'discord-review-message:'; then
-            echo "post=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "post=true" >> "$GITHUB_OUTPUT"
+          # Until this script is on the default branch, a push can't tell, so it doesn't announce.
+          if [ ! -x .github/scripts/discord-review-announced.sh ]; then
+            echo "::warning::discord-review-announced.sh is not on the default branch yet; not announcing on push"
+            echo "post=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
+          # A failed fetch must fail this job (it does: no pipe, so errexit applies). Reading it as "no marker"
+          # would announce the PR again.
+          comments=$(gh api --paginate "repos/$REPO/issues/$PR/comments" --jq '.[] | {login: .user.login, body: .body}')
+          rc=0
+          printf '%s\n' "$comments" | .github/scripts/discord-review-announced.sh || rc=$?
+          case "$rc" in
+            0) echo "post=false" >> "$GITHUB_OUTPUT" ;;
+            1) echo "post=true" >> "$GITHUB_OUTPUT" ;;
+            *) echo "::error::Could not read the PR comments to see whether it was announced"; exit 1 ;;
+          esac
 
   notify:
     needs: check
@@ -99,8 +115,9 @@ jobs:
           echo "message_id=$(jq -r '.id // empty' response.json)" >> "$GITHUB_OUTPUT"
           echo "Posted review request for PR #$PR_NUMBER"
 
-  # Saves the Discord message id on the PR so the review-ack workflow can find the message. A
-  # failure here does not touch the already-posted message; it only means no checkmark later.
+  # Saves the Discord message id on the PR so the review-ack workflow can find the message, and so a later
+  # push knows the PR was announced (the check job looks for this comment). If it can't be saved, the next push
+  # would announce the PR again, so it retries, and the fallback job warns if it still fails.
   record:
     needs: notify
     if: needs.notify.result == 'success'
@@ -117,13 +134,19 @@ jobs:
           MESSAGE_ID: ${{ needs.notify.outputs.message_id }}
         run: |
           [[ "$MESSAGE_ID" =~ ^[0-9]+$ ]] || { echo "::error::Discord did not return a message id"; exit 1; }
-          gh pr comment "$PR" --repo "$REPO" \
-            --body "Review requested in Discord. <!-- discord-review-message:$MESSAGE_ID -->"
+          for attempt in 1 2 3; do
+            gh pr comment "$PR" --repo "$REPO" \
+              --body "Review requested in Discord. <!-- discord-review-message:$MESSAGE_ID -->" && exit 0
+            echo "::warning::Saving the message id failed (attempt $attempt of 3)"
+            sleep $((attempt * 5))
+          done
+          exit 1
 
-  # Only this job and record can write to the PR. This one runs only when the post failed, so a
-  # dead webhook surfaces on the PR instead of as a silently quiet channel.
+  # Only this job and record can write to the PR. It runs when the post failed, so a dead webhook surfaces on
+  # the PR instead of as a silently quiet channel, and when the post worked but record could not save its
+  # marker, which would otherwise show only as a repeat announcement on the next push.
   fallback:
-    needs: notify
+    needs: [notify, record]
     if: failure()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -135,7 +158,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number }}
+          NOTIFY_RESULT: ${{ needs.notify.result }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          gh pr comment "$PR" --repo "$REPO" \
-            --body "Discord review request failed. Please ping reviewers manually. ([workflow run]($RUN_URL))"
+          if [ "$NOTIFY_RESULT" = success ]; then
+            body="The Discord review request was posted, but saving its marker on this PR failed. The next push will announce this PR again, and no review checkmark will be added. Re-run the failed job to save it. ([workflow run]($RUN_URL))"
+          else
+            body="Discord review request failed. Please ping reviewers manually. ([workflow run]($RUN_URL))"
+          fi
+          gh pr comment "$PR" --repo "$REPO" --body "$body"
