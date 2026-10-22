@@ -2,6 +2,8 @@ name: CI
 
 on:
   pull_request:
+    # ready_for_review: CI skips drafts (Actions minutes) and runs when the PR is marked ready.
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]
 
@@ -13,9 +15,18 @@ permissions:
   contents: read
 
 jobs:
+  # Draft PRs get no CI at all, to save Actions minutes: it runs when the PR is marked ready. The Armour eval's draft PRs
+  # (#128) are the exception, because Armour waits for their CI. Every job below needs detect, so skipping it skips them.
+  # Also scans for secrets (gitleaks) here, so that costs no job of its own.
   detect:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft || startsWith(github.head_ref, 'armour-eval/')
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read # the PR's changed files, for the docs-only skip
     outputs:
+      code: ${{ steps.d.outputs.code }}
       schema: ${{ steps.d.outputs.schema }}
       web: ${{ steps.d.outputs.web }}
       python: ${{ steps.d.outputs.python }}
@@ -23,32 +34,50 @@ jobs:
       supabase: ${{ steps.d.outputs.supabase }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # gitleaks scans the PR's commits
       # Jobs switch on as each part of the monorepo gains real code.
       - id: d
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR: ${{ github.event.pull_request.number }}
         run: |
           flag() { [ -e "$2" ] && echo "$1=true" >> "$GITHUB_OUTPUT" || echo "$1=false" >> "$GITHUB_OUTPUT"; }
           flag schema schema/template.schema.json
           flag web web/package.json
           flag python pyproject.toml
           flag codegen Makefile
-          flag supabase supabase/config.toml
-
-  secrets-scan:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
+          [ -e supabase/config.toml ] && supabase=true || supabase=false
+          # A PR that only touches Markdown at the repo root or under docs/ skips the heavy jobs below (Actions minutes).
+          # ci-ok still runs, so the required check still reports. docs/schema.md is code here: check-docs.sh reads it.
+          # Pushes to main always run everything (they record the coverage baseline). If the file list can't be read,
+          # run everything.
+          # The Supabase job (the longest) runs on a PR only if the PR touches the database, the RLS check or this file.
+          code=true
+          if [ "$EVENT_NAME" = pull_request ] && files=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/files" --paginate \
+              --jq '.[] | .filename, (.previous_filename // empty)') && [ -n "$files" ]; then
+            non_docs=$(printf '%s\n' "$files" | grep -vE '^(docs/.*\.md|[^/]+\.md)$' || true)
+            schema_doc=$(printf '%s\n' "$files" | grep -x 'docs/schema.md' || true)
+            [ -z "$non_docs" ] && [ -z "$schema_doc" ] && code=false
+            db_files=$(printf '%s\n' "$files" | grep -E '^(supabase/|\.github/scripts/(test-)?check-rls-tests\.sh$|\.github/workflows/ci\.yml$)' || true)
+            [ -n "$db_files" ] || supabase=false
+            echo "Changed files: $(printf '%s\n' "$files" | wc -l); code=$code supabase=$supabase"
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "supabase=$supabase" >> "$GITHUB_OUTPUT"
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # Unit tests for the CI helper scripts (e.g. the Discord review payload's @-defusing, #140).
+  # Also lints the workflow files themselves (syntax, expressions, shellcheck on run: steps; added with deploy.yml, #48)
+  # and validates the template schema. They share a job because every job is billed for at least a minute.
   scripts:
+    needs: detect
+    if: needs.detect.outputs.code == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
       # test-coverage-gate.sh runs the real diff-cover (#129). Same pin as the coverage job.
@@ -78,57 +107,46 @@ jobs:
       # renamed or missing test fails everywhere else.
       - if: "!startsWith(github.head_ref, 'armour-eval/')"
         run: scripts/armour-eval/test-score.sh
-
-  schema:
-    needs: detect
-    if: needs.detect.outputs.schema == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
       - uses: actions/setup-python@v5
+        if: needs.detect.outputs.schema == 'true'
         with:
           python-version: "3.11"
-      - run: pip install check-jsonschema
+      - if: needs.detect.outputs.schema == 'true'
+        run: pip install check-jsonschema
       - name: Schema is valid JSON Schema
+        if: needs.detect.outputs.schema == 'true'
         run: check-jsonschema --check-metaschema schema/template.schema.json
       - name: Examples validate against the schema
+        if: needs.detect.outputs.schema == 'true'
         run: |
           shopt -s nullglob
           files=(schema/examples/*.json)
           [ ${#files[@]} -eq 0 ] && { echo "no examples yet"; exit 0; }
           check-jsonschema --schemafile schema/template.schema.json "${files[@]}"
       - name: Invalid fixtures are rejected, for the right reason
+        if: needs.detect.outputs.schema == 'true'
         run: |
           [ -d schema/examples/invalid ] || { echo "no invalid fixtures yet"; exit 0; }
           schema/check-invalid.sh
       - name: Every schema field is documented
+        if: needs.detect.outputs.schema == 'true'
         run: schema/check-docs.sh
       - name: Test vectors match the reference implementation
+        if: needs.detect.outputs.schema == 'true'
         run: schema/check-vectors.sh
-
-  codegen:
-    needs: detect
-    if: needs.detect.outputs.codegen == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - uses: astral-sh/setup-uv@v6
-      - run: npm ci
-        working-directory: web
-      - run: make codegen
-      # Also fails on a generated file that was never committed, which `git diff` alone misses.
-      - name: Generated code is up to date
-        run: test -z "$(git status --porcelain)" || { git status --short; git diff --stat; echo "::error::Generated code is stale. Run 'make codegen' and commit."; exit 1; }
+      # Pinned release with a checksum, not the unpinned download script. Bump both together.
+      - name: Install actionlint
+        run: |
+          curl -fsSL -o actionlint.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_linux_amd64.tar.gz
+          echo "023070a287cd8cccd71515fedc843f1985bf96c436b7effaecce67290e7e0757  actionlint.tar.gz" | sha256sum -c -
+          tar xzf actionlint.tar.gz actionlint
+      - run: ./actionlint -color
 
   web:
     needs: detect
-    if: needs.detect.outputs.web == 'true'
+    if: needs.detect.outputs.web == 'true' && needs.detect.outputs.code == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: web
@@ -139,7 +157,17 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: web/package-lock.json
+      - uses: astral-sh/setup-uv@v6
+        if: needs.detect.outputs.codegen == 'true'
       - run: npm ci
+      # Codegen shares this job (billing is per job, minimum a minute). It runs before the tests, which write untracked
+      # coverage files. Also fails on a generated file that was never committed, which `git diff` alone misses.
+      - name: Generated code is up to date
+        if: needs.detect.outputs.codegen == 'true'
+        working-directory: .
+        run: |
+          make codegen
+          test -z "$(git status --porcelain)" || { git status --short; git diff --stat; echo "::error::Generated code is stale. Run 'make codegen' and commit."; exit 1; }
       # No --if-present: once web/ exists it must define lint, typecheck and test scripts (#48). Otherwise a
       # missing script passes silently, and the changed-line coverage gate (#129) gets no data.
       - run: npm run lint
@@ -154,8 +182,9 @@ jobs:
 
   python:
     needs: detect
-    if: needs.detect.outputs.python == 'true'
+    if: needs.detect.outputs.python == 'true' && needs.detect.outputs.code == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v6
@@ -184,6 +213,7 @@ jobs:
     needs: [web, python]
     if: always() && (needs.web.result == 'success' || needs.python.result == 'success')
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       pull-requests: write # the sticky comment (a fork PR's read-only token only gets a warning)
@@ -243,24 +273,11 @@ jobs:
           path: coverage-out/summary.json
           retention-days: 30
 
-  # Lints the workflow files themselves (syntax, expressions, shellcheck on run: steps). Added with deploy.yml (#48).
-  actionlint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      # Pinned release with a checksum, not the unpinned download script. Bump both together.
-      - name: Install actionlint
-        run: |
-          curl -fsSL -o actionlint.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_linux_amd64.tar.gz
-          echo "023070a287cd8cccd71515fedc843f1985bf96c436b7effaecce67290e7e0757  actionlint.tar.gz" | sha256sum -c -
-          tar xzf actionlint.tar.gz actionlint
-      - run: ./actionlint -color
-
   # Applies every migration to a fresh local database, loads the seed, and runs the RLS tests (#49). Only Postgres is
   # started: RLS lives in the database, and the API services would just add image pulls.
   supabase:
     needs: detect
-    if: needs.detect.outputs.supabase == 'true'
+    if: needs.detect.outputs.supabase == 'true' && needs.detect.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -275,9 +292,11 @@ jobs:
 
   # Single required check for branch protection: fails if any job failed, ignores skipped ones.
   ci-ok:
-    if: always()
-    needs: [detect, secrets-scan, scripts, actionlint, schema, codegen, web, python, coverage, supabase]
+    # A draft PR has no CI (see detect), so no ci-ok either; marking it ready runs everything.
+    if: always() && (github.event_name != 'pull_request' || !github.event.pull_request.draft || startsWith(github.head_ref, 'armour-eval/'))
+    needs: [detect, scripts, web, python, coverage, supabase]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       pull-requests: write # to show the final result in the Coverage comment
