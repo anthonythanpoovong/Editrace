@@ -42,11 +42,19 @@
       },
       "vfr": false,
       "rights": "full",
-      "edit_styles": [],
-      "music": null,
-      "labeled": false,
-      "labeling_minutes": null,
-      "notes": [],
+      "edit_styles": [
+        "montage",
+        "jump-cuts",
+        "zoom",
+        "text-heavy"
+      ],
+      "music": "released",
+      "labeled": true,
+      "labeling_minutes": 26,
+      "notes": [
+        "split screen: 2x2 grid of 4 shots, frames 128-271. Builds tile by tile 128-222, tiles removed one by one 256-271, no cuts labeled inside (rule 11). Cut at 272 when a new shot fills the frame",
+        "platform end card: frames 749-869 (1 black frame + Instagram end card), not part of the edit, unlabeled. Exclude from scoring"
+      ],
       "ambiguous": []
     },
     {
