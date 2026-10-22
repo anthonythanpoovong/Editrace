@@ -1,4 +1,6 @@
-"""Turns a DaVinci Resolve marker export (File → Export → Timeline Markers to EDL) into a golden-set label (LABELING.md).
+"""Turns hand-placed markers into a golden-set label (LABELING.md). Two inputs are accepted:
+- `vNN.markers.json` saved by labeler.html (the default workflow), or
+- a DaVinci Resolve export (File → Export → Timeline Markers to EDL).
 
 Marker names carry the label:
 - empty, "Marker N" or "cut": a hard cut at the marker's frame.
@@ -10,7 +12,7 @@ Marker names carry the label:
 Slots are derived from the labels: a slot boundary at every cut, and at the middle of any transition with no cut inside.
 The label's `source` (written by ingest.py) is kept; cuts, transitions and slots are replaced on every run.
 
-Usage: python3.11 edl_to_template.py [--start 01:00:00:00] VIDEO_ID MARKERS.edl
+Usage: python3.11 markers_to_label.py [--start 01:00:00:00] VIDEO_ID MARKERS.json|MARKERS.edl
 """
 
 from __future__ import annotations
@@ -65,25 +67,35 @@ def main() -> None:
     parser.add_argument(
         "--start",
         default="01:00:00:00",
-        help="timeline start timecode in Resolve (default 01:00:00:00)",
+        help="EDL only: timeline start timecode in Resolve (default 01:00:00:00)",
     )
     parser.add_argument("video_id")
-    parser.add_argument("edl", type=Path)
+    parser.add_argument("markers", type=Path)
     args = parser.parse_args()
 
     label_path = ROOT / "labels" / f"{args.video_id}.json"
     label = json.loads(label_path.read_text())
     fps = label["source"]["fps"]
     duration = label["source"]["duration"]
-    # Timecode counts whole frames at the rounded rate (non-drop frame), e.g. 30 for 30000/1001.
-    base = round(fps["num"] / fps["den"])
-    markers = parse_markers(
-        args.edl.read_text(), base, timecode_to_frames(args.start, base)
-    )
-    if not markers:
-        sys.exit(
-            f"no markers found in {args.edl}; is it a Timeline Markers EDL, and is --start right?"
+    labeling_minutes = None
+    if args.markers.suffix == ".json":
+        saved = json.loads(args.markers.read_text())
+        if saved["video_id"] != args.video_id:
+            sys.exit(f"{args.markers} is for {saved['video_id']}, not {args.video_id}")
+        if saved["frames"] != duration:
+            sys.exit(
+                f"labeler saw {saved['frames']} frames but the label says {duration}; was the right file and fps used?"
+            )
+        markers = [(m["frame"], m["name"], m["duration"]) for m in saved["markers"]]
+        labeling_minutes = saved.get("labeling_minutes")
+    else:
+        # Timecode counts whole frames at the rounded rate (non-drop frame), e.g. 30 for 30000/1001.
+        base = round(fps["num"] / fps["den"])
+        markers = parse_markers(
+            args.markers.read_text(), base, timecode_to_frames(args.start, base)
         )
+    if not markers:
+        sys.exit(f"no markers found in {args.markers}")
 
     cuts: list[int] = []
     transitions: list[dict] = []
@@ -92,7 +104,7 @@ def main() -> None:
     for frame, name, length in sorted(markers):
         if not 0 <= frame < duration:
             sys.exit(
-                f"marker '{name}' at frame {frame} is outside the video (0–{duration - 1}); check --start"
+                f"marker '{name}' at frame {frame} is outside the video (0–{duration - 1}); check --start (EDL) or the fps"
             )
         if "?" in name:
             ambiguous.append(frame)
@@ -162,6 +174,8 @@ def main() -> None:
     entry["labeled"] = True
     entry["notes"] = [n for n in entry["notes"] if not n.startswith("flash:")] + notes
     entry["ambiguous"] = ambiguous
+    if labeling_minutes is not None:
+        entry["labeling_minutes"] = labeling_minutes
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
     print(
         f"{args.video_id}: {len(cuts)} cuts, {len(transitions)} transitions, {len(slots)} slots, {len(ambiguous)} ambiguous"

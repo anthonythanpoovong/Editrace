@@ -32,25 +32,31 @@ Labels are schema templates (`schema/template.schema.json`) with one video track
 11. **Split screen / picture-in-picture appearing:** a cut only if the whole frame changes at once. Otherwise list it in `notes`.
 12. **Unsure:** record your best guess and list the frame in the video's `ambiguous` list in the manifest. These get reviewed with a second labeler, and they're reported separately in the results.
 
-## Workflow (DaVinci Resolve)
+## Workflow
 
 Videos are ingested first (`python3.11 eval/golden/ingest.py <originals>`). That writes `videos/vNN.mp4`, the manifest entry and an empty `labels/vNN.json`.
 
-1. Make a new timeline at the video's fps (30 for the current set), starting at `01:00:00:00` (Resolve's default), and drop `vNN.mp4` on it.
-2. Step through with the arrow keys (one frame per press). Put **timeline markers** (`M` with nothing selected) and name them:
+### Labeler (default)
 
-   | Marker name | Becomes |
+1. Open `eval/golden/labeler.html` in Chrome (double-click it). Pick `videos/vNN.mp4` and check the fps (30 for the current set). The video stays on your computer.
+2. Step with `←`/`→` (`Shift` for 10 frames), comparing the previous and current frame side by side. Then mark:
+
+   | Key | Marks |
    |---|---|
-   | leave the default (`Marker 1`), or `cut` | a cut at that frame (the first frame of the new shot) |
-   | `flash` | a cut, noted as a flash (rule 3) |
-   | `dissolve`, `fade_black`, `fade_white`, `wipe`, `push`, `slide`, `zoom`, `whip`, `glitch` | a transition. Give the marker a **duration** covering the transition (rule 5–8) |
-   | `other: <what it is>` | a transition of type `other` |
-   | add `?` to any name, e.g. `cut?` | kept, and listed as ambiguous (rule 12) |
+   | `C` | a cut at this frame (the first frame of the new shot) |
+   | `F` | a flash cut (rule 3) |
+   | `T` … `T` | a transition: press on its first frame and again on its last, with the type chosen in the sidebar (rules 5–8) |
+   | `A` | toggles ambiguous (`?`) on the marker at this frame (rule 12) |
+   | `⌫` | deletes the marker at this frame |
 
-   A whip gets two markers: a `whip` duration marker over the blur, and a `cut` marker inside it.
-3. Export: File → Export → Timeline Markers to EDL.
-4. Convert: `python3.11 eval/golden/edl_to_template.py vNN markers.edl`. This fills `labels/vNN.json` (cuts, transitions, and slots derived from them) and the manifest's `notes`/`ambiguous`. Re-running replaces the previous labels.
-5. Spot-check 2–3 cut frames by eye, then fill in `rights`, `edit_styles`, `has_music` and `labeling_minutes` in `manifest.json`.
+   A whip gets both: a `whip` transition over the blur, and a `C` cut inside it. Markers autosave in the browser, but **Save** (`S`) is what counts.
+3. Save to download `vNN.markers.json`. Labeling time is tracked while you press keys and is saved with it.
+4. Convert: `python3.11 eval/golden/markers_to_label.py vNN ~/Downloads/vNN.markers.json`. This fills `labels/vNN.json` (cuts, transitions, and slots derived from them) and the manifest's `notes`, `ambiguous` and `labeling_minutes`. Re-running replaces the previous labels. To keep editing later, load the markers file back into the labeler with **Resume**.
+5. Spot-check 2–3 cut frames, then fill in `rights`, `edit_styles` and `has_music` in `manifest.json`.
+
+### DaVinci Resolve (alternative)
+
+Make a timeline at the video's fps starting at `01:00:00:00` and put **timeline markers** on it, named `cut` (or left at the default), `flash`, a transition type with a **duration** covering it, or `other: <what it is>`. Add `?` to any name for ambiguous. Export with File → Export → Timeline Markers to EDL, then run `markers_to_label.py vNN markers.edl`.
 
 ## After the detectors run
 
