@@ -12,8 +12,10 @@ name: Discord review request
 
 on:
   pull_request:
-    # opened covers PRs created ready; ready_for_review covers drafts that get promoted.
-    types: [opened, ready_for_review]
+    # opened covers PRs created ready; ready_for_review covers drafts that get promoted. synchronize is a
+    # safety net for an opened event GitHub dropped: the next push posts the request, and the check job
+    # makes sure a PR is only ever announced once.
+    types: [opened, ready_for_review, synchronize]
 
 concurrency:
   group: discord-review-request-${{ github.event.pull_request.number }}
@@ -22,9 +24,40 @@ concurrency:
 permissions: {}
 
 jobs:
+  # A PR already announced (its message-id comment exists) is not announced again on a push. A promoted
+  # draft is announced on ready_for_review even if it was announced before, as it always was.
+  check:
+    if: >
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+    outputs:
+      post: ${{ steps.seen.outputs.post }}
+    steps:
+      - id: seen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          ACTION: ${{ github.event.action }}
+        run: |
+          if [ "$ACTION" != synchronize ]; then echo "post=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if gh pr view "$PR" --repo "$REPO" --json comments --jq '.comments[].body' \
+            | grep -q 'discord-review-message:'; then
+            echo "post=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "post=true" >> "$GITHUB_OUTPUT"
+          fi
+
   notify:
+    needs: check
     # No drafts. No forks or Dependabot (neither can read the secret).
     if: >
+      needs.check.outputs.post == 'true' &&
       github.event.pull_request.draft == false &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.actor != 'dependabot[bot]'
