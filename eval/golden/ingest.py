@@ -211,7 +211,7 @@ def main() -> None:
                 "vfr": not info["cfr"],
                 "rights": "",
                 "edit_styles": [],
-                "has_music": None,
+                "music": None,
                 "labeled": False,
                 "labeling_minutes": None,
                 "notes": [],

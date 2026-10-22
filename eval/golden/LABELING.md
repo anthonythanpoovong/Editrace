@@ -52,11 +52,41 @@ Videos are ingested first (`python3.11 eval/golden/ingest.py <originals>`). That
    A whip gets both: a `whip` transition over the blur, and a `C` cut inside it. Markers autosave in the browser, but **Save** (`S`) is what counts.
 3. Save to download `vNN.markers.json`. Labeling time is tracked while you press keys and is saved with it.
 4. Convert: `python3.11 eval/golden/markers_to_label.py vNN ~/Downloads/vNN.markers.json`. This fills `labels/vNN.json` (cuts, transitions, and slots derived from them) and the manifest's `notes`, `ambiguous` and `labeling_minutes`. Re-running replaces the previous labels. To keep editing later, load the markers file back into the labeler with **Resume**.
-5. Spot-check 2–3 cut frames, then fill in `rights`, `edit_styles` and `has_music` in `manifest.json`.
+5. Spot-check 2–3 cut frames, then fill in `rights`, `edit_styles` and `music` in `manifest.json` (see below).
 
 ### DaVinci Resolve (alternative)
 
 Make a timeline at the video's fps starting at `01:00:00:00` and put **timeline markers** on it, named `cut` (or left at the default), `flash`, a transition type with a **duration** covering it, or `other: <what it is>`. Add `?` to any name for ambiguous. Export with File → Export → Timeline Markers to EDL, then run `markers_to_label.py vNN markers.edl`.
+
+## Manifest fields
+
+`manifest.json` is committed, so it never names or links to the people in the videos.
+
+- **`rights`**: the usage rights for the video, e.g. `"full"` (any use permitted by the owner) or `"self-made"`.
+- **`edit_styles`**: tags for the editing in the video, so results can be broken down by style. Use these; add a new tag only if none fit:
+
+  | Tag | Use when |
+  |---|---|
+  | `fast-cuts` | lots of cuts, under ~1 s per shot |
+  | `slow-paced` | few cuts, long shots |
+  | `beat-synced` | cuts clearly land on the music |
+  | `flash` | has flash cuts |
+  | `whip` | has whip transitions |
+  | `dissolve` | has dissolves or fades |
+  | `jump-cuts` | same framing, skipping ahead in time |
+  | `talking-head` | someone talking to camera |
+  | `montage` | a sequence of different clips |
+  | `text-heavy` | lots of on-screen text or captions |
+  | `speed-ramp` | speeds up or slows down within shots |
+  | `zoom` | zoom punches or zoom transitions |
+
+- **`music`**: what's on the soundtrack, used by the sound-ID spike (#11):
+  - `"released"`: a commercially released song
+  - `"original"`: a platform original sound, a remix, or a sped-up/slowed edit
+  - `"none"`: no music (speech, ambient sound or silence)
+  - `"unknown"`: there's music, but you can't tell which kind
+
+  Don't write the song's name: #11 checks whether the vendors find it on their own.
 
 ## After the detectors run
 
