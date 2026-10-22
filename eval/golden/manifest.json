@@ -18,7 +18,8 @@
       "edit_styles": [
         "slow-paced",
         "talking-head",
-        "jump-cuts"
+        "jump-cuts",
+        "montage"
       ],
       "music": "none",
       "labeled": true,
@@ -107,10 +108,14 @@
       },
       "vfr": false,
       "rights": "full",
-      "edit_styles": [],
-      "music": null,
-      "labeled": false,
-      "labeling_minutes": null,
+      "edit_styles": [
+        "beat-synced",
+        "montage",
+        "zoom"
+      ],
+      "music": "original",
+      "labeled": true,
+      "labeling_minutes": 8,
       "notes": [],
       "ambiguous": []
     }
