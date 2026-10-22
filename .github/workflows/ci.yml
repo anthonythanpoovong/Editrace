@@ -48,20 +48,24 @@ jobs:
           flag web web/package.json
           flag python pyproject.toml
           flag codegen Makefile
-          flag supabase supabase/config.toml
+          [ -e supabase/config.toml ] && supabase=true || supabase=false
           # A PR that only touches Markdown at the repo root or under docs/ skips the heavy jobs below (Actions minutes).
           # ci-ok still runs, so the required check still reports. docs/schema.md is code here: check-docs.sh reads it.
           # Pushes to main always run everything (they record the coverage baseline). If the file list can't be read,
           # run everything.
+          # The Supabase job (the longest) runs on a PR only if the PR touches the database, the RLS check or this file.
           code=true
           if [ "$EVENT_NAME" = pull_request ] && files=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/files" --paginate \
               --jq '.[] | .filename, (.previous_filename // empty)') && [ -n "$files" ]; then
             non_docs=$(printf '%s\n' "$files" | grep -vE '^(docs/.*\.md|[^/]+\.md)$' || true)
             schema_doc=$(printf '%s\n' "$files" | grep -x 'docs/schema.md' || true)
             [ -z "$non_docs" ] && [ -z "$schema_doc" ] && code=false
-            echo "Changed files: $(printf '%s\n' "$files" | wc -l); code=$code"
+            db_files=$(printf '%s\n' "$files" | grep -E '^(supabase/|\.github/scripts/(test-)?check-rls-tests\.sh$|\.github/workflows/ci\.yml$)' || true)
+            [ -n "$db_files" ] || supabase=false
+            echo "Changed files: $(printf '%s\n' "$files" | wc -l); code=$code supabase=$supabase"
           fi
           echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "supabase=$supabase" >> "$GITHUB_OUTPUT"
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
