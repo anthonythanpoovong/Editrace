@@ -32,6 +32,9 @@
   #list { list-style: none; margin: 0; padding: 0; overflow: auto; max-height: 40vh; }
   #list li { display: flex; gap: 8px; padding: 4px 6px; border-radius: 4px; cursor: pointer; font-variant-numeric: tabular-nums; }
   #list li:hover, #list li.here { background: #2a2f3a; }
+  #list li.sel { outline: 1px solid var(--accent); }
+  #list .name { flex: 1; }
+  .mini { padding: 0 6px; font-size: 12px; line-height: 18px; }
   .dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; flex: none; }
   kbd { background: #2a2f3a; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font-size: 12px; }
   .keys { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 13px; }
@@ -82,8 +85,8 @@
       <span><kbd>C</kbd></span><span>cut here (first frame of the new shot)</span>
       <span><kbd>F</kbd></span><span>flash cut here</span>
       <span><kbd>T</kbd></span><span>start transition, <kbd>T</kbd> again on its last frame</span>
-      <span><kbd>A</kbd></span><span>toggle ambiguous (?) on the marker here</span>
-      <span><kbd>⌫</kbd></span><span>delete the marker here</span>
+      <span><kbd>A</kbd></span><span>toggle ambiguous (?) on the selected marker</span>
+      <span><kbd>⌫</kbd></span><span>delete the selected marker (click one in the list to select it)</span>
       <span><kbd>J</kbd> <kbd>K</kbd></span><span>previous / next marker</span>
       <span><kbd>Esc</kbd></span><span>cancel a started transition</span>
     </div>
@@ -94,7 +97,7 @@
 const COLORS = { cut: "var(--cut)", flash: "var(--flash)", transition: "var(--trans)" };
 const $ = (id) => document.getElementById(id);
 const video = $("video"), prev = $("prev");
-const state = { id: null, frames: 0, frame: 0, markers: [], pendingStart: null, activeMs: 0, lastInput: 0 };
+const state = { id: null, frames: 0, frame: 0, markers: [], selected: null, pendingStart: null, activeMs: 0, lastInput: 0 };
 
 const fps = () => parseFloat($("fps").value) || 30;
 const kindOf = (m) => m.name.replace("?", "").split(":")[0].trim().toLowerCase();
@@ -132,13 +135,39 @@ function timecode(frame) {
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}:${String(frame % f).padStart(2, "0")}`;
 }
 
-function markerAt(frame) { return state.markers.findIndex((m) => m.frame === frame); }
+const covers = (m, frame) => frame >= m.frame && frame < m.frame + Math.max(m.duration, 1);
+
+// The marker that ⌫ and A act on: the selected one (last added or clicked in the list) if it covers this frame,
+// otherwise a cut on this frame, otherwise the first transition covering it.
+function target() {
+  if (state.selected && state.markers.includes(state.selected) && covers(state.selected, state.frame)) return state.selected;
+  return state.markers.find((m) => m.frame === state.frame && category(m) !== "transition")
+    || state.markers.find((m) => category(m) === "transition" && covers(m, state.frame));
+}
+
+function toggleAmbiguous(m) {
+  m.name = m.name.includes("?") ? m.name.replace("?", "") : `${m.name}?`;
+  persist(); render();
+}
+
+function removeMarker(m) {
+  state.markers = state.markers.filter((x) => x !== m);
+  if (state.selected === m) state.selected = null;
+  persist(); render();
+}
+
+// Same slot = the new marker replaces the old one: one cut per frame, and one transition of each type per start
+// frame. Different transition types may overlap (e.g. a zoom during a fade), and a cut may sit inside a transition.
+function sameSlot(a, b) {
+  if (a.frame !== b.frame) return false;
+  if (category(a) !== "transition" || category(b) !== "transition") return category(a) !== "transition" && category(b) !== "transition";
+  return kindOf(a) === kindOf(b);
+}
 
 function addMarker(marker) {
-  // One cut per frame (a new one replaces it); a transition may share its start frame with a cut.
-  const isTransition = (m) => category(m) === "transition";
-  const i = state.markers.findIndex((m) => m.frame === marker.frame && isTransition(m) === isTransition(marker));
+  const i = state.markers.findIndex((m) => sameSlot(m, marker));
   if (i >= 0) state.markers[i] = marker; else state.markers.push(marker);
+  state.selected = marker;
   state.markers.sort((a, b) => a.frame - b.frame || b.duration - a.duration);
   persist(); render();
 }
@@ -152,11 +181,16 @@ function render() {
   const list = $("list"); list.innerHTML = "";
   for (const m of state.markers) {
     const li = document.createElement("li");
-    if (m.frame === state.frame) li.className = "here";
+    if (m.frame === state.frame) li.classList.add("here");
+    if (m === state.selected) li.classList.add("sel");
     const label = m.duration > 1 ? `${m.frame}–${m.frame + m.duration - 1}` : `${m.frame}`;
-    li.innerHTML = `<span class="dot" style="background:${COLORS[category(m)]}"></span><span style="width:80px">${label}</span><span></span>`;
-    li.lastChild.textContent = m.name;
-    li.onclick = () => seek(m.frame);
+    li.innerHTML = `<span class="dot" style="background:${COLORS[category(m)]}"></span><span style="width:80px">${label}</span><span class="name"></span>` +
+      `<button class="mini" title="Toggle ambiguous">?</button><button class="mini" title="Delete">✕</button>`;
+    li.querySelector(".name").textContent = m.name;
+    li.onclick = () => { state.selected = m; seek(m.frame); };
+    const [amb, del] = li.querySelectorAll("button");
+    amb.onclick = (e) => { e.stopPropagation(); toggleAmbiguous(m); };
+    del.onclick = (e) => { e.stopPropagation(); removeMarker(m); };
     list.appendChild(li);
   }
   const tl = $("timeline");
@@ -273,15 +307,8 @@ document.addEventListener("keydown", (e) => {
     }
   }
   else if (k === "Escape") { state.pendingStart = null; render(); }
-  else if (k === "a" || k === "A") {
-    const i = markerAt(state.frame); if (i < 0) return;
-    const m = state.markers[i];
-    m.name = m.name.includes("?") ? m.name.replace("?", "") : `${m.name}?`;
-    persist(); render();
-  }
-  else if (k === "Backspace" || k === "Delete") {
-    const i = markerAt(state.frame); if (i >= 0) { state.markers.splice(i, 1); persist(); render(); }
-  }
+  else if (k === "a" || k === "A") { const m = target(); if (m) toggleAmbiguous(m); }
+  else if (k === "Backspace" || k === "Delete") { const m = target(); if (m) removeMarker(m); }
   else if (k === "j" || k === "J" || k === "k" || k === "K") {
     const forward = k.toLowerCase() === "k";
     const frames = state.markers.map((m) => m.frame);

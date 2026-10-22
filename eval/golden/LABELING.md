@@ -23,10 +23,11 @@ Labels are schema templates (`schema/template.schema.json`) with one video track
 2. **Jump cut** (same framing, time skip): a cut. Label it.
 3. **Flash frame** (1–3 frames of a solid white/black frame or a different shot inserted between two shots): label **two cuts**, one at the first flash frame and one at the first frame after it. Write `flash` in the video's `notes` so it can be scored with and without flashes.
 4. **Brightness flash over continuous footage** (an exposure or glow effect on the same shot): **not a cut**.
-5. **Dissolve / crossfade / fade to black or white:** **not a cut.** Label it as a `transition` (`dissolve`, `fade_black`, `fade_white`).
+5. **Dissolve / crossfade / fade to black or white:** **not a cut.** Label it as a `transition` (`dissolve`, `fade_black`, `fade_white`). `fade_black` covers every direction: fading out to black, fading in from black, or dipping through black between two shots (same for white). Label one transition over the whole fade, through the black frames. A fade in at the very start or out at the very end is labeled too; it doesn't split the shot.
 6. **Whip transition** (two shots joined behind motion blur): label a `transition` of type `whip`, **and** a cut at the first frame where the new shot is the main content. The cut is still there; it's just hidden by blur.
 7. **In-camera whip pan** inside one continuous shot: **not a cut** and not a transition.
 8. **Other edited transitions** (wipe, push, slide, zoom, glitch): label a `transition` with that type, or `other` plus `type_detail`. Add a cut only if there's a single frame where the shot switches outright.
+   **Stacked transitions** (e.g. a zoom during a fade): label **each** one separately, with its own type and its own range, since they may start and end on different frames. Overlapping transitions count as one change of shot.
 9. **Text, stickers, captions or overlays changing over the same footage:** **not a cut.**
 10. **Zooms, speed ramps, reframes inside one shot:** **not a cut.**
 11. **Split screen / picture-in-picture appearing:** a cut only if the whole frame changes at once. Otherwise list it in `notes`.
@@ -49,7 +50,7 @@ Videos are ingested first (`python3.11 eval/golden/ingest.py <originals>`). That
    | `A` | toggles ambiguous (`?`) on the marker at this frame (rule 12) |
    | `⌫` | deletes the marker at this frame |
 
-   A whip gets both: a `whip` transition over the blur, and a `C` cut inside it. Markers autosave in the browser, but **Save** (`S`) is what counts.
+   A whip gets both: a `whip` transition over the blur, and a `C` cut inside it. For stacked transitions, mark each with `T`…`T`, changing the type in between. To delete or flag one of several overlapping markers, click it in the list first (or use its ✕ / ? buttons). Markers autosave in the browser, but **Save** (`S`) is what counts.
 3. Save to download `vNN.markers.json`. Labeling time is tracked while you press keys and is saved with it.
 4. Convert: `python3.11 eval/golden/markers_to_label.py vNN ~/Downloads/vNN.markers.json`. This fills `labels/vNN.json` (cuts, transitions, and slots derived from them) and the manifest's `notes`, `ambiguous` and `labeling_minutes`. Re-running replaces the previous labels. To keep editing later, load the markers file back into the labeler with **Resume**.
 5. Spot-check 2–3 cut frames, then fill in `rights`, `edit_styles` and `music` in `manifest.json` (see below).

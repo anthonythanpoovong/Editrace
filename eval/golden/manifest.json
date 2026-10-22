@@ -15,8 +15,13 @@
       },
       "vfr": false,
       "rights": "full",
-      "edit_styles": [],
-      "music": null,
+      "edit_styles": [
+        "slow-paced",
+        "talking-head",
+        "jump-cuts",
+        "flash"
+      ],
+      "music": "none",
       "labeled": true,
       "labeling_minutes": 4,
       "notes": [

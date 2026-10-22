@@ -9,7 +9,8 @@ Marker names carry the label:
   "other: <detail>"): a transition covering the marker's duration.
 - a "?" anywhere in the name: the label is kept, and its frame is listed in the manifest's `ambiguous`.
 
-Slots are derived from the labels: a slot boundary at every cut, and at the middle of any transition with no cut inside.
+Slots are derived from the labels: a slot boundary at every cut, and at the middle of any transition (or group of
+overlapping transitions) with no cut inside, unless it touches the first or last frame (a fade in or out of the video).
 The label's `source` (written by ingest.py) is kept; cuts, transitions and slots are replaced on every run.
 
 Usage: python3.11 markers_to_label.py [--start 01:00:00:00] VIDEO_ID MARKERS.json|MARKERS.edl
@@ -129,11 +130,20 @@ def main() -> None:
             f"duplicate cut frames: {sorted(f for f in set(cuts) if cuts.count(f) > 1)}"
         )
 
+    # Overlapping transitions (e.g. a zoom during a fade) are one shot change, so they share one boundary. A group
+    # with a cut inside already has its boundary. A group touching the first or last frame is a fade in or out of
+    # the video, not a change of shot, so it adds none.
     boundaries = set(cuts)
-    for t in transitions:
+    groups: list[list[int]] = []
+    for t in sorted(transitions, key=lambda t: t["range"]["start"]):
         start, end = t["range"]["start"], t["range"]["start"] + t["range"]["duration"]
-        if not any(start <= c < end for c in cuts):
-            boundaries.add(start + t["range"]["duration"] // 2)
+        if groups and start < groups[-1][1]:
+            groups[-1][1] = max(groups[-1][1], end)
+        else:
+            groups.append([start, end])
+    for start, end in groups:
+        if start > 0 and end < duration and not any(start <= c < end for c in cuts):
+            boundaries.add((start + end) // 2)
     edges = [0, *sorted(b for b in boundaries if 0 < b < duration), duration]
     slots = [
         {"id": f"slot-{i + 1}", "range": {"start": a, "duration": b - a}, **MANUAL}
