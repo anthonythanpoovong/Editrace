@@ -15,7 +15,12 @@ permissions:
 jobs:
   detect:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read # the PR's changed files, for the docs-only skip
     outputs:
+      code: ${{ steps.d.outputs.code }}
       schema: ${{ steps.d.outputs.schema }}
       web: ${{ steps.d.outputs.web }}
       python: ${{ steps.d.outputs.python }}
@@ -25,6 +30,10 @@ jobs:
       - uses: actions/checkout@v6
       # Jobs switch on as each part of the monorepo gains real code.
       - id: d
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR: ${{ github.event.pull_request.number }}
         run: |
           flag() { [ -e "$2" ] && echo "$1=true" >> "$GITHUB_OUTPUT" || echo "$1=false" >> "$GITHUB_OUTPUT"; }
           flag schema schema/template.schema.json
@@ -32,9 +41,23 @@ jobs:
           flag python pyproject.toml
           flag codegen Makefile
           flag supabase supabase/config.toml
+          # A PR that only touches Markdown at the repo root or under docs/ skips the heavy jobs below (Actions minutes).
+          # ci-ok still runs, so the required check still reports. docs/schema.md is code here: check-docs.sh reads it.
+          # Pushes to main always run everything (they record the coverage baseline). If the file list can't be read,
+          # run everything.
+          code=true
+          if [ "$EVENT_NAME" = pull_request ] && files=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/files" --paginate \
+              --jq '.[] | .filename, (.previous_filename // empty)') && [ -n "$files" ]; then
+            non_docs=$(printf '%s\n' "$files" | grep -vE '^(docs/.*\.md|[^/]+\.md)$' || true)
+            schema_doc=$(printf '%s\n' "$files" | grep -x 'docs/schema.md' || true)
+            [ -z "$non_docs" ] && [ -z "$schema_doc" ] && code=false
+            echo "Changed files: $(printf '%s\n' "$files" | wc -l); code=$code"
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
 
   secrets-scan:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       pull-requests: read
@@ -47,8 +70,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # Unit tests for the CI helper scripts (e.g. the Discord review payload's @-defusing, #140).
+  # Also lints the workflow files themselves (syntax, expressions, shellcheck on run: steps; added with deploy.yml, #48).
+  # They share a job because every job is billed for at least a minute.
   scripts:
+    needs: detect
+    if: needs.detect.outputs.code == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
       # test-coverage-gate.sh runs the real diff-cover (#129). Same pin as the coverage job.
@@ -78,11 +106,19 @@ jobs:
       # renamed or missing test fails everywhere else.
       - if: "!startsWith(github.head_ref, 'armour-eval/')"
         run: scripts/armour-eval/test-score.sh
+      # Pinned release with a checksum, not the unpinned download script. Bump both together.
+      - name: Install actionlint
+        run: |
+          curl -fsSL -o actionlint.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_linux_amd64.tar.gz
+          echo "023070a287cd8cccd71515fedc843f1985bf96c436b7effaecce67290e7e0757  actionlint.tar.gz" | sha256sum -c -
+          tar xzf actionlint.tar.gz actionlint
+      - run: ./actionlint -color
 
   schema:
     needs: detect
-    if: needs.detect.outputs.schema == 'true'
+    if: needs.detect.outputs.schema == 'true' && needs.detect.outputs.code == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v5
@@ -108,8 +144,9 @@ jobs:
 
   codegen:
     needs: detect
-    if: needs.detect.outputs.codegen == 'true'
+    if: needs.detect.outputs.codegen == 'true' && needs.detect.outputs.code == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
@@ -127,8 +164,9 @@ jobs:
 
   web:
     needs: detect
-    if: needs.detect.outputs.web == 'true'
+    if: needs.detect.outputs.web == 'true' && needs.detect.outputs.code == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: web
@@ -154,8 +192,9 @@ jobs:
 
   python:
     needs: detect
-    if: needs.detect.outputs.python == 'true'
+    if: needs.detect.outputs.python == 'true' && needs.detect.outputs.code == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v6
@@ -184,6 +223,7 @@ jobs:
     needs: [web, python]
     if: always() && (needs.web.result == 'success' || needs.python.result == 'success')
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       pull-requests: write # the sticky comment (a fork PR's read-only token only gets a warning)
@@ -243,24 +283,11 @@ jobs:
           path: coverage-out/summary.json
           retention-days: 30
 
-  # Lints the workflow files themselves (syntax, expressions, shellcheck on run: steps). Added with deploy.yml (#48).
-  actionlint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      # Pinned release with a checksum, not the unpinned download script. Bump both together.
-      - name: Install actionlint
-        run: |
-          curl -fsSL -o actionlint.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_linux_amd64.tar.gz
-          echo "023070a287cd8cccd71515fedc843f1985bf96c436b7effaecce67290e7e0757  actionlint.tar.gz" | sha256sum -c -
-          tar xzf actionlint.tar.gz actionlint
-      - run: ./actionlint -color
-
   # Applies every migration to a fresh local database, loads the seed, and runs the RLS tests (#49). Only Postgres is
   # started: RLS lives in the database, and the API services would just add image pulls.
   supabase:
     needs: detect
-    if: needs.detect.outputs.supabase == 'true'
+    if: needs.detect.outputs.supabase == 'true' && needs.detect.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -276,8 +303,9 @@ jobs:
   # Single required check for branch protection: fails if any job failed, ignores skipped ones.
   ci-ok:
     if: always()
-    needs: [detect, secrets-scan, scripts, actionlint, schema, codegen, web, python, coverage, supabase]
+    needs: [detect, secrets-scan, scripts, schema, codegen, web, python, coverage, supabase]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       pull-requests: write # to show the final result in the Coverage comment

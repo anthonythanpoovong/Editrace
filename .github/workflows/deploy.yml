@@ -15,6 +15,8 @@ on:
     branches: [main]
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+    # A docs-only push has nothing to preview. Pushes to main are not filtered: staging must follow main.
+    paths-ignore: ["**.md", "docs/**"]
   workflow_dispatch:
     inputs:
       sha:
@@ -38,17 +40,6 @@ env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
 
 jobs:
-  # Same convention as ci.yml: stay a no-op until web/ has an app, so this can merge before the app does.
-  detect:
-    runs-on: ubuntu-latest
-    outputs:
-      web: ${{ steps.d.outputs.web }}
-    steps:
-      - uses: actions/checkout@v6
-      - id: d
-        run: |
-          [ -e web/package.json ] && echo "web=true" >> "$GITHUB_OUTPUT" || echo "web=false" >> "$GITHUB_OUTPUT"
-
   # Same-repo PRs only: fork PRs can't read the Vercel secrets. The deploy runs under the token's owner, but Vercel
   # still blocks it when the commit's author isn't on the team: that ends as a note on the PR, not a failure.
   # Anyone with write access can edit this workflow in their branch and read the secrets, which is already true of
@@ -56,13 +47,11 @@ jobs:
   # Armour eval PRs (#128, scripts/armour-eval) get no preview: they hold deliberately buggy code, and a
   # preview would outlive the PR.
   preview:
-    needs: detect
     if: >-
       github.event_name == 'pull_request'
       && github.event.pull_request.head.repo.full_name == github.repository
       && !github.event.pull_request.draft
       && !startsWith(github.head_ref, 'armour-eval/')
-      && needs.detect.outputs.web == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -115,8 +104,7 @@ jobs:
           exit 1
 
   staging:
-    needs: detect
-    if: github.event_name == 'push' && needs.detect.outputs.web == 'true'
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -182,8 +170,7 @@ jobs:
           exit 1
 
   production:
-    needs: detect
-    if: github.event_name == 'workflow_dispatch' && needs.detect.outputs.web == 'true'
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
