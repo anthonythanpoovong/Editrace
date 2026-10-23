@@ -1,0 +1,23 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "space grotesk",
+        "createdAt": "2026-10-17T23:15:05.343Z",
+        "reason": "brand/BRAND.md (accepted brand kit, PR #114) mandates Space Grotesk as the display/body typeface; not a default AI pick"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "site/index.html"
+        ],
+        "createdAt": "2026-10-17T23:26:39.014Z",
+        "reason": "brand/BRAND.md (accepted brand kit, PR #114) names this exact value 'Bone' (#FBF9F5) as a documented light-surface token, not a reflexive cream default; user asked to switch the page to this light register"
+      }
+    ]
+  }
+}

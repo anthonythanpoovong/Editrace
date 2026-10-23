@@ -53,3 +53,9 @@ htmlcov/
 # Coverage output (#129)
 coverage/
 coverage.xml
+
+# Impeccable (per-developer state; config.json and design.json are shared)
+.impeccable/config.local.json
+.impeccable/hook.cache.json
+.impeccable/critique/
+.impeccable/live/
