@@ -1,0 +1,145 @@
+{
+  "videos": [
+    {
+      "id": "v01",
+      "content_hash": "sha256:6d2bc44e77a0a23fe94075430e58d7025077d05db372e98ecaea3bbc729ad998",
+      "original_sha256": "f4dea558538399d9f8a4a230575ab2ac1812d06127eaa81ddb09d4f35894990c",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 1070,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "slow-paced",
+        "talking-head",
+        "jump-cuts",
+        "montage"
+      ],
+      "music": "none",
+      "labeled": true,
+      "labeling_minutes": 4,
+      "notes": [
+        "platform end card: frames 949-1069 (1 black frame + Instagram end card), not part of the edit, unlabeled. Exclude from scoring. Start frame estimated from the 120-frame card in v02-v04; confirm against the video"
+      ],
+      "ambiguous": []
+    },
+    {
+      "id": "v02",
+      "content_hash": "sha256:aaa31d199b319fd1f42e71fb17c82d153f366063858f32b91e81d7594bc937d2",
+      "original_sha256": "4637c384fcf0215e640b3d6249abbfd34b49f3024a4a54d79f4e5cd4218a0401",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 870,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "montage",
+        "jump-cuts",
+        "zoom",
+        "text-heavy"
+      ],
+      "music": "released",
+      "labeled": true,
+      "labeling_minutes": 26,
+      "notes": [
+        "split screen: 2x2 grid of 4 shots, frames 128-271. Builds tile by tile 128-222, tiles removed one by one 256-271, no cuts labeled inside (rule 11). Cut at 272 when a new shot fills the frame",
+        "platform end card: frames 749-869 (1 black frame + Instagram end card), not part of the edit, unlabeled. Exclude from scoring"
+      ],
+      "ambiguous": []
+    },
+    {
+      "id": "v03",
+      "content_hash": "sha256:951a998d42fa12abd9e5aa5d6682527d5c8c24594862053ca9b00675036d8c1e",
+      "original_sha256": "0648501034753d768ce60f0f3b5fd05ffa15ec32fb91a1ea4f6f97c393dc8b6c",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 1052,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "talking-head",
+        "text-heavy",
+        "montage"
+      ],
+      "music": "original",
+      "labeled": true,
+      "labeling_minutes": 7,
+      "notes": [
+        "talking head picture-in-picture over still background images, frames 0-218: each background change labeled as a cut. Changes inside the box (new clip, time skip, move, resize, appear/disappear) not labeled (rule 11). Cut at 219 where the section ends",
+        "platform end card: frames 931-1051 (1 black frame + Instagram end card), not part of the edit, unlabeled. Exclude from scoring"
+      ],
+      "ambiguous": []
+    },
+    {
+      "id": "v04",
+      "content_hash": "sha256:6a7ab8fe3e4776b57590f48eda6a134384a5df0bedb9c6c47f27d0ab46ef8fb8",
+      "original_sha256": "2c6763425dbe28cc6d50aceb4dec4b4f62cd00c821ae20f67e7f4cc366221bbf",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 648,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "montage",
+        "beat-synced"
+      ],
+      "music": "released",
+      "labeled": true,
+      "labeling_minutes": 4,
+      "notes": [
+        "platform end card: frames 528-647 (Instagram end card, no black frame before it), not part of the edit, unlabeled. Exclude from scoring"
+      ],
+      "ambiguous": []
+    },
+    {
+      "id": "v05",
+      "content_hash": "sha256:35b01f5b17a6abee8036dd81a14585a030766c1d9a9e4a3c4a04ec6b91244b19",
+      "original_sha256": "9c76cee5851a936fa486bd4f43935dd56db122bb79968c2ba73cbbc167af7de0",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 400,
+      "resolution": {
+        "width": 576,
+        "height": 1024
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "beat-synced",
+        "montage",
+        "zoom"
+      ],
+      "music": "original",
+      "labeled": true,
+      "labeling_minutes": 8,
+      "notes": [],
+      "ambiguous": []
+    }
+  ]
+}
