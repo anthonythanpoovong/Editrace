@@ -80,7 +80,7 @@ Threshold 2.0 is chosen over the default 3.0 for recall, not because it scores b
 ## Open questions
 
 - **Runtime on Modal:** not measured. Only local CPU at 720p is known. #7 measures 1080p on Modal CPU against its < 60 s target for a 60 s video. Owner: @calvinkafaiyuen (#7).
-- **v01 and v05 were scored on unverified copies** (same frame count, fps and size as the manifest, different file hash). Rerun on the conformed files before this ADR is accepted. Owner: @calvinkafaiyuen with @sktchan.
+- **v01 and v05 were scored on copies that aren't hash-verified** (same frame count, fps and size as the manifest, different file hash), so every label lines up but a re-encode could shift a borderline cut or two. That can't change the decision: the recall gap between Adaptive and TransNetV2 is 14 cuts. Rerunning on the conformed files (`run.py detect --only v01 v05`) is optional and not a condition of acceptance. Owner: @sktchan, who has the conformed files.
 - **"False cuts are cheaper to fix" is the author's reasoning, not user evidence.** The Phase 0 editor review is the first test. Owner: @calvinkafaiyuen.
 - **Thresholds tuned on 5 videos will overfit.** #7 re-checks them on the full golden set (#52).
 
