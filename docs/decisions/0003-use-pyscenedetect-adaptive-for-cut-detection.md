@@ -55,6 +55,8 @@ The failure modes are specific to short-form editing:
 
 We will build #7 on **PySceneDetect's AdaptiveDetector (adaptive_threshold 2.0, min_scene_len 1)**, keep every detected cut, and **flag suspect cuts for the user to review** instead of filtering them.
 
+This departs from #4's pre-set exit criteria. Since nothing passed, the spike's outcome is "No", which said #7 should wait for a different approach. We proceed anyway with a lower precision floor (below) because Adaptive already clears the recall bar, the remaining errors are a kind the user can fix cheaply, and blocking #7 would also block the Phase 0 gate. Reaching precision 0.90 becomes a follow-up rather than a precondition.
+
 Threshold 2.0 is chosen over the default 3.0 for recall, not because it scores best overall: the two are tied on F1, and 2.0 finds 2 more cuts at the price of 4 more false ones. The deciding trade-off is which mistake costs the user more. A false cut adds a slot, and the fix is a merge that needs no new footage. A missed cut removes a slot, and the fix means finding the frame, adding the cut, and shooting or finding another clip that may not exist. Adaptive makes the cheap mistake; TransNetV2 makes the expensive one. Flagging keeps the user in control and stays transparent about uncertainty, without hiding real fast cuts (v03 has cuts 10 frames apart) the way a minimum-gap filter would.
 
 ## Consequences
