@@ -40,7 +40,7 @@ From then on, every `git commit` runs ruff + ruff-format (Python), prettier (`we
 
 ### Pull requests
 
-- Open a draft PR early and mark it ready when CI is green and you've reviewed your own diff.
+- Open a draft PR early. CI and Armour don't run on drafts (to save GitHub Actions minutes), so run the checks locally before marking it ready: `npm run lint`, `npm run typecheck` and `npm test` in `web/`, `make codegen` after a schema change, and `supabase test db` for migrations. Marking the PR ready runs CI and Armour once. After later pushes CI reruns automatically; add the `armour` label to ask Armour for another review.
 - The PR template opens pre-filled. Use `Closes #n` so the issue closes on merge.
 - **Keep PRs small.** Aim for under about 400 changed lines and one concern per PR. If a change is bigger, split it (schema first, then code that uses it) or say in the PR why it can't be split.
 - A PR that changes how the system works for others (new service, schema or MCP contract change, new setup steps, CI changes, new skills) is a **large change**: tick the `/sync-docs` box in the template and run `/sync-docs` after it merges.
@@ -65,6 +65,8 @@ If the grill says "Needs a spike first", use `/spike`. Bugs and spikes have issu
 - A sprint or status that is already set is never overwritten, so moving a card is safe.
 - Pull requests: `project-intake-pr.yml` assigns the author. A PR never gets a card of its own: only tickets are on the board, and a PR is tracked by the ticket it closes, so open it with `Closes #N`.
 - To backfill open issues that are not on the board: **Actions → Project intake → Run workflow**.
+
+**Marking tickets Done.** `project-done.yml` runs when a PR merges and sets Status Done for every ticket the PR closes (`Closes`/`Fixes`/`Resolves #n` at the start of a line in the PR body, or a link GitHub already shows), whatever the base branch. `Part of #n` does not count. A re-run changes nothing.
 
 **Carrying over unfinished work.** `project-carry-over.yml` (Sprint carry-over) runs daily and, while a sprint is running, moves every open card that is not Done from an earlier sprint into the running one. Done cards, closed issues and PRs, cards with no sprint and cards on a later sprint stay put, and nothing moves between sprints. A re-run changes nothing. To preview: **Actions → Sprint carry-over → Run workflow** (*dry_run* is on by default). Locally: `DRY_RUN=true PROJECT_OWNER=anthonythanpoovong PROJECT_NUMBER=2 .github/scripts/project-carry-over.sh`.
 

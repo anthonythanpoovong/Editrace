@@ -32,7 +32,8 @@ permissions: {}
 jobs:
   notify:
     # Same-repo PRs only for the pull_request* events (forks cannot read the secret). Comments:
-    # pull requests only, not plain issues. Always a human actor and a human PR author.
+    # pull requests only, not plain issues, and only a comment with an @ in it (the only thing it pings for, so
+    # any other comment would start a runner for nothing). Always a human actor and a human PR author.
     if: >
       (
         github.event_name == 'pull_request_review' &&
@@ -44,6 +45,7 @@ jobs:
         github.event_name == 'issue_comment' &&
         github.event.issue.pull_request != null &&
         github.event.issue.state == 'open' &&
+        contains(github.event.comment.body, '@') &&
         github.event.issue.user.type != 'Bot' &&
         github.event.comment.user.type != 'Bot'
       ) || (
