@@ -1,0 +1,6 @@
+# Versions the spike was run with (ADR 0003). Detector output can change between releases.
+scenedetect==0.7.2
+opencv-python-headless==5.0.0.93
+transnetv2-pytorch==1.0.5
+torch==2.14.1
+numpy==2.4.6
