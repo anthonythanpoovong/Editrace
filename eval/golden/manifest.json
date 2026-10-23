@@ -72,11 +72,18 @@
       },
       "vfr": false,
       "rights": "full",
-      "edit_styles": [],
-      "music": null,
-      "labeled": false,
-      "labeling_minutes": null,
-      "notes": [],
+      "edit_styles": [
+        "talking-head",
+        "text-heavy",
+        "montage"
+      ],
+      "music": "original",
+      "labeled": true,
+      "labeling_minutes": 7,
+      "notes": [
+        "talking head picture-in-picture over still background images, frames 0-218: each background change labeled as a cut. Changes inside the box (new clip, time skip, move, resize, appear/disappear) not labeled (rule 11). Cut at 219 where the section ends",
+        "platform end card: frames 931-1051 (1 black frame + Instagram end card), not part of the edit, unlabeled. Exclude from scoring"
+      ],
       "ambiguous": []
     },
     {

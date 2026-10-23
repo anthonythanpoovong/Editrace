@@ -20,8 +20,568 @@
     {
       "id": "video-1",
       "kind": "video",
-      "slots": [],
-      "cuts": [],
+      "slots": [
+        {
+          "id": "slot-1",
+          "range": {
+            "start": 0,
+            "duration": 140
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-2",
+          "range": {
+            "start": 140,
+            "duration": 40
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-3",
+          "range": {
+            "start": 180,
+            "duration": 19
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-4",
+          "range": {
+            "start": 199,
+            "duration": 20
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-5",
+          "range": {
+            "start": 219,
+            "duration": 34
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-6",
+          "range": {
+            "start": 253,
+            "duration": 26
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-7",
+          "range": {
+            "start": 279,
+            "duration": 22
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-8",
+          "range": {
+            "start": 301,
+            "duration": 23
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-9",
+          "range": {
+            "start": 324,
+            "duration": 20
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-10",
+          "range": {
+            "start": 344,
+            "duration": 27
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-11",
+          "range": {
+            "start": 371,
+            "duration": 10
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-12",
+          "range": {
+            "start": 381,
+            "duration": 10
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-13",
+          "range": {
+            "start": 391,
+            "duration": 12
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-14",
+          "range": {
+            "start": 403,
+            "duration": 10
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-15",
+          "range": {
+            "start": 413,
+            "duration": 30
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-16",
+          "range": {
+            "start": 443,
+            "duration": 26
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-17",
+          "range": {
+            "start": 469,
+            "duration": 33
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-18",
+          "range": {
+            "start": 502,
+            "duration": 36
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-19",
+          "range": {
+            "start": 538,
+            "duration": 104
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-20",
+          "range": {
+            "start": 642,
+            "duration": 21
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-21",
+          "range": {
+            "start": 663,
+            "duration": 24
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-22",
+          "range": {
+            "start": 687,
+            "duration": 80
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-23",
+          "range": {
+            "start": 767,
+            "duration": 24
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-24",
+          "range": {
+            "start": 791,
+            "duration": 42
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-25",
+          "range": {
+            "start": 833,
+            "duration": 39
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-26",
+          "range": {
+            "start": 872,
+            "duration": 36
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-27",
+          "range": {
+            "start": 908,
+            "duration": 144
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        }
+      ],
+      "cuts": [
+        {
+          "id": "cut-1",
+          "frame": 140,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-2",
+          "frame": 180,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-3",
+          "frame": 199,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-4",
+          "frame": 219,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-5",
+          "frame": 253,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-6",
+          "frame": 279,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-7",
+          "frame": 301,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-8",
+          "frame": 324,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-9",
+          "frame": 344,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-10",
+          "frame": 371,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-11",
+          "frame": 381,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-12",
+          "frame": 391,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-13",
+          "frame": 403,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-14",
+          "frame": 413,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-15",
+          "frame": 443,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-16",
+          "frame": 469,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-17",
+          "frame": 502,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-18",
+          "frame": 538,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-19",
+          "frame": 642,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-20",
+          "frame": 663,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-21",
+          "frame": 687,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-22",
+          "frame": 767,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-23",
+          "frame": 791,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-24",
+          "frame": 833,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-25",
+          "frame": 872,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-26",
+          "frame": 908,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        }
+      ],
       "transitions": []
     }
   ]
