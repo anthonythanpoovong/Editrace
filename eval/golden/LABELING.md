@@ -31,7 +31,9 @@ Labels are schema templates (`schema/template.schema.json`) with one video track
 9. **Text, stickers, captions or overlays changing over the same footage:** **not a cut.**
 10. **Zooms, speed ramps, reframes inside one shot:** **not a cut.**
 11. **Split screen / picture-in-picture appearing:** a cut only if the whole frame changes at once. Otherwise list it in `notes`.
-12. **Unsure:** record your best guess and list the frame in the video's `ambiguous` list in the manifest. These get reviewed with a second labeler, and they're reported separately in the results.
+   **Picture-in-picture over a background** (e.g. a talking head in a box over still images): the background is the shot. A background change is a cut. Changes inside the box (a new clip, a time skip, the box moving, resizing, appearing or disappearing) are **not**.
+12. **Platform end card** (e.g. Instagram's logo card added when a reel is downloaded, with or without a black frame before it): **not part of the edit.** Label nothing from its first frame to the end, not even the black frame (it's not a flash), and write `platform end card: frames <first>-<last>` in the video's `notes` so it can be excluded from scoring.
+13. **Unsure:** record your best guess and list the frame in the video's `ambiguous` list in the manifest. These get reviewed with a second labeler, and they're reported separately in the results.
 
 ## Workflow
 
@@ -47,7 +49,7 @@ Videos are ingested first (`python3.11 eval/golden/ingest.py <originals>`). That
    | `C` | a cut at this frame (the first frame of the new shot) |
    | `F` | a flash cut (rule 3) |
    | `T` … `T` | a transition: press on its first frame and again on its last, with the type chosen in the sidebar (rules 5–8) |
-   | `A` | toggles ambiguous (`?`) on the marker at this frame (rule 12) |
+   | `A` | toggles ambiguous (`?`) on the marker at this frame (rule 13) |
    | `⌫` | deletes the marker at this frame |
 
    A whip gets both: a `whip` transition over the blur, and a `C` cut inside it. For stacked transitions, mark each with `T`…`T`, changing the type in between. To delete or flag one of several overlapping markers, click it in the list first (or use its ✕ / ? buttons). Markers autosave in the browser, but **Save** (`S`) is what counts.
