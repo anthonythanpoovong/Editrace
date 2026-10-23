@@ -53,3 +53,4 @@ htmlcov/
 # Coverage output (#129)
 coverage/
 coverage.xml
+.worker-cache/
