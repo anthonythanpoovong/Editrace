@@ -103,11 +103,11 @@ def main() -> None:
     args = parser.parse_args()
 
     def tool(name: str) -> str:
-        found = (
-            str(Path(args.ffmpeg_dir) / name) if args.ffmpeg_dir else shutil.which(name)
-        )
+        # which() with path= checks the file exists and is executable, and adds .exe on Windows.
+        found = shutil.which(name, path=args.ffmpeg_dir)
         if not found:
-            sys.exit(f"{name} not found; install ffmpeg or pass --ffmpeg-dir")
+            where = f"in {args.ffmpeg_dir}" if args.ffmpeg_dir else "on PATH"
+            sys.exit(f"{name} not found {where}; install ffmpeg or pass --ffmpeg-dir")
         return found
 
     ffmpeg, ffprobe = tool("ffmpeg"), tool("ffprobe")

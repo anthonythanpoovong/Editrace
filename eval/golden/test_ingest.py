@@ -5,6 +5,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -12,6 +15,10 @@ from types import SimpleNamespace
 
 import ingest
 import pytest
+
+from editrace_schema import Template
+
+REAL_WHICH = shutil.which
 
 
 class FakeTools:
@@ -24,7 +31,7 @@ class FakeTools:
 
     def __call__(self, cmd: list[str], **_kwargs) -> SimpleNamespace:
         self.calls.append(cmd)
-        tool, path = Path(cmd[0]).name, cmd[-1]
+        tool, path = Path(cmd[0]).stem, cmd[-1]  # stem: ffmpeg.exe on Windows
         if tool == "ffprobe" and "stream=width,height,r_frame_rate,nb_frames" in cmd:
             stream = {"width": 720, "height": 1280, "r_frame_rate": "30/1"}
             return SimpleNamespace(stdout=json.dumps({"streams": [stream]}))
@@ -45,7 +52,7 @@ class FakeTools:
         return SimpleNamespace(stdout="")
 
     def conform_cmds(self) -> list[list[str]]:
-        return [c for c in self.calls if Path(c[0]).name == "ffmpeg" and "-i" in c]
+        return [c for c in self.calls if Path(c[0]).stem == "ffmpeg" and "-i" in c]
 
 
 @pytest.fixture
@@ -54,7 +61,9 @@ def golden(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     root.mkdir()
     monkeypatch.setattr(ingest, "ROOT", root)
     monkeypatch.setattr(ingest, "MANIFEST", root / "manifest.json")
-    monkeypatch.setattr(ingest.shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(
+        ingest.shutil, "which", lambda name, path=None: f"/usr/bin/{name}"
+    )
     return root
 
 
@@ -105,6 +114,7 @@ def test_cfr_upload_is_remuxed_losslessly(
         "content_hash": content_hash,
     }
     assert label["tracks"][0]["cuts"] == [] and label["tracks"][0]["transitions"] == []
+    Template.model_validate(label)
 
 
 def test_vfr_upload_is_conformed_and_marked(
@@ -122,6 +132,7 @@ def test_vfr_upload_is_conformed_and_marked(
     assert source["vfr"] is True
     assert source["original_fps"] == {"num": 30, "den": 1}
     assert source["conform"] == {"detector": "ffmpeg", "version": "7.1"}
+    Template.model_validate(json.loads((golden / "labels" / "v01.json").read_text()))
 
 
 def test_rerun_skips_known_originals_and_numbers_new_ones(
@@ -144,19 +155,48 @@ def test_rerun_skips_known_originals_and_numbers_new_ones(
     assert "skip a.mov: already ingested" in capsys.readouterr().out
 
 
+def fake_executables(folder: Path, *names: str) -> Path:
+    folder.mkdir()
+    for name in names:
+        exe = folder / (name + (".exe" if os.name == "nt" else ""))
+        exe.write_text("")
+        exe.chmod(0o755)
+    return folder
+
+
 def test_ffmpeg_dir_is_used_when_given(
     golden: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    monkeypatch.setattr(ingest.shutil, "which", REAL_WHICH)
+    tools_dir = fake_executables(tmp_path / "bin", "ffmpeg", "ffprobe")
     tools = FakeTools([i / 30 for i in range(90)])
-    tools_dir = tmp_path / "bin"
     run(monkeypatch, tools, "--ffmpeg-dir", str(tools_dir), str(original(tmp_path)))
     assert {Path(c[0]).parent for c in tools.calls} == {tools_dir}
+
+
+def test_wrong_ffmpeg_dir_stops(
+    golden: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A folder without the tools used to slip through and fail later inside subprocess.run.
+    monkeypatch.setattr(ingest.shutil, "which", REAL_WHICH)
+    wrong = fake_executables(tmp_path / "bin", "ffprobe")
+    with pytest.raises(
+        SystemExit, match=f"ffmpeg not found in {re.escape(str(wrong))}"
+    ):
+        run(
+            monkeypatch,
+            FakeTools([]),
+            "--ffmpeg-dir",
+            str(wrong),
+            str(original(tmp_path)),
+        )
+    assert not (golden / "manifest.json").exists()
 
 
 def test_missing_ffmpeg_stops(
     golden: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(ingest.shutil, "which", lambda name: None)
-    with pytest.raises(SystemExit, match="ffmpeg not found"):
+    monkeypatch.setattr(ingest.shutil, "which", lambda name, path=None: None)
+    with pytest.raises(SystemExit, match="ffmpeg not found on PATH"):
         run(monkeypatch, FakeTools([]), str(original(tmp_path)))
     assert not (golden / "manifest.json").exists()
