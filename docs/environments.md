@@ -30,7 +30,7 @@ Vercel's own Git deploys are turned off for every branch in `web/vercel.json`, s
 - **A blocked deploy never fails a collaborator's push.** Vercel marks a deployment `BLOCKED` when the commit's author isn't on the team, and the CLI would then wait forever. `.github/scripts/vercel-deploy.sh` polls instead: the preview job comments "No preview" and ends green, and the staging job leaves staging on its last build with a warning annotation. Only the manual prod run fails on `BLOCKED`, so run it from a commit authored by a Vercel team member. Staging therefore only advances when the latest commit on `main` is by a team member, if it happens again. It stopped on Pro (Oct 12), so this is defensive.
 - Previews are deployed from Actions under the owner's token, not Vercel's Git integration, which refuses commits from anyone who isn't on the team. Collaborators who aren't Vercel team members can't open previews while SSO protection is on. Add them as Vercel members (a paid seat each) if they need to.
 - GitHub required reviewers on environments need a paid plan for private repos, so `Production` has no approval gate. The `main` branch protection (PR plus 1 approval plus `ci-ok`) is the only gate.
-- Supabase staging and prod projects exist and their keys are set in Vercel (`staging` target on `editrace-np`, Production on `editrace-prod`). The Preview target has no Supabase variables: the free Supabase plan allows two projects, and both are taken. Previews run without a database until we upgrade or point them at staging with the anon key only, never the service-role key. `deploy.yml` applies migrations to both projects with `supabase db push` (never `seed.sql`). Modal environments follow in #163.
+- Supabase staging and prod projects exist and their keys are set in Vercel (`staging` target on `editrace-np`, Production on `editrace-prod`). The Preview target has no Supabase variables: the free Supabase plan allows two projects, and both are taken. Previews run without a database until we upgrade or point them at staging with the anon key only, never the service-role key. `deploy.yml` applies migrations to both projects with `supabase db push` (never `seed.sql`). `deploy.yml` also deploys the workers to the matching Modal environment (see [Modal](#modal)).
 
 ## Supabase locally
 
@@ -68,6 +68,21 @@ The web app's sign-in (#15) needs these in the Supabase dashboard of **each** ho
 - **Authentication → Sign In / Providers → Email:** minimum password length 8, to match the app's own check.
 - **Google:** turn the provider on with a Google OAuth client ID and secret, and add Supabase's callback URL to that Google client's authorised redirect URIs. Keep the Google client secret in Supabase only, never in this repo or Vercel.
 
+## Modal
+
+Workers run in a Modal workspace with two environments, `staging` and `prod`. `deploy.yml` runs `modal deploy --env <environment> workers/modal_app.py` in the `staging` job (every push to `main`) and the `Production` job (the manual promotion), after the Supabase migrations and before the web deploy. A failed worker deploy stops the job, so the commit gets no `deployed/staging` status and can't be promoted. While `workers/modal_app.py` doesn't exist the step logs a notice and passes, and needs no token.
+
+Why a token per environment: Modal service users have no access until they're given a role on an environment ([service users](https://modal.com/docs/guide/service-users), [RBAC](https://modal.com/docs/guide/rbac.md)), so a service user with Contributor on `staging` only can't deploy to `prod`.
+
+One-time setup, by a workspace owner or manager:
+
+1. In Modal (Settings → Environments), create `staging` and `prod`. Workers are never deployed to `main`.
+2. Create two service users (Settings → Service users), `ci-staging` and `ci-prod`. Give `ci-staging` the Contributor role on `staging` only, and `ci-prod` the Contributor role on `prod` only. The token secret is shown once.
+3. Add each token to its GitHub environment as `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET`: `ci-staging` in `staging`, `ci-prod` in `Production` (Settings → Environments). Don't add them as repo secrets.
+4. After the first deploy, check that the app shows up in the `staging` environment and not in `prod`.
+
+The CLI version is pinned in `deploy.yml` (`MODAL_CLI_VERSION`), because `modal deploy` runs the app's Python and the job holds a Modal token. The `Production` job runs the promoted commit's app file with the prod token. That commit is already on `main`, so it's the code being released.
+
 ## Where each secret lives
 
 Each secret lives in **one** place. Don't copy values between systems except through the deploy workflow.
@@ -83,12 +98,13 @@ Each secret lives in **one** place. Don't copy values between systems except thr
 | `CLAUDE_CODE_OAUTH_TOKEN` | GitHub repo secret | Armour review and `@claude` |
 | `DISCORD_REVIEW_WEBHOOK` | GitHub repo secret | Discord review notifications |
 | `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SERVICE_ROLE_KEY` | Vercel project env vars: `editrace-np` (Preview and `staging` environments), `editrace-prod` (Production) | Web app |
-| `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET` | GitHub repo secrets (deploys) and Modal (runtime) | Workers |
+| `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET` | GitHub environment secrets, a different service-user token in `staging` and `Production`. Each token has the Contributor role on that one Modal environment and no role on the other, so the staging token can't deploy to prod | `deploy.yml` Modal steps |
+| Worker runtime secrets | Modal secrets, created in each Modal environment (none yet: workers get a signed video URL and return results to the orchestrator) | Workers |
 | `ANTHROPIC_API_KEY`, `STRIPE_*` | Vercel project env vars: `editrace-np` (Preview and `staging` environments), `editrace-prod` (Production) | Web app and assistant |
 
 Rules:
 
 - Real values never go in git. `.env`, `.env.local` and `.env.*.local` are ignored, and gitleaks runs on every PR.
 - The `staging` environment only accepts deployments from `main` (Settings → Environments → staging → Deployment branches), like `Production` accepts protected branches. A branch workflow can't read the staging secrets.
-- Staging and prod use different Supabase projects, Stripe keys (test vs live) and Modal environments, so a staging mistake can't touch production data.
+- Staging and prod use different Supabase projects, Stripe keys (test vs live) and Modal environments, so a staging mistake can't touch production data. `deploy.yml` names the Modal environment in each job (`staging` or `prod`) instead of reading it from a variable, so a mistyped variable can't point staging at prod.
 - Rotate a token by creating the new one first, updating the secret, then revoking the old one. If a token shows up in a chat, log or commit, revoke it straight away.
