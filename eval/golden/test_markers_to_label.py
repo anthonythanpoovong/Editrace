@@ -172,6 +172,8 @@ def test_other_keeps_its_detail(golden: Path, monkeypatch: pytest.MonkeyPatch) -
         ([], {}, "no markers"),
         ([marker(10)], {"frames": DURATION + 1}, "labeler saw 301 frames"),
         ([marker(10)], {"video_id": "v02"}, "is for v02"),
+        ([marker(10, "Fade")], {}, "unknown marker name 'Fade'"),
+        ([marker(DURATION - 5, "fade_black", 10)], {}, "past the last frame (299)"),
     ],
 )
 def test_bad_markers_are_rejected(
@@ -181,6 +183,79 @@ def test_bad_markers_are_rejected(
     with pytest.raises(SystemExit, match=re.escape(message)):
         run(monkeypatch, "v01", str(saved(golden, markers, **extra)))
     assert (golden / "labels" / "v01.json").read_text() == before
+
+
+def test_names_are_normalized(golden: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    markers = [
+        marker(50, "Fade Black", 10),
+        marker(100, "fade-white", 10),
+        marker(200, "Marker 3"),
+    ]
+    run(monkeypatch, "v01", str(saved(golden, markers)))
+    t = track(golden)
+    assert [x["type"] for x in t["transitions"]] == ["fade_black", "fade_white"]
+    assert [c["frame"] for c in t["cuts"]] == [200]
+
+
+def test_missing_manifest_entry_writes_nothing(
+    golden: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (golden / "manifest.json").write_text(json.dumps({"videos": []}))
+    before = (golden / "labels" / "v01.json").read_text()
+    with pytest.raises(SystemExit, match="v01 isn't in"):
+        run(monkeypatch, "v01", str(saved(golden, [marker(10)])))
+    assert (golden / "labels" / "v01.json").read_text() == before
+
+
+@pytest.mark.parametrize(
+    ("broken", "message"),
+    [("missing", "not found; run ingest.py"), ("corrupt", "isn't valid JSON")],
+)
+def test_unreadable_label_file(
+    golden: Path, monkeypatch: pytest.MonkeyPatch, broken: str, message: str
+) -> None:
+    label = golden / "labels" / "v01.json"
+    label.unlink() if broken == "missing" else label.write_text("{not json")
+    with pytest.raises(SystemExit, match=re.escape(message)):
+        run(monkeypatch, "v01", str(saved(golden, [marker(10)])))
+
+
+def test_rerunning_gives_the_same_result(
+    golden: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = saved(
+        golden, [marker(50, "flash"), marker(51), marker(100, "dissolve?", 20)]
+    )
+    run(monkeypatch, "v01", str(path))
+    first = (
+        (golden / "labels" / "v01.json").read_text(),
+        (golden / "manifest.json").read_text(),
+    )
+    run(monkeypatch, "v01", str(path))
+    assert (
+        (golden / "labels" / "v01.json").read_text(),
+        (golden / "manifest.json").read_text(),
+    ) == first
+
+
+def test_touching_transitions_are_two_shot_changes(
+    golden: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Ranges are half-open: 100-120 and 120-140 touch but don't overlap, so each gets its own boundary.
+    markers = [marker(100, "dissolve", 20), marker(120, "dissolve", 20)]
+    run(monkeypatch, "v01", str(saved(golden, markers)))
+    assert [s["range"]["start"] for s in track(golden)["slots"]] == [0, 110, 130]
+
+
+def test_cut_on_a_transitions_edges(
+    golden: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A cut on the first frame is inside the transition (no extra boundary). The range ends before frame 120,
+    # so a cut there is outside it and the transition still gets its own middle boundary.
+    run(monkeypatch, "v01", str(saved(golden, [marker(100, "zoom", 20), marker(100)])))
+    assert [s["range"]["start"] for s in track(golden)["slots"]] == [0, 100]
+    run(monkeypatch, "v01", str(saved(golden, [marker(100, "zoom", 20), marker(120)])))
+    assert [s["range"]["start"] for s in track(golden)["slots"]] == [0, 110, 120]
 
 
 EDL = """TITLE: Timeline 1
@@ -211,6 +286,46 @@ def test_edl_with_another_start_timecode(
     path.write_text(EDL.replace("01:00:0", "00:00:0"))
     run(monkeypatch, "--start", "00:00:00:00", "v01", str(path))
     assert [c["frame"] for c in track(golden)["cuts"]] == [100]
+
+
+def test_edl_at_25_fps(golden: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    label = golden / "labels" / "v01.json"
+    data = json.loads(label.read_text())
+    data["source"]["fps"] = {"num": 25, "den": 1}
+    label.write_text(json.dumps(data))
+    path = golden / "markers.edl"
+    path.write_text(EDL)
+    run(monkeypatch, "v01", str(path))
+    t = track(golden)
+    assert [c["frame"] for c in t["cuts"]] == [85]  # 3 s 10 frames at 25 fps
+    assert t["transitions"][0]["range"]["start"] == 125
+
+
+@pytest.mark.parametrize(
+    ("edl", "message"),
+    [
+        (
+            EDL.replace(" |C:ResolveColorBlue |M:Marker 1 |D:1\n", ""),
+            "EDL line 4: event has no marker details",
+        ),
+        (
+            EDL.replace("|D:12", "|D:twelve"),
+            "EDL line 8: can't read the marker details",
+        ),
+        (EDL.rsplit("\n", 2)[0] + "\n", "EDL line 7: event has no marker details"),
+        (
+            "TITLE: x\n |C:Blue |M:cut |D:1\n",
+            "EDL line 2: marker details without an event line",
+        ),
+    ],
+)
+def test_malformed_edl_is_rejected(
+    golden: Path, monkeypatch: pytest.MonkeyPatch, edl: str, message: str
+) -> None:
+    path = golden / "markers.edl"
+    path.write_text(edl)
+    with pytest.raises(SystemExit, match=re.escape(message)):
+        run(monkeypatch, "v01", str(path))
 
 
 def test_timecode_to_frames() -> None:

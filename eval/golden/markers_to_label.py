@@ -8,6 +8,8 @@ Marker names carry the label:
 - a transition type ("dissolve", "fade_black", "fade_white", "wipe", "push", "slide", "zoom", "whip", "glitch", or
   "other: <detail>"): a transition covering the marker's duration.
 - a "?" anywhere in the name: the label is kept, and its frame is listed in the manifest's `ambiguous`.
+Names are case-insensitive and spaces or hyphens count as underscores ("Fade Black" is fade_black). Any other name,
+a transition running past the last frame, or a malformed EDL row stops the run without writing anything.
 
 Slots are derived from the labels: a slot boundary at every cut, and at the middle of any transition (or group of
 overlapping transitions) with no cut inside, unless it touches the first or last frame (a fade in or out of the video).
@@ -49,16 +51,53 @@ def timecode_to_frames(tc: str, base: int) -> int:
 
 
 def parse_markers(text: str, base: int, start: int) -> list[tuple[int, str, int]]:
-    markers, frame = [], None
-    for line in text.splitlines():
+    """Every event line must be followed by its marker details; anything else is a malformed export."""
+    markers, frame, event_line = [], None, 0
+    for n, line in enumerate(text.splitlines(), 1):
         if event := EVENT.match(line):
-            frame = timecode_to_frames(event.group(1), base) - start
-        elif (details := DETAILS.search(line)) and frame is not None:
+            if frame is not None:
+                sys.exit(
+                    f"EDL line {event_line}: event has no marker details (|C: |M: |D:)"
+                )
+            frame, event_line = timecode_to_frames(event.group(1), base) - start, n
+        elif details := DETAILS.search(line):
+            if frame is None:
+                sys.exit(
+                    f"EDL line {n}: marker details without an event line before them"
+                )
             markers.append(
                 (frame, details.group("name").strip(), int(details.group("duration")))
             )
             frame = None
+        elif "|M:" in line:
+            sys.exit(f"EDL line {n}: can't read the marker details: {line.strip()}")
+    if frame is not None:
+        sys.exit(f"EDL line {event_line}: event has no marker details (|C: |M: |D:)")
     return markers
+
+
+def marker_kind(name: str) -> tuple[str, str]:
+    """(kind, detail) from a marker name: lowercased, with spaces and hyphens as underscores ("Fade Black" ->
+    "fade_black"). Unknown names stop the run instead of silently becoming cuts."""
+    kind, _, detail = name.replace("?", "").strip().partition(":")
+    kind = re.sub(r"[\s-]+", "_", kind.strip().lower())
+    if kind in ("", "cut") or re.fullmatch(r"marker_\d+", kind):
+        return "cut", ""
+    if kind == "flash" or kind in TRANSITION_TYPES:
+        return kind, detail
+    sys.exit(
+        f"unknown marker name '{name}': use cut, flash, a transition type ({', '.join(sorted(TRANSITION_TYPES))}) "
+        "or 'other: <detail>'"
+    )
+
+
+def read_json(path: Path) -> dict:
+    try:
+        return json.loads(path.read_text())
+    except FileNotFoundError:
+        sys.exit(f"{path} not found; run ingest.py for this video first")
+    except json.JSONDecodeError as e:
+        sys.exit(f"{path} isn't valid JSON: {e}")
 
 
 def main() -> None:
@@ -74,8 +113,16 @@ def main() -> None:
     parser.add_argument("markers", type=Path)
     args = parser.parse_args()
 
+    # Read and check both files before writing either, so a bad run never leaves them out of step.
     label_path = ROOT / "labels" / f"{args.video_id}.json"
-    label = json.loads(label_path.read_text())
+    label = read_json(label_path)
+    manifest_path = ROOT / "manifest.json"
+    manifest = read_json(manifest_path)
+    entry = next((v for v in manifest["videos"] if v["id"] == args.video_id), None)
+    if entry is None:
+        sys.exit(
+            f"{args.video_id} isn't in {manifest_path}; run ingest.py for it first"
+        )
     fps = label["source"]["fps"]
     duration = label["source"]["duration"]
     labeling_minutes = None
@@ -109,9 +156,12 @@ def main() -> None:
             )
         if "?" in name:
             ambiguous.append(frame)
-        kind, _, detail = name.replace("?", "").strip().partition(":")
-        kind = kind.strip().lower()
+        kind, detail = marker_kind(name)
         if kind in TRANSITION_TYPES:
+            if frame + max(length, 1) > duration:
+                sys.exit(
+                    f"{kind} at frame {frame} runs {length} frames, past the last frame ({duration - 1})"
+                )
             transition = {
                 "type": kind,
                 "range": {"start": frame, "duration": max(length, 1)},
@@ -178,9 +228,6 @@ def main() -> None:
     ]
     label_path.write_text(json.dumps(label, indent=2) + "\n")
 
-    manifest_path = ROOT / "manifest.json"
-    manifest = json.loads(manifest_path.read_text())
-    entry = next(v for v in manifest["videos"] if v["id"] == args.video_id)
     entry["labeled"] = True
     entry["notes"] = [n for n in entry["notes"] if not n.startswith("flash:")] + notes
     entry["ambiguous"] = ambiguous
