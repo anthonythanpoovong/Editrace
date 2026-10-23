@@ -16,4 +16,4 @@ Close every spike with a learning. If a learning changes a decision, link it fro
 
 | Date | Learning | Tags |
 |---|---|---|
-| | _None yet_ | |
+| 2026-10-23 | [Pin a Node patch floor](2026-10-23-pin-node-floor-for-brotli-cve.md) | security, ci, node, vercel |
