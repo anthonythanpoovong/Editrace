@@ -17,14 +17,15 @@ every element, validates the partial template against the strict schema models, 
 
 ```python
 class CutsWorker(Worker):
-    name = "cuts"            # the provenance detector
-    version = "0.1.0"        # bump on any change that can change the output
+    name = "cuts"  # the provenance detector
+    version = "0.1.0"  # bump on any change that can change the output
     compute = Compute(gpu="T4", memory_mb=8192)
 
-    def params(self): return {"threshold": 0.5}   # anything that changes the output
+    def params(self):
+        return {"threshold": 0.5}  # anything that changes the output
 
     def detect(self, video: Path, job: Job) -> Partial:
-        return {"tracks": [...]}                  # tracks, beats and sound_ref only
+        return {"tracks": [...]}  # tracks, beats and sound_ref only
 ```
 
 - **Cache.** The key is content hash, worker, version and a hash of `params()`. Re-running a job with the same inputs returns the stored result without fetching the video or calling `detect()`. Only successful runs are stored. Change `version` or a param and it is a miss.
