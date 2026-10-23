@@ -2,7 +2,7 @@
 
 Throwaway spike code, not merged. Usage (Python 3.10+, with scenedetect, opencv-python and transnetv2-pytorch):
 
-    python eval/cuts_spike/run.py detect   # caches predictions in eval/cuts_spike/out/
+    python eval/cuts_spike/run.py detect   # caches predictions in eval/cuts_spike/predictions/
     python eval/cuts_spike/run.py score    # precision/recall tables from the cache
 
 A predicted cut is the first frame of the new shot, like the labels. Matching is one-to-one within a frame
@@ -18,7 +18,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1] / "golden"
-OUT = Path(__file__).resolve().parent / "out"
+OUT = Path(__file__).resolve().parent / "predictions"
 
 CONTENT_THRESHOLDS = [12, 15, 18, 21, 24, 27, 30, 35, 40, 50]
 ADAPTIVE_THRESHOLDS = [1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0]
@@ -39,8 +39,11 @@ def video_path(video_id: str) -> Path | None:
     return None
 
 
-def videos() -> list[dict]:
+def videos(cached: bool = False) -> list[dict]:
+    """Manifest entries with a video on disk, or with cached predictions (scoring needs no video)."""
     manifest = json.loads((ROOT / "manifest.json").read_text())
+    if cached:
+        return [v for v in manifest["videos"] if (OUT / f"{v['id']}.json").exists()]
     return [v for v in manifest["videos"] if video_path(v["id"])]
 
 
@@ -190,7 +193,7 @@ def predictions(cache: dict) -> dict[str, list[int]]:
 def score_all(show_misses: str | None) -> None:
     per_run: dict[str, dict[int, list[int]]] = {}  # run -> tol -> [tp, fp, fn]
     misses: dict[str, list[str]] = {}
-    vids = videos()
+    vids = videos(cached=True)
     for video in vids:
         cache = json.loads((OUT / f"{video['id']}.json").read_text())
         ranges = excluded_ranges(video)
@@ -236,7 +239,7 @@ def combine(base: str = "pyscenedetect adaptive t=2.0 msl=1") -> None:
     """Can TransNetV2 help Adaptive? Cuts it recovers, its confidence on Adaptive's cuts, and gated scores."""
     recovered, peaks = 0, {"false": [], "real": []}
     gated: dict[float, list[int]] = {g: [0, 0, 0] for g in (0.02, 0.05, 0.1, 0.2, 0.3)}
-    for video in videos():
+    for video in videos(cached=True):
         cache = json.loads((OUT / f"{video['id']}.json").read_text())
         probs = cache["transnetv2"]["probs"]
         ranges = excluded_ranges(video)
