@@ -8,7 +8,7 @@
 
 ## Context
 
-Cuts are the backbone of every template: each cut starts a slot, and each slot is a clip the user has to supply. Spike #4 compared PySceneDetect and TransNetV2 on 5 hand-labeled short-form videos (86 cuts, labeled blind per `eval/golden/LABELING.md`). Predictions were matched one-to-one to labels; Instagram end cards were excluded (rule 12). The exit bar set before the spike was **recall ≥ 0.95 and precision ≥ 0.90 at ±2 frames**.
+Cuts are the backbone of every template: each cut starts a slot, and each slot is a clip the user has to supply. Spike #4 compared PySceneDetect and TransNetV2 on 5 hand-labeled short-form videos (86 cuts, labeled blind per `eval/golden/LABELING.md`). All five were scored on the conformed files whose hashes the manifest records. Predictions were matched one-to-one to labels; Instagram end cards were excluded (rule 12). The exit bar set before the spike was **recall ≥ 0.95 and precision ≥ 0.90 at ±2 frames**.
 
 | Detector | Precision ±2 | Recall ±2 | False cuts | Missed cuts |
 |---|---|---|---|---|
@@ -16,9 +16,9 @@ Cuts are the backbone of every template: each cut starts a slot, and each slot i
 | PySceneDetect Adaptive, t=3.0 (default) | 0.835 | 0.942 | 16 | 5 |
 | TransNetV2, t=0.5 | **0.908** | 0.802 | 7 | 17 |
 | PySceneDetect Content, t=40 | 0.896 | 0.802 | 8 | 17 |
-| PySceneDetect Content, t=27 (default) | 0.313 | 0.940 | 103 | 3 |
+| PySceneDetect Content, t=27 (default threshold), min_scene_len 1 | 0.418 | 0.895 | 107 | 9 |
 
-±1 and ±2 scores are identical: every matched cut was within one frame. **No detector meets the bar.** With 86 cuts, one cut moves recall by about 1.2 points, and the 95% interval on Adaptive t=2.0's recall is roughly 0.90–0.99. The Adaptive thresholds 2.0–3.0 are statistically tied (F1 0.877–0.885); the gap between Adaptive and TransNetV2 on recall (83 vs. 69 cuts found) is the only large, consistent difference.
+±1 and ±2 scores are identical: every matched cut was within one frame. **No detector meets the bar.** With 86 cuts, one cut moves recall by about 1.2 points, and the 95% interval on Adaptive t=2.0's recall is roughly 0.90–0.99. The Adaptive thresholds 2.0–3.0 are statistically tied (F1 0.872–0.885); the gap between Adaptive and TransNetV2 on recall (83 vs. 69 cuts found) is the only large, consistent difference.
 
 The failure modes are specific to short-form editing:
 
@@ -80,7 +80,6 @@ Threshold 2.0 is chosen over the default 3.0 for recall, not because it scores b
 ## Open questions
 
 - **Runtime on Modal:** not measured. Only local CPU at 720p is known. #7 measures 1080p on Modal CPU against its < 60 s target for a 60 s video. Owner: @calvinkafaiyuen (#7).
-- **v01 and v05 were scored on copies that aren't hash-verified** (same frame count, fps and size as the manifest, different file hash), so every label lines up but a re-encode could shift a borderline cut or two. That can't change the decision: the recall gap between Adaptive and TransNetV2 is 14 cuts. Rerunning on the conformed files (`run.py detect --only v01 v05`) is optional and not a condition of acceptance. Owner: @sktchan, who has the conformed files.
 - **"False cuts are cheaper to fix" is the author's reasoning, not user evidence.** The Phase 0 editor review is the first test. Owner: @calvinkafaiyuen.
 - **Thresholds tuned on 5 videos will overfit.** #7 re-checks them on the full golden set (#52).
 
