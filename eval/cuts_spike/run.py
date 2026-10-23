@@ -28,11 +28,20 @@ TOLERANCES = [1, 2]
 END_CARD = re.compile(r"platform end card: frames (\d+)-(\d+)")
 
 
+def video_path(video_id: str) -> Path | None:
+    """The conformed vNN.mp4, else an unverified copy in videos/originals/ (same frames, different file hash)."""
+    for path in (
+        ROOT / "videos" / f"{video_id}.mp4",
+        ROOT / "videos" / "originals" / f"{video_id}.mov",
+    ):
+        if path.exists():
+            return path
+    return None
+
+
 def videos() -> list[dict]:
     manifest = json.loads((ROOT / "manifest.json").read_text())
-    return [
-        v for v in manifest["videos"] if (ROOT / "videos" / f"{v['id']}.mp4").exists()
-    ]
+    return [v for v in manifest["videos"] if video_path(v["id"])]
 
 
 def excluded_ranges(video: dict) -> list[tuple[int, int]]:
@@ -122,13 +131,15 @@ def transnet_cuts(probs: list[float], threshold: float) -> list[int]:
     return cuts
 
 
-def detect_all() -> None:
+def detect_all(only: list[str] | None) -> None:
     from transnetv2_pytorch import TransNetV2
 
     OUT.mkdir(exist_ok=True)
     model = TransNetV2(device="cpu")
     for video in videos():
-        path = ROOT / "videos" / f"{video['id']}.mp4"
+        if only and video["id"] not in only:
+            continue
+        path = video_path(video["id"])
         print(f"{video['id']}: PySceneDetect...", flush=True)
         psd = run_pyscenedetect(path)
         print(f"{video['id']}: TransNetV2...", flush=True)
@@ -138,7 +149,9 @@ def detect_all() -> None:
                 f"{video['id']}: decoded {tn['frames']} frames, manifest says {video['frames']}"
             )
         (OUT / f"{video['id']}.json").write_text(
-            json.dumps({"pyscenedetect": psd, "transnetv2": tn}, indent=1)
+            json.dumps(
+                {"source": path.name, "pyscenedetect": psd, "transnetv2": tn}, indent=1
+            )
         )
 
 
@@ -225,8 +238,9 @@ def main() -> None:
     parser.add_argument(
         "--misses", help="list false/missed cuts per video for this run name"
     )
+    parser.add_argument("--only", nargs="+", help="detect: only these video ids")
     args = parser.parse_args()
-    detect_all() if args.command == "detect" else score_all(args.misses)
+    detect_all(args.only) if args.command == "detect" else score_all(args.misses)
 
 
 if __name__ == "__main__":
