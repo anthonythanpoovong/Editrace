@@ -15,7 +15,7 @@ Cuts are the backbone of every template: each cut starts a slot, and each slot i
 | PySceneDetect Adaptive, t=2.0, min_scene_len 1 | 0.806 | **0.965** | 20 | 3 |
 | PySceneDetect Adaptive, t=3.0 (default) | 0.835 | 0.942 | 16 | 5 |
 | TransNetV2, t=0.5 | **0.908** | 0.802 | 7 | 17 |
-| PySceneDetect Content, t=40 | 0.896 | 0.802 | 8 | 17 |
+| PySceneDetect Content, t=40, min_scene_len 2 | 0.896 | 0.802 | 8 | 17 |
 | PySceneDetect Content, t=27 (default threshold), min_scene_len 1 | 0.418 | 0.895 | 107 | 9 |
 
 ±1 and ±2 scores are identical: every matched cut was within one frame. **No detector meets the bar.** With 86 cuts, one cut moves recall by about 1.2 points, and the 95% interval on Adaptive t=2.0's recall is roughly 0.90–0.99. The Adaptive thresholds 2.0–3.0 are statistically tied (F1 0.872–0.885); the gap between Adaptive and TransNetV2 on recall (83 vs. 69 cuts found) is the only large, consistent difference.
