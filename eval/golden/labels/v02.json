@@ -217,7 +217,7 @@
           "id": "slot-17",
           "range": {
             "start": 695,
-            "duration": 37
+            "duration": 23
           },
           "confidence": 1,
           "provenance": {
@@ -227,6 +227,18 @@
         },
         {
           "id": "slot-18",
+          "range": {
+            "start": 718,
+            "duration": 14
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-19",
           "range": {
             "start": 732,
             "duration": 138
@@ -385,6 +397,15 @@
         },
         {
           "id": "cut-17",
+          "frame": 718,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-18",
           "frame": 732,
           "confidence": 1,
           "provenance": {
