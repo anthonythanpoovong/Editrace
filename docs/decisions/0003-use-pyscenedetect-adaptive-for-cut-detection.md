@@ -67,6 +67,7 @@ Threshold 2.0 is chosen over the default 3.0 for recall, not because it scores b
 - **Follow-up work:**
   - #7: pin `scenedetect` to the evaluated version (0.7.2), since detector output can change between releases; define the flagging rule (e.g. low confidence, or cuts closer than N frames); log review edits (below). A PySceneDetect scene start is already the first frame of the new shot, the same convention as `cuts[].frame`.
   - #52: the eval needs a machine-readable exclusion for platform end cards. Today they're free-text `notes` (`platform end card: frames a-b`) that the spike parses with a regex.
+  - #52: choose the remaining golden videos to stress the failure modes above, not to look typical. Rough mix for 30: jump cuts 5-6; split screen, picture-in-picture or grids 4-5; punch-ins and zoom emphasis 3-4; cuts inside transitions 4-5; fast montage with cuts under 10 frames apart; 4-5 easy videos (clean hard cuts, slow pacing) so the eval shows whether Adaptive degrades on ordinary content. Also cover text and animated overlays, screen recordings and flicker, which are unmeasured false-cut sources. Vary source platform, creator, frame rate (24, 30, 60, at least one variable-frame-rate file), resolution and aspect ratio, and length (about 15-60 s). Tag each video's `edit_styles` so the mix can be checked. Hold out about 10 as a test set nobody tunes on.
   - A later story targets the shared blind spots with new signals, toward the 0.90 precision target: jump cuts (same subject, discontinuous pose or position), punch-ins (new frame is a scaled crop of the previous one), split screens (only part of the frame changes).
 - **Affected:** #7 worker and its regression test. Schema, DB, RLS and MCP contracts are unchanged.
 - **Reproducing:** spike code and cached predictions are on branch `spike/4-detectors` (`eval/cuts_spike/run.py`; `detect` reruns the detectors and needs the private videos; `score` and `combine` read the cached predictions in `eval/cuts_spike/predictions/`, so anyone can rerun them). Versions: scenedetect 0.7.2 (OpenCV backend), transnetv2-pytorch 1.0.5 on CPU, frames decoded with OpenCV.
@@ -81,7 +82,7 @@ Threshold 2.0 is chosen over the default 3.0 for recall, not because it scores b
 
 - **Runtime on Modal:** not measured. Only local CPU at 720p is known. #7 measures 1080p on Modal CPU against its < 60 s target for a 60 s video. Owner: @calvinkafaiyuen (#7).
 - **"False cuts are cheaper to fix" is the author's reasoning, not user evidence.** The Phase 0 editor review is the first test. Owner: @calvinkafaiyuen.
-- **Thresholds tuned on 5 videos will overfit.** #7 re-checks them on the full golden set (#52).
+- **Thresholds tuned on 5 videos will overfit.** #7 re-checks them on the full golden set (#52), tuning on the non-held-out videos only.
 
 <details><summary>Grill scorecard</summary>
 
