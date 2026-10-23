@@ -58,7 +58,9 @@ def test_sound_ref_stays_closed() -> None:
 def test_writer_rejects_the_forward_compat_vector() -> None:
     # Readers skip the unknown enum value (test_reader.py). Writers stay strict (docs/schema.md), so the same
     # document, from a newer minor, must not validate as a Template.
-    document = json.loads((SCHEMA_DIR / "test-vectors" / "forward-compat.json").read_text())["document"]
+    document = json.loads(
+        (SCHEMA_DIR / "test-vectors" / "forward-compat.json").read_text()
+    )["document"]
     with pytest.raises(ValidationError):
         Template.model_validate(document)
 
