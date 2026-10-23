@@ -101,11 +101,16 @@
       },
       "vfr": false,
       "rights": "full",
-      "edit_styles": [],
-      "music": null,
-      "labeled": false,
-      "labeling_minutes": null,
-      "notes": [],
+      "edit_styles": [
+        "montage",
+        "beat-synced"
+      ],
+      "music": "released",
+      "labeled": true,
+      "labeling_minutes": 4,
+      "notes": [
+        "platform end card: frames 528-647 (Instagram end card, no black frame before it), not part of the edit, unlabeled. Exclude from scoring"
+      ],
       "ambiguous": []
     },
     {
