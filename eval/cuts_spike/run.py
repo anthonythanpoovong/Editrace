@@ -232,15 +232,54 @@ def score_all(show_misses: str | None) -> None:
         print("\n".join(f"  {line}" for line in lines))
 
 
+def combine(base: str = "pyscenedetect adaptive t=2.0 msl=1") -> None:
+    """Can TransNetV2 help Adaptive? Cuts it recovers, its confidence on Adaptive's cuts, and gated scores."""
+    recovered, peaks = 0, {"false": [], "real": []}
+    gated: dict[float, list[int]] = {g: [0, 0, 0] for g in (0.02, 0.05, 0.1, 0.2, 0.3)}
+    for video in videos():
+        cache = json.loads((OUT / f"{video['id']}.json").read_text())
+        probs = cache["transnetv2"]["probs"]
+        ranges = excluded_ranges(video)
+        truth = outside(label_cuts(video["id"]), ranges)
+        pred = outside(predictions(cache)[base], ranges)
+        _, false, missed = match(pred, truth, 2)
+        _, _, tn_missed = match(outside(transnet_cuts(probs, 0.5), ranges), truth, 2)
+        recovered += len(set(missed) - set(tn_missed))
+        # TransNetV2 peaks on the last frame of the old shot, one before our cut frame.
+        peak = {f: max(probs[max(0, f - 3) : f + 2]) for f in pred}
+        for f in pred:
+            peaks["false" if f in false else "real"].append(
+                f"{video['id']}:{f}={peak[f]:.2f}"
+            )
+        for gate, totals in gated.items():
+            tp, fps, fns = match([f for f in pred if peak[f] >= gate], truth, 2)
+            totals[0] += tp
+            totals[1] += len(fps)
+            totals[2] += len(fns)
+    print(f"base: {base}")
+    print(f"cuts it misses that TransNetV2 t=0.5 finds: {recovered}")
+    for kind, values in peaks.items():
+        print(f"TransNetV2 peak on its {kind} cuts: {' '.join(sorted(values))}")
+    for gate, (tp, fp, fn) in gated.items():
+        print(
+            f"keep if TransNetV2 >= {gate}: P {tp / (tp + fp):.3f} R {tp / (tp + fn):.3f}"
+        )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=["detect", "score"])
+    parser.add_argument("command", choices=["detect", "score", "combine"])
     parser.add_argument(
         "--misses", help="list false/missed cuts per video for this run name"
     )
     parser.add_argument("--only", nargs="+", help="detect: only these video ids")
     args = parser.parse_args()
-    detect_all(args.only) if args.command == "detect" else score_all(args.misses)
+    if args.command == "detect":
+        detect_all(args.only)
+    elif args.command == "score":
+        score_all(args.misses)
+    else:
+        combine()
 
 
 if __name__ == "__main__":
