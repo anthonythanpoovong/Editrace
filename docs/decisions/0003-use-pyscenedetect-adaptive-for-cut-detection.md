@@ -67,7 +67,21 @@ Threshold 2.0 is chosen over the default 3.0 for recall, not because it scores b
 - **Follow-up work:**
   - #7: pin `scenedetect` to the evaluated version (0.7.2), since detector output can change between releases; define the flagging rule (e.g. low confidence, or cuts closer than N frames); log review edits (below). A PySceneDetect scene start is already the first frame of the new shot, the same convention as `cuts[].frame`.
   - #52: the eval needs a machine-readable exclusion for platform end cards. Today they're free-text `notes` (`platform end card: frames a-b`) that the spike parses with a regex.
-  - #52: choose the remaining golden videos to stress the failure modes above, not to look typical. Rough mix for 30: jump cuts 5-6; split screen, picture-in-picture or grids 4-5; punch-ins and zoom emphasis 3-4; cuts inside transitions 4-5; fast montage with cuts under 10 frames apart; 4-5 easy videos (clean hard cuts, slow pacing) so the eval shows whether Adaptive degrades on ordinary content. Also cover text and animated overlays, screen recordings and flicker, which are unmeasured false-cut sources. Vary source platform, creator, frame rate (24, 30, 60, at least one variable-frame-rate file), resolution and aspect ratio, and length (about 15-60 s). Tag each video's `edit_styles` so the mix can be checked. Hold out about 10 as a test set nobody tunes on.
+  - #52: grow the golden set to 30 videos, chosen to stress the failure modes, not to look typical. The current five give 86 cuts and a recall interval of about 0.90-0.99; the new videos should narrow that interval and test the weak spots.
+    - **Cover the known failure modes, several videos each:**
+      - Jump cuts (talking head, same framing, time skip): the hardest case for both detectors, and where Adaptive still misses cuts. Aim for 5-6.
+      - Split screens, picture-in-picture, grids and reaction layouts: the source of about half the false cuts. Aim for 4-5.
+      - Punch-ins and punch-outs, and zoom-in "emphasis" edits: common in creator content. Aim for 3-4.
+      - Cuts inside transitions (zoom, slide, whip, glitch): the v05 pattern. Aim for 4-5.
+      - Fast montage with cuts under 10 frames apart: tests whether flagging deletes real cuts, as v03 does.
+      - Text-heavy and animated overlays, screen recordings, and lighting flicker or strobe: likely false-cut sources nobody has measured yet.
+    - **Include easy videos:** 4-5 with clean hard cuts, slow pacing and a talking head or static scene. Without them the eval can't show whether Adaptive degrades on ordinary content, and the precision number will look worse than real uploads would.
+    - **Vary the inputs, not just the editing:**
+      - Different source platforms (the current set has Instagram end cards) and different creators, so no style is dominated by one person.
+      - Different frame rates, including 24 and 60 fps, and at least one variable-frame-rate file (the manifest already tracks `vfr`).
+      - Different resolutions and aspect ratios, plus some horizontal video if the product will accept it.
+      - Lengths from about 15 s to 60 s, since the latency target is for a 60 s video.
+    - **Tag and split:** record each video's `edit_styles` so the mix can be checked, and hold out about 10 as a test set nobody tunes on.
   - A later story targets the shared blind spots with new signals, toward the 0.90 precision target: jump cuts (same subject, discontinuous pose or position), punch-ins (new frame is a scaled crop of the previous one), split screens (only part of the frame changes).
 - **Affected:** #7 worker and its regression test. Schema, DB, RLS and MCP contracts are unchanged.
 - **Reproducing:** spike code and cached predictions are on branch `spike/4-detectors` (`eval/cuts_spike/run.py`; `detect` reruns the detectors and needs the private videos; `score` and `combine` read the cached predictions in `eval/cuts_spike/predictions/`, so anyone can rerun them). Versions: scenedetect 0.7.2 (OpenCV backend), transnetv2-pytorch 1.0.5 on CPU, frames decoded with OpenCV.
