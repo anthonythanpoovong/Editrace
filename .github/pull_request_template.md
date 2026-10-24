@@ -48,4 +48,5 @@ Closes #
 - [ ] New tables have RLS policies and a two-user access test
 - [ ] No secrets or copyrighted audio committed
 - [ ] Docs updated, if behaviour or setup changed
+- [ ] Learned something worth keeping (spike result, gotcha, failed approach)? Add a note in `docs/learnings/`
 - [ ] Large change (new service, schema or MCP contract change, new setup steps, CI changes, new skills)? Run `/sync-docs` after merge
