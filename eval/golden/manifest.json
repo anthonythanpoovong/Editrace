@@ -25,7 +25,7 @@
       "labeled": true,
       "labeling_minutes": 4,
       "notes": [
-        "platform end card: frames 949-1069 (1 black frame + Instagram end card), not part of the edit, unlabeled. Exclude from scoring. Start frame estimated from the 120-frame card in v02-v04; confirm against the video"
+        "platform end card: frames 949-1069 (1 black frame + Instagram end card), not part of the edit, unlabeled. Exclude from scoring. Start frame checked against the video (black frame at 949)"
       ],
       "ambiguous": [],
       "exclude": [
