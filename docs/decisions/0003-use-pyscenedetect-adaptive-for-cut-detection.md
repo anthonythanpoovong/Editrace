@@ -65,7 +65,9 @@ Threshold 2.0 is chosen over the default 3.0 for recall, not because it scores b
 - **Bad / accepted trade-offs:** about 1 false cut per 5 real ones. Split screens and punch-ins produce bursts that can look like a fast-cut section until the user merges them. Jump cuts are still occasionally missed.
 - **One-way or two-way door:** two-way. The detector lives inside #7's worker; swapping it changes no schema, API or stored data. Reversing costs a worker change and a golden-set rerun.
 - **Follow-up work:**
-  - #7: pin `scenedetect` to the evaluated version (0.7.2), since detector output can change between releases; define the flagging rule (e.g. low confidence, or cuts closer than N frames); log review edits (below). A PySceneDetect scene start is already the first frame of the new shot, the same convention as `cuts[].frame`.
+  - #7: pin `scenedetect` to the evaluated version (0.7.2), since detector output can change between releases, and log review edits (below). A PySceneDetect scene start is already the first frame of the new shot, the same convention as `cuts[].frame`. Two acceptance criteria this decision depends on:
+    - **The flagging rule is defined and its flag rate measured on the golden set**: how many false cuts it flags, and how many real cuts. The 0.75 precision floor is acceptable only because suspect cuts are flagged. Detector confidence alone may not work as the flag, since TransNetV2's confidence didn't separate real from false cuts here.
+    - **p95 latency and cost per video are measured on Modal**, against the < 60 s target for a 60 s 1080p video. If it misses, the fallback is to detect on a 720p downsample, where the spike ran at about 17× real time.
   - #52: the eval needs a machine-readable exclusion for platform end cards. Today they're free-text `notes` (`platform end card: frames a-b`) that the spike parses with a regex.
   - #52: grow the golden set to 30 videos, chosen to stress the failure modes, not to look typical. The current five give 86 cuts and a recall interval of about 0.90-0.99; the new videos should narrow that interval and test the weak spots.
     - **Cover the known failure modes, several videos each:**
@@ -84,7 +86,7 @@ Threshold 2.0 is chosen over the default 3.0 for recall, not because it scores b
     - **Tag and split:** record each video's `edit_styles` so the mix can be checked, and hold out about 10 as a test set nobody tunes on.
   - A later story targets the shared blind spots with new signals, toward the 0.90 precision target: jump cuts (same subject, discontinuous pose or position), punch-ins (new frame is a scaled crop of the previous one), split screens (only part of the frame changes).
 - **Affected:** #7 worker and its regression test. Schema, DB, RLS and MCP contracts are unchanged.
-- **Reproducing:** spike code and cached predictions are on branch `spike/4-detectors` (`eval/cuts_spike/run.py`; `detect` reruns the detectors and needs the private videos; `score` and `combine` read the cached predictions in `eval/cuts_spike/predictions/`, so anyone can rerun them). Versions: scenedetect 0.7.2 (OpenCV backend), transnetv2-pytorch 1.0.5 on CPU, frames decoded with OpenCV.
+- **Reproducing:** spike code and cached predictions are at tag `spike-4-detectors`, which outlives the `spike/4-detectors` branch. In `eval/cuts_spike/run.py`, `detect` reruns the detectors and needs the private videos; `score` and `combine` read the cached predictions in `eval/cuts_spike/predictions/`, so anyone can rerun them. Versions: scenedetect 0.7.2 (OpenCV backend), transnetv2-pytorch 1.0.5 on CPU, frames decoded with OpenCV.
 
 ## How we'll know
 
