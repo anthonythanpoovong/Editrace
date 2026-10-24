@@ -1,0 +1,15 @@
+[extend]
+useDefault = true
+
+# PR #153 review: gitleaks' default "jwt" rule flags the Supabase anon key once hardcoded in
+# site/index.html (~line 568). It's public by design — its JWT payload decodes to role: anon, and the
+# project ref already sits in the same URL — so it isn't a leak. gitleaks scans commit history, and
+# the commit that added it is still in every PR built on this branch even after site/index.html was
+# deleted (ported into web/, which loads the same key from an env var instead: #294). Scoped to that
+# one path and rule rather than disabling "jwt" outright.
+[[rules]]
+id = "jwt"
+
+[[rules.allowlists]]
+description = "Supabase anon key in the retired static site, public by design (role: anon)"
+paths = ['''^site/index\.html$''']

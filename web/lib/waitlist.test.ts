@@ -28,8 +28,8 @@ describe("validateSignup", () => {
 describe("joinWaitlist", () => {
   test("posts the trimmed signup to the RPC with the anon key", async () => {
     const fetchImpl = vi.fn(async () => new Response(null, { status: 204 }));
-    const ok = await joinWaitlist(config, { ...valid, firstName: " Ada ", email: " ada@example.com " }, fetchImpl);
-    expect(ok).toBe(true);
+    const outcome = await joinWaitlist(config, { ...valid, firstName: " Ada ", email: " ada@example.com " }, fetchImpl);
+    expect(outcome).toBe("ok");
     const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("https://example.supabase.co/rest/v1/rpc/join_waitlist");
     expect(init.headers).toMatchObject({ apikey: "anon", Authorization: "Bearer anon" });
@@ -41,20 +41,28 @@ describe("joinWaitlist", () => {
       p_source: "tiktok",
     });
   });
-  test("returns false, without a request, when Supabase isn't configured", async () => {
+  test("returns failed, without a request, when Supabase isn't configured", async () => {
     const fetchImpl = vi.fn(async () => new Response(null, { status: 204 }));
-    expect(await joinWaitlist(null, valid, fetchImpl)).toBe(false);
+    expect(await joinWaitlist(null, valid, fetchImpl)).toBe("failed");
     expect(fetchImpl).not.toHaveBeenCalled();
   });
-  test("returns false on an error response", async () => {
-    expect(await joinWaitlist(config, valid, async () => new Response(null, { status: 400 }))).toBe(false);
+  test("returns rate_limited when the rate-limit trigger's error code comes back", async () => {
+    const body = JSON.stringify({ code: "EDR01", message: "Too many signups from this address. Try again later." });
+    expect(await joinWaitlist(config, valid, async () => new Response(body, { status: 400 }))).toBe("rate_limited");
   });
-  test("returns false when the network fails", async () => {
+  test("returns failed on an error response with a different code", async () => {
+    const body = JSON.stringify({ code: "23514", message: "some other constraint" });
+    expect(await joinWaitlist(config, valid, async () => new Response(body, { status: 400 }))).toBe("failed");
+  });
+  test("returns failed on an error response with no JSON body", async () => {
+    expect(await joinWaitlist(config, valid, async () => new Response(null, { status: 500 }))).toBe("failed");
+  });
+  test("returns failed when the network fails", async () => {
     expect(
       await joinWaitlist(config, valid, async () => {
         throw new Error("offline");
       }),
-    ).toBe(false);
+    ).toBe("failed");
   });
 });
 
@@ -82,5 +90,12 @@ describe("submitSignup", () => {
   test("keeps the form filled in when the request fails", async () => {
     const result = await submitSignup(config, valid, "", async () => new Response(null, { status: 500 }));
     expect(result).toMatchObject({ note: { state: "error" }, reset: false });
+  });
+  test("tells a rate-limited visitor apart from a generic failure", async () => {
+    const body = JSON.stringify({ code: "EDR01", message: "Too many signups from this address. Try again later." });
+    const limited = await submitSignup(config, valid, "", async () => new Response(body, { status: 400 }));
+    const failed = await submitSignup(config, valid, "", async () => new Response(null, { status: 500 }));
+    expect(limited.note.text).not.toBe(failed.note.text);
+    expect(limited).toMatchObject({ note: { state: "error" }, reset: false });
   });
 });
