@@ -54,3 +54,6 @@ htmlcov/
 coverage/
 coverage.xml
 .worker-cache/
+
+# Golden-set videos: private, never committed (#4, #52)
+eval/golden/videos/
