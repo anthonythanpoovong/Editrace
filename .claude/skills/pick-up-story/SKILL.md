@@ -23,6 +23,8 @@ Read the issue: `gh issue view <n>`. Then check:
 - **Owner:** if it's unassigned, or assigned to someone else, confirm with the person before taking it.
 - **Needs a decision?** If the scope implies a breaking schema change or a Key Decision change, stop → `/schema-change` or `/propose-adr`.
 
+Also search `docs/learnings/` (`grep -ril "<keyword>" docs/learnings`) for the story's area, and surface any relevant notes to the person before they start.
+
 ## 3. Start
 ```sh
 gh issue edit <n> --add-assignee @me
@@ -58,7 +60,7 @@ Based on the story's area, tell the person which skill fits:
 - Assistant, prompts or retrieval → `/rag-eval`
 
 ## 5. Finishing (when asked)
-Tick the PR checklist from real evidence: tests or eval output, not claims. Mark the PR ready for review. `Closes #<n>` closes the issue on merge. If the story changed something large, remind them to run `/sync-docs` after merge.
+Ask whether the work taught the team anything worth keeping (a gotcha, a failed approach, a surprise). If so, add a note to `docs/learnings/` from `TEMPLATE.md` and the index, in this PR. Then tick the PR checklist from real evidence: tests or eval output, not claims. Mark the PR ready for review. `Closes #<n>` closes the issue on merge. If the story changed something large, remind them to run `/sync-docs` after merge.
 
 ## Rules
 - Never start a story whose dependencies are open without the author explicitly accepting the risk.
