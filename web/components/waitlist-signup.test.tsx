@@ -56,7 +56,7 @@ describe("WaitlistSignup", () => {
     const user = await openForm();
     await fillIn(user);
     await user.click(screen.getByRole("button", { name: "Notify me at launch" }));
-    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("hear from us"));
+    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("You're on the list"));
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect((screen.getByLabelText("Email address") as HTMLInputElement).value).toBe("");
   });
@@ -70,12 +70,23 @@ describe("WaitlistSignup", () => {
     expect((screen.getByLabelText("Email address") as HTMLInputElement).value).toBe("ada@example.com");
   });
 
+  test("tells a rate-limited visitor apart from a generic failure", async () => {
+    const body = JSON.stringify({ code: "EDR01", message: "Too many signups from this address. Try again later." });
+    fetchMock.mockResolvedValue(new Response(body, { status: 400 }));
+    const user = await openForm();
+    await fillIn(user);
+    await user.click(screen.getByRole("button", { name: "Notify me at launch" }));
+    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("tried this a few times"));
+    expect(screen.getByRole("status").textContent).not.toContain("Something went wrong");
+    expect((screen.getByLabelText("Email address") as HTMLInputElement).value).toBe("ada@example.com");
+  });
+
   test("thanks a bot that fills the hidden field, without sending", async () => {
     const user = await openForm();
     await fillIn(user);
     await user.type(screen.getByLabelText("Leave this field blank"), "spam");
     await user.click(screen.getByRole("button", { name: "Notify me at launch" }));
-    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("hear from us"));
+    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("You're on the list"));
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

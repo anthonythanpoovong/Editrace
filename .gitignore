@@ -59,3 +59,8 @@ coverage.xml
 .impeccable/hook.cache.json
 .impeccable/critique/
 .impeccable/live/
+
+# Impeccable engine binary (#153 review): the launcher self-downloads and checksum-verifies this per
+# platform (github.com/pbakaus/impeccable releases) into ~/.impeccable/bin/ on first use. Don't vendor it.
+.claude/skills/impeccable/scripts/bin/
+.github/skills/impeccable/scripts/bin/

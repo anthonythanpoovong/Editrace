@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(16);
+SELECT plan(25);
 
 -- waitlist_signups (#54) has no owning user, so this adapts the usual
 -- two-user RLS test (/db-migration, #49): instead of "user A vs user B",
@@ -49,7 +49,11 @@ SELECT throws_ok(
 
 -- 6. A duplicate (case-insensitive) email is silently absorbed: no
 --    error, no distinguishable response, so the RPC can never be used
---    to probe which emails are already on the list.
+--    to probe which emails are already on the list. It still reaches
+--    the rate-limit trigger and logs an attempt (#153 review, F5): the
+--    insert into waitlist_signups is what gets discarded by ON CONFLICT
+--    DO NOTHING, not the whole statement, so the attempt the trigger
+--    already recorded commits regardless.
 SELECT lives_ok(
   $$ select public.join_waitlist('Ada', 'Lovelace', 'ADA@example.com', 'creator', 'tiktok') $$,
   'a duplicate email via join_waitlist() is silently ignored, not rejected'
@@ -98,41 +102,107 @@ SELECT throws_ok(
   'first_name over 100 chars is rejected by the length check'
 );
 
--- 12-14. Three more signups land in the same 'unknown' rate-limit
---        bucket (there is no request.headers GUC outside of PostgREST,
---        so every call in this test file shares that bucket; Ada +
---        Margaret already used 2 of the 5 allowed slots — the
---        duplicate Ada call in test 6 did not consume a slot, since it
---        was discarded by ON CONFLICT DO NOTHING and never persisted).
+-- 12-14. Three calls land in the same 'unknown' rate-limit bucket (there
+--        is no request.headers GUC outside of PostgREST, so every call
+--        so far in this file shares that bucket). Ada (test 2), the
+--        duplicate Ada (test 6, which now counts — see its comment) and
+--        Margaret (test 9) already used 3 of the 5 allowed slots.
 SELECT lives_ok(
   $$ select public.join_waitlist('Rate', 'Limit1', 'rate-limit-1@example.com', 'editor', 'other') $$,
-  'rate-limit bucket insert 3 of 5'
-);
-SELECT lives_ok(
-  $$ select public.join_waitlist('Rate', 'Limit2', 'rate-limit-2@example.com', 'editor', 'other') $$,
   'rate-limit bucket insert 4 of 5'
 );
 SELECT lives_ok(
-  $$ select public.join_waitlist('Rate', 'Limit3', 'rate-limit-3@example.com', 'editor', 'other') $$,
+  $$ select public.join_waitlist('Rate', 'Limit2', 'rate-limit-2@example.com', 'editor', 'other') $$,
   'rate-limit bucket insert 5 of 5'
 );
 
--- 15. A 6th signup from the same address within the window is rejected.
+-- 14. A 6th attempt from the same address within the window is rejected,
+--     with the stable 'EDR01' code the web client matches on to show a
+--     rate-limited visitor a different message than a generic failure.
 SELECT throws_ok(
-  $$ select public.join_waitlist('Rate', 'Limit4', 'rate-limit-4@example.com', 'editor', 'other') $$,
-  'P0001',
+  $$ select public.join_waitlist('Rate', 'Limit3', 'rate-limit-3@example.com', 'editor', 'other') $$,
+  'EDR01',
   'Too many signups from this address. Try again later.',
-  'a 6th signup from the same address within the window is rate-limited'
+  'a 6th attempt from the same address within the window is rate-limited'
 );
 
--- 16. service_role (used by internal admin tooling only) bypasses RLS
---     and can see everything that actually landed in the table.
+-- 15-20. The trusted-IP logic (#153 review, F3): a request carrying a real
+--        cf-connecting-ip gets its own bucket, independent of 'unknown',
+--        and is rate-limited the same way once it fills up.
+SELECT set_config('request.headers', '{"cf-connecting-ip": "203.0.113.5"}', true);
+SELECT lives_ok(
+  $$ select public.join_waitlist('Ip', 'A1', 'ip-a-1@example.com', 'editor', 'other') $$,
+  'a request with its own cf-connecting-ip is not blocked by the already-full unknown bucket'
+);
+SELECT lives_ok(
+  $$ select public.join_waitlist('Ip', 'A2', 'ip-a-2@example.com', 'editor', 'other') $$,
+  'cf-connecting-ip bucket insert 2 of 5'
+);
+SELECT lives_ok(
+  $$ select public.join_waitlist('Ip', 'A3', 'ip-a-3@example.com', 'editor', 'other') $$,
+  'cf-connecting-ip bucket insert 3 of 5'
+);
+SELECT lives_ok(
+  $$ select public.join_waitlist('Ip', 'A4', 'ip-a-4@example.com', 'editor', 'other') $$,
+  'cf-connecting-ip bucket insert 4 of 5'
+);
+SELECT lives_ok(
+  $$ select public.join_waitlist('Ip', 'A5', 'ip-a-5@example.com', 'editor', 'other') $$,
+  'cf-connecting-ip bucket insert 5 of 5'
+);
+SELECT throws_ok(
+  $$ select public.join_waitlist('Ip', 'A6', 'ip-a-6@example.com', 'editor', 'other') $$,
+  'EDR01',
+  'Too many signups from this address. Try again later.',
+  'a 6th attempt from the same cf-connecting-ip within the window is rate-limited'
+);
+
+-- 21. cf-connecting-ip is trusted over x-forwarded-for when both are
+--     present (Cloudflare sets the former at its edge; the latter is
+--     client-suppliable).
+SELECT set_config(
+  'request.headers',
+  '{"cf-connecting-ip": "203.0.113.9", "x-forwarded-for": "198.51.100.1, 10.0.0.1"}',
+  true
+);
+SELECT lives_ok(
+  $$ select public.join_waitlist('Cf', 'Precedence', 'cf-precedence@example.com', 'editor', 'other') $$,
+  'cf-connecting-ip takes precedence over x-forwarded-for'
+);
+
+-- 22. Without cf-connecting-ip, the last x-forwarded-for entry (the
+--     nearest proxy's own observation) is used, not the client-supplied
+--     first one.
+SELECT set_config(
+  'request.headers',
+  '{"x-forwarded-for": "198.51.100.2, 10.0.0.2"}',
+  true
+);
+SELECT lives_ok(
+  $$ select public.join_waitlist('Xff', 'Fallback', 'xff-fallback@example.com', 'editor', 'other') $$,
+  'falls back to the last x-forwarded-for entry when cf-connecting-ip is absent'
+);
+
+-- 23-25. service_role (used by internal admin tooling only) bypasses RLS and can see everything that
+--        actually landed in waitlist_signups, and the IP each attempt in 21-22 was attributed to in
+--        waitlist_attempts (waitlist_signups itself holds no IP: #153 review, see the "drop
+--        ip_address" migration).
 RESET ROLE;
 SET LOCAL ROLE service_role;
 SELECT is(
   (SELECT count(*)::int FROM public.waitlist_signups),
-  5,
+  11,
   'service_role can read all signups that were successfully inserted'
+);
+SELECT is(
+  (SELECT count(*)::int FROM public.waitlist_attempts WHERE ip_address = '203.0.113.9'),
+  1,
+  'the precedence attempt was attributed to the cf-connecting-ip value, not the x-forwarded-for decoy'
+);
+SELECT is(
+  (SELECT count(*)::int FROM public.waitlist_attempts WHERE ip_address = '10.0.0.2'),
+  1,
+  'the fallback attempt was attributed to the last x-forwarded-for entry'
 );
 
 SELECT * FROM finish();

@@ -47,6 +47,13 @@ export function validateSignup(signup: WaitlistSignup): Partial<Record<WaitlistF
   return errors;
 }
 
+// The SQLSTATE enforce_waitlist_rate_limit() raises when an address is over the 5-per-10-minutes cap
+// (supabase/migrations/20261023050442_create_waitlist_signups.sql). PostgREST passes it through
+// as the RPC error body's `code` field, which is more stable to match on than the message text.
+const RATE_LIMITED_CODE = "EDR01";
+
+export type JoinOutcome = "ok" | "rate_limited" | "failed";
+
 // Calls the join_waitlist RPC straight from the browser. It must not go through a Next server action: the per-IP rate
 // limit in Postgres reads the visitor's address from the request headers Supabase sees, and a server action would make
 // every visitor look like our server.
@@ -54,9 +61,9 @@ export async function joinWaitlist(
   config: SupabaseConfig | null,
   signup: WaitlistSignup,
   fetchImpl: typeof fetch = fetch,
-): Promise<boolean> {
+): Promise<JoinOutcome> {
   // Previews have no Supabase variables (docs/environments.md): the form still shows, and sending fails politely.
-  if (!config) return false;
+  if (!config) return "failed";
   try {
     const response = await fetchImpl(`${config.url}/rest/v1/rpc/join_waitlist`, {
       method: "POST",
@@ -73,13 +80,18 @@ export async function joinWaitlist(
         p_source: signup.source,
       }),
     });
-    return response.ok;
+    if (response.ok) return "ok";
+    const body: unknown = await response.json().catch(() => null);
+    const code = body && typeof body === "object" && "code" in body ? (body as { code: unknown }).code : null;
+    return code === RATE_LIMITED_CODE ? "rate_limited" : "failed";
   } catch {
-    return false;
+    return "failed";
   }
 }
 
-const THANKS = "Not open yet — but we'll make sure you hear from us the moment it is.";
+// "We'll make sure you hear from us" would promise an email that nothing sends yet (#153 review): say only what's true.
+const THANKS = "You're on the list.";
+const RATE_LIMITED = "You've tried this a few times. Wait a few minutes, then try again.";
 const FAILED = "Something went wrong. Please try again in a moment.";
 
 export type SubmitResult = {
@@ -102,8 +114,8 @@ export async function submitSignup(
   }
   // A bot filled the hidden field: say thanks without making a request.
   if (honeypot) return { errors: {}, note: { state: "success", text: THANKS }, reset: true };
-  const ok = await joinWaitlist(config, signup, fetchImpl);
-  return ok
-    ? { errors: {}, note: { state: "success", text: THANKS }, reset: true }
-    : { errors: {}, note: { state: "error", text: FAILED }, reset: false };
+  const outcome = await joinWaitlist(config, signup, fetchImpl);
+  if (outcome === "ok") return { errors: {}, note: { state: "success", text: THANKS }, reset: true };
+  const text = outcome === "rate_limited" ? RATE_LIMITED : FAILED;
+  return { errors: {}, note: { state: "error", text }, reset: false };
 }
