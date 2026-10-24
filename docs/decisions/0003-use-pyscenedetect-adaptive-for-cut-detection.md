@@ -1,7 +1,7 @@
 # 0003: Detect cuts with PySceneDetect's AdaptiveDetector and flag suspect cuts for review
 
-- **Status:** Proposed
-- **Date:** 2026-10-23
+- **Status:** Accepted
+- **Date:** 2026-10-23 · Accepted: 2026-10-24
 - **Author:** @calvinkafaiyuen
 - **Deciders:** @anthonythanpoovong
 - **Related:** #4 (cut detection spike), #7 (production cut worker), #52 (golden dataset), PR #290 (labels and guide), ADR 0002

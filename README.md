@@ -20,11 +20,12 @@ See [`docs/plan.md`](docs/plan.md) for the full project plan, architecture and r
 schema/      Template JSON Schema (source of truth) + editor tool ontology
 web/         Next.js + TypeScript app (a placeholder page so far; breakdown UI, assistant and remote MCP server are planned)
 workers/     Python analysis pipeline (Modal)
+eval/        Golden set (`eval/golden/`): hand-labeled cut labels, labeling guide, labeler and tools. Videos stay private
 editrace_schema/  Python template models generated from the schema (`make codegen`), plus the reader
 supabase/    Supabase config, migrations, seed data and the RLS tests
 scripts/     Codegen helpers and the Armour eval (`scripts/armour-eval/`)
 exporters/   OpenTimelineIO + CapCut adapters
-docs/        Plan, architecture, environments and secrets, decisions (ADRs), epic proposals, customer research
+docs/        Plan, architecture, environments and secrets, decisions (ADRs), epic proposals, learnings, customer research
 brand/       Brand kit: logo, favicon, social avatar and banners, and the guidelines in `brand/BRAND.md`
 .claude/     Claude Code skills shared by the team (see Claude Code Skills below)
 .github/     Workflows, issue and PR templates, CODEOWNERS and the Armour review rules
