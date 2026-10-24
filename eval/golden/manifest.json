@@ -27,7 +27,14 @@
       "notes": [
         "platform end card: frames 949-1069 (1 black frame + Instagram end card), not part of the edit, unlabeled. Exclude from scoring. Start frame checked against the video (black frame at 949)"
       ],
-      "ambiguous": []
+      "ambiguous": [],
+      "exclude": [
+        {
+          "start": 949,
+          "duration": 121,
+          "reason": "platform end card"
+        }
+      ]
     },
     {
       "id": "v02",
@@ -57,7 +64,14 @@
         "split screen: 2x2 grid of 4 shots, frames 128-271. Builds tile by tile 128-222, tiles removed one by one 256-271, no cuts labeled inside (rule 11). Cut at 272 when a new shot fills the frame",
         "platform end card: frames 749-869 (1 black frame + Instagram end card), not part of the edit, unlabeled. Exclude from scoring"
       ],
-      "ambiguous": []
+      "ambiguous": [],
+      "exclude": [
+        {
+          "start": 749,
+          "duration": 121,
+          "reason": "platform end card"
+        }
+      ]
     },
     {
       "id": "v03",
@@ -86,7 +100,14 @@
         "talking head picture-in-picture over still background images, frames 0-218: each background change labeled as a cut. Changes inside the box (new clip, time skip, move, resize, appear/disappear) not labeled (rule 11). Cut at 219 where the section ends",
         "platform end card: frames 931-1051 (1 black frame + Instagram end card), not part of the edit, unlabeled. Exclude from scoring"
       ],
-      "ambiguous": []
+      "ambiguous": [],
+      "exclude": [
+        {
+          "start": 931,
+          "duration": 121,
+          "reason": "platform end card"
+        }
+      ]
     },
     {
       "id": "v04",
@@ -113,7 +134,14 @@
       "notes": [
         "platform end card: frames 528-647 (Instagram end card, no black frame before it), not part of the edit, unlabeled. Exclude from scoring"
       ],
-      "ambiguous": []
+      "ambiguous": [],
+      "exclude": [
+        {
+          "start": 528,
+          "duration": 120,
+          "reason": "platform end card"
+        }
+      ]
     },
     {
       "id": "v05",
@@ -139,7 +167,8 @@
       "labeled": true,
       "labeling_minutes": 8,
       "notes": [],
-      "ambiguous": []
+      "ambiguous": [],
+      "exclude": []
     }
   ]
 }
