@@ -8,7 +8,7 @@
 
 ## Context
 
-Cuts are the backbone of every template: each cut starts a slot, and each slot is a clip the user has to supply. Spike #4 compared PySceneDetect and TransNetV2 on 5 hand-labeled short-form videos (86 cuts, labeled blind per `eval/golden/LABELING.md`). All five were scored on the conformed files whose hashes the manifest records. Predictions were matched one-to-one to labels; Instagram end cards were excluded (rule 12). The exit bar set before the spike was **recall ≥ 0.95 and precision ≥ 0.90 at ±2 frames**.
+Cuts are the backbone of every template: each cut starts a slot, and each slot is a clip the user has to supply. Spike #4 compared PySceneDetect and TransNetV2 on 5 hand-labeled short-form videos (86 cuts, labeled blind per `eval/golden/LABELING.md`). All five were scored on the conformed files whose hashes the manifest records. Predictions were matched one-to-one to labels; Instagram end cards were excluded (rule 12). The exit bar set before the spike was **recall ≥ 0.95 and precision ≥ 0.90 at ±2 frames**. Issue #4 was scoped at 5 videos; #52's Phase 0 bar of 10 isn't met yet, so the golden-set roadmap under Consequences sets what #7 is signed off on.
 
 | Detector | Precision ±2 | Recall ±2 | False cuts | Missed cuts |
 |---|---|---|---|---|
@@ -66,10 +66,18 @@ Threshold 2.0 is chosen over the default 3.0 for recall, not because it scores b
 - **One-way or two-way door:** two-way. The detector lives inside #7's worker; swapping it changes no schema, API or stored data. Reversing costs a worker change and a golden-set rerun.
 - **Follow-up work:**
   - #7: pin `scenedetect` to the evaluated version (0.7.2), since detector output can change between releases, and log review edits (below). A PySceneDetect scene start is already the first frame of the new shot, the same convention as `cuts[].frame`. Two acceptance criteria this decision depends on:
-    - **The flagging rule is defined and its flag rate measured on the golden set**: how many false cuts it flags, and how many real cuts. The 0.75 precision floor is acceptable only because suspect cuts are flagged. Detector confidence alone may not work as the flag, since TransNetV2's confidence didn't separate real from false cuts here.
+    - **The flagging rule is defined and its flag rate measured on #52's 10-video set**: how many false cuts it flags, and how many real cuts. The 0.75 precision floor is acceptable only because suspect cuts are flagged. Detector confidence alone may not work as the flag, since TransNetV2's confidence didn't separate real from false cuts here.
     - **p95 latency and cost per video are measured on Modal**, against the < 60 s target for a 60 s 1080p video. If it misses, the fallback is to detect on a 720p downsample, where the spike ran at about 17× real time.
   - #52: the eval needs a machine-readable exclusion for platform end cards. Today they're free-text `notes` (`platform end card: frames a-b`) that the spike parses with a regex.
-  - #52: grow the golden set to 30 videos, chosen to stress the failure modes, not to look typical. The current five give 86 cuts and a recall interval of about 0.90-0.99; the new videos should narrow that interval and test the weak spots.
+  - #52, **golden set roadmap.** This decision rests on #4's 5 videos. Three milestones:
+
+    | Milestone | Videos | Owner | What it's for | Gate |
+    |---|---|---|---|---|
+    | 1. Done | 5 (86 cuts) | #4 | The basis for this decision | — |
+    | 2. Phase 0 bar | 10 (5 more) | #52 | Meets #52's Phase 0 target. #7's regression floor and flag-rate criteria are signed off on these 10, not the first 5. The 5 new videos come from the failure modes below, starting with jump cuts and split screens. | Adaptive t=2.0 still reaches recall ≥ 0.95 and precision ≥ 0.75 on all 10. If not, revisit this decision before #7 ships. |
+    | 3. Phase 1 exit | 30 (20 more) | #52 | Narrows the recall interval (about 0.90–0.99 today). Thresholds are tuned on 20; 10 are held out and scored only at the end. | #7 holds the floor on the 10 held-out videos; progress toward precision 0.90 is measured here. |
+
+    The 25 new videos are chosen to stress the failure modes, not to look typical:
     - **Cover the known failure modes, several videos each:**
       - Jump cuts (talking head, same framing, time skip): the hardest case for both detectors, and where Adaptive still misses cuts. Aim for 5-6.
       - Split screens, picture-in-picture, grids and reaction layouts: the source of about half the false cuts. Aim for 4-5.
@@ -84,15 +92,17 @@ Threshold 2.0 is chosen over the default 3.0 for recall, not because it scores b
       - Different resolutions and aspect ratios, plus some horizontal video if the product will accept it.
       - Lengths from about 15 s to 60 s, since the latency target is for a 60 s video.
     - **Tag and split:** record each video's `edit_styles` so the mix can be checked, and hold out about 10 as a test set nobody tunes on.
-  - A later story targets the shared blind spots with new signals, toward the 0.90 precision target: jump cuts (same subject, discontinuous pose or position), punch-ins (new frame is a scaled crop of the previous one), split screens (only part of the frame changes).
+  - #311 tracks the 0.90 precision target with new signals: split screens and picture-in-picture (only part of the frame changes), punch-ins (the new frame is a scaled crop of the previous one), and the false cuts with no known cause yet. Jump cuts (same subject, discontinuous pose or position) are the remaining misses, a recall problem; they get their own story if milestone 2 shows them to be common. **Flag before filter:** a new signal starts as a flag, and may remove cuts automatically only once it's shown to keep recall ≥ 0.95 on the golden set.
 - **Affected:** #7 worker and its regression test. Schema, DB, RLS and MCP contracts are unchanged.
 - **Reproducing:** spike code and cached predictions are at tag `spike-4-detectors`, which outlives the `spike/4-detectors` branch. In `eval/cuts_spike/run.py`, `detect` reruns the detectors and needs the private videos; `score` and `combine` read the cached predictions in `eval/cuts_spike/predictions/`, so anyone can rerun them. Versions: scenedetect 0.7.2 (OpenCV backend), transnetv2-pytorch 1.0.5 on CPU, frames decoded with OpenCV.
 
 ## How we'll know
 
-- **Regression floor for #7:** recall ≥ 0.95 and precision ≥ 0.75 at ±2 frames on the golden set, end cards excluded. Target: precision ≥ 0.90, the original bar.
+- **Regression floor for #7:** recall ≥ 0.95 and precision ≥ 0.75 at ±2 frames on #52's 10-video set (milestone 2 below), end cards excluded. Target: precision ≥ 0.90, the original bar.
 - **Production check:** per template, count cuts the user **merges** (false cuts), cuts they **add** (missed cuts), and flagged cuts kept vs. merged. This depends on the review UI logging those edits; edits made later inside an editor aren't visible.
-- **Revisit if** users add cuts often (Adaptive misses more on real uploads than on 5 videos), or if flagged cuts are almost always merged (flags are reliable enough to filter automatically).
+- **Revisit**, checked at Phase 1 exit or after 200 reviewed templates, whichever comes first:
+  - if users **add more than 5% as many cuts as were detected** (real-world recall below 0.95), the detector choice is wrong for real uploads;
+  - if **90% or more of flagged cuts are merged**, the flag is reliable enough to become automatic removal.
 
 ## Open questions
 
