@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from workers.cuts.detect import find_cuts, to_partial
+from workers.cuts.detect import REVIEW_BELOW, find_cuts, to_partial
 
 pytest.importorskip("scenedetect")
 
@@ -50,8 +50,29 @@ def _sha256(path: Path) -> str:
     return f"sha256:{h.hexdigest()}"
 
 
+def _matched(predicted: list[int], labeled: list[int], tolerance: int) -> set[int]:
+    """Predicted frames in a maximum one-to-one matching: score.match_count's walk, keeping the pairs."""
+    p, t = sorted(predicted), sorted(labeled)
+    i = j = 0
+    hits: set[int] = set()
+    while i < len(p) and j < len(t):
+        if p[i] < t[j] - tolerance:
+            i += 1
+        elif p[i] > t[j] + tolerance:
+            j += 1
+        else:
+            hits.add(p[i])
+            i += 1
+            j += 1
+    return hits
+
+
 def test_cuts_meet_the_floor_on_the_golden_set(tmp_path: Path) -> None:
     labeled = _labeled_videos()
+    manifest = {
+        v["id"]: v for v in json.loads((GOLDEN / "manifest.json").read_text())["videos"]
+    }
+    flags = {"false": 0, "real": 0, "false_total": 0, "real_total": 0}
     absent = [vid for vid in labeled if not (GOLDEN / "videos" / f"{vid}.mp4").exists()]
     if absent:
         # Scoring a subset would report numbers nobody else can compare, so it's all labeled videos or nothing.
@@ -65,6 +86,20 @@ def test_cuts_meet_the_floor_on_the_golden_set(tmp_path: Path) -> None:
             **to_partial(find_cuts(video)),
         }
         (tmp_path / f"{vid}.json").write_text(json.dumps(predicted))
+
+        # Flag rate (#7): which detected cuts sit below the review line, and are they real or false?
+        ranges = manifest[vid].get("exclude", [])
+
+        def kept(f: int, ranges: list[dict] = ranges) -> bool:
+            return not any(r["start"] <= f < r["start"] + r["duration"] for r in ranges)
+
+        cuts = [c for c in predicted["tracks"][0]["cuts"] if kept(c["frame"])]
+        labels = [c["frame"] for c in label["tracks"][0]["cuts"] if kept(c["frame"])]
+        real = _matched([c["frame"] for c in cuts], labels, TOLERANCE)
+        for c in cuts:
+            kind = "real" if c["frame"] in real else "false"
+            flags[f"{kind}_total"] += 1
+            flags[kind] += c["confidence"] < REVIEW_BELOW
 
     score = _scorer()
     per_video, missing, _unlabeled = score.score_dir(tmp_path, TOLERANCE)
@@ -81,5 +116,10 @@ def test_cuts_meet_the_floor_on_the_golden_set(tmp_path: Path) -> None:
         + f" · total P {total.precision:.3f} R {total.recall:.3f} (TP {total.true_positives}, FP {total.false_positives}, FN {total.false_negatives})"
     )
     print(f"\n{len(per_video)} videos · ±{TOLERANCE} frames · {report}")
+    # Provisional rule (#7), so reported rather than asserted until #52's 10-video sign-off.
+    print(
+        f"flagged for review: {flags['false']}/{flags['false_total']} false cuts, "
+        f"{flags['real']}/{flags['real_total']} real cuts"
+    )
     assert total.recall >= RECALL_FLOOR, f"recall below the floor: {report}"
     assert total.precision >= PRECISION_FLOOR, f"precision below the floor: {report}"

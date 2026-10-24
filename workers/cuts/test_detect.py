@@ -10,10 +10,15 @@ import pytest
 from editrace_schema import Template
 from workers.cuts.detect import (
     ADAPTIVE_THRESHOLD,
+    FLAG_MAX_GAP,
+    FLAGGED_MAX,
+    REVIEW_BELOW,
     Cut,
     Detection,
     confidence,
+    cut_confidence,
     find_cuts,
+    flagged,
     to_partial,
 )
 
@@ -117,3 +122,42 @@ def test_a_slot_is_as_certain_as_its_weakest_boundary() -> None:
 )
 def test_confidence(score: float, expected: float) -> None:
     assert confidence(score) == pytest.approx(expected)
+
+
+@pytest.mark.parametrize(
+    ("frames", "expected"),
+    [
+        (
+            [100, 100 + FLAG_MAX_GAP],
+            {100, 100 + FLAG_MAX_GAP},
+        ),  # right at the gap: a burst
+        ([100, 101 + FLAG_MAX_GAP], set()),  # one frame further: two separate cuts
+        ([10, 12, 17, 60], {10, 12, 17}),  # a burst of three, then a lone cut
+        ([30], set()),
+        ([], set()),
+        (
+            [371, 381, 391, 403, 413],
+            set(),
+        ),  # v03's real montage, 10-12 frames apart: not flagged
+    ],
+)
+def test_flagged_bursts(frames: list[int], expected: set[int]) -> None:
+    assert flagged([Cut(f, 3 * ADAPTIVE_THRESHOLD) for f in frames]) == expected
+
+
+def test_flagged_cuts_and_their_sliver_sit_below_the_review_line() -> None:
+    lone, a, b = Cut(30, 10.0), Cut(100, 10.0), Cut(105, 10.0)
+    track = to_partial(Detection([lone, a, b], 200))["tracks"][0]
+    conf = {c["frame"]: c["confidence"] for c in track["cuts"]}
+    assert conf[30] >= REVIEW_BELOW
+    assert conf[100] < REVIEW_BELOW and conf[105] < REVIEW_BELOW
+    assert max(conf[100], conf[105]) <= FLAGGED_MAX
+    slots = {s["range"]["start"]: s["confidence"] for s in track["slots"]}
+    assert slots[100] < REVIEW_BELOW  # the 5-frame sliver between the two flagged cuts
+    assert slots[0] >= REVIEW_BELOW
+
+
+def test_unflagged_cuts_never_fall_below_the_line() -> None:
+    weak = Cut(50, math.nan)  # a missing ratio maps to strength 0
+    assert cut_confidence(weak, is_flagged=False) == REVIEW_BELOW
+    assert cut_confidence(Cut(50, math.inf), is_flagged=True) == FLAGGED_MAX
