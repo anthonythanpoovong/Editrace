@@ -1,7 +1,7 @@
 # 0002: Represent template time as integer frames on one rational timebase, and version the schema with semver
 
-- **Status:** Proposed
-- **Date:** 2026-10-07
+- **Status:** Accepted
+- **Date:** 2026-10-07 · Accepted: 2026-10-09 (#175 merged)
 - **Author:** @anthonythanpoovong
 - **Deciders:** @anthonythanpoovong
 - **Related:** #1 (template schema v0), #2 (codegen), #52 (golden dataset), Key Decisions in `docs/plan.md`
