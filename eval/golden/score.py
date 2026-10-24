@@ -6,7 +6,9 @@ their labels exist.
   maximal (as many matches as possible), so one prediction never counts for two labels.
 - Frames inside a video's `exclude` ranges in the manifest (e.g. platform end cards, LABELING.md rule 12) are left out
   of scoring on both sides.
-- A video is scored only if a prediction for it exists; missing predictions are reported, never silently dropped.
+- A video is scored only if it's hand-labeled (`labeled: true` in the manifest) and a prediction for it exists.
+  Videos ingested but not labeled yet have an empty label file, so scoring them would turn every real predicted cut
+  into a false positive. Unlabeled videos and missing predictions are both reported, never silently dropped.
 
 Usage: python3.11 eval/golden/score.py PREDICTIONS_DIR [--tolerance 2] [--json]
 PREDICTIONS_DIR holds one template per video, named like the labels (`v01.json`, ...).
@@ -89,11 +91,17 @@ def score_cuts(
     return Counts(matches, len(pred) - matches, len(truth) - matches)
 
 
-def score_dir(predictions: Path, tolerance: int) -> tuple[dict[str, Counts], list[str]]:
-    """Per-video cut counts for every manifest video with a prediction, and the ids that have none."""
+def score_dir(
+    predictions: Path, tolerance: int
+) -> tuple[dict[str, Counts], list[str], list[str]]:
+    """Per-video cut counts for every labeled video with a prediction, the labeled ids with no prediction, and the
+    ids not labeled yet (never scored, whether or not a prediction exists)."""
     manifest = json.loads((ROOT / "manifest.json").read_text())
-    scored, missing = {}, []
+    scored, missing, unlabeled = {}, [], []
     for video in manifest["videos"]:
+        if video.get("labeled") is not True:
+            unlabeled.append(video["id"])
+            continue
         pred_path = predictions / f"{video['id']}.json"
         if not pred_path.exists():
             missing.append(video["id"])
@@ -107,7 +115,7 @@ def score_dir(predictions: Path, tolerance: int) -> tuple[dict[str, Counts], lis
         scored[video["id"]] = score_cuts(
             predicted, labeled, video.get("exclude", []), tolerance
         )
-    return scored, missing
+    return scored, missing, unlabeled
 
 
 def main() -> None:
@@ -123,9 +131,9 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    scored, missing = score_dir(args.predictions, args.tolerance)
+    scored, missing, unlabeled = score_dir(args.predictions, args.tolerance)
     if not scored:
-        sys.exit(f"no predictions for any golden video in {args.predictions}")
+        sys.exit(f"no predictions for any labeled golden video in {args.predictions}")
     total = Counts()
     for counts in scored.values():
         total.add(counts)
@@ -141,6 +149,7 @@ def main() -> None:
                     "element": "cuts",
                     "tolerance": args.tolerance,
                     "missing": missing,
+                    "unlabeled": unlabeled,
                     "videos": rows,
                     "total": {
                         **asdict(total),
@@ -156,6 +165,7 @@ def main() -> None:
     print(
         f"cuts · ±{args.tolerance} frames · {len(scored)} videos"
         + (f" · no prediction: {', '.join(missing)}" if missing else "")
+        + (f" · not labeled yet: {', '.join(unlabeled)}" if unlabeled else "")
     )
     print(f"{'video':<8}{'P':>7}{'R':>7}{'TP':>5}{'FP':>5}{'FN':>5}")
     for vid, c in [*scored.items(), ("total", total)]:

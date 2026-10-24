@@ -88,13 +88,17 @@ def golden(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (tmp_path / "labels").mkdir()
     (tmp_path / "labels" / "v01.json").write_text(json.dumps(template([10, 50])))
     (tmp_path / "labels" / "v02.json").write_text(json.dumps(template([30])))
+    (tmp_path / "labels" / "v03.json").write_text(json.dumps(template([])))
     videos = [
         {
             "id": "v01",
             "frames": 100,
+            "labeled": True,
             "exclude": [{"start": 90, "duration": 10, "reason": "platform end card"}],
         },
-        {"id": "v02", "frames": 100},
+        {"id": "v02", "frames": 100, "labeled": True},
+        # Ingested but not labeled yet: ingest.py writes an empty label file and labeled: false.
+        {"id": "v03", "frames": 100, "labeled": False},
     ]
     (tmp_path / "manifest.json").write_text(json.dumps({"videos": videos}))
     monkeypatch.setattr(score, "ROOT", tmp_path)
@@ -117,6 +121,7 @@ def test_cli_totals_and_missing_videos(
     run(monkeypatch, str(golden), "--json")
     out = json.loads(capsys.readouterr().out)
     assert out["missing"] == ["v02"]
+    assert out["unlabeled"] == ["v03"]
     assert out["total"]["true_positives"] == 2 and out["total"]["false_positives"] == 0
     assert out["tolerance"] == score.DEFAULT_TOLERANCE
 
@@ -139,4 +144,28 @@ def test_cli_with_no_predictions_stops(
     golden: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     with pytest.raises(SystemExit, match="no predictions"):
+        run(monkeypatch, str(golden))
+
+
+def test_unlabeled_videos_are_never_scored(
+    golden: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A prediction for a video that's ingested but not labeled yet must not count its cuts as false positives."""
+    (golden / "v01.json").write_text(json.dumps(template([10, 50])))
+    (golden / "v03.json").write_text(json.dumps(template([20, 40, 60])))
+    run(monkeypatch, str(golden), "--json")
+    out = json.loads(capsys.readouterr().out)
+    assert set(out["videos"]) == {"v01"}
+    assert out["unlabeled"] == ["v03"]
+    assert out["total"]["false_positives"] == 0 and out["total"]["precision"] == 1.0
+
+    run(monkeypatch, str(golden))
+    assert "not labeled yet: v03" in capsys.readouterr().out
+
+
+def test_only_unlabeled_predictions_stops(
+    golden: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (golden / "v03.json").write_text(json.dumps(template([20])))
+    with pytest.raises(SystemExit, match="no predictions for any labeled golden video"):
         run(monkeypatch, str(golden))
