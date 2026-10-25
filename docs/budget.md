@@ -8,10 +8,10 @@ _Last updated 2026-10-25. These are estimates. Prices marked **(list)** are vend
 
 | Stage | Fixed cost / month | Paying users to break even at $19 |
 |---|---|---|
-| Today | ~$20 | n/a (no revenue yet) |
-| MVP beta (Sprint 8, 2027-01-07) | ~$57 | **4** |
-| After launch, lean | ~$220 | **17** |
-| After launch, Modal Team plan | ~$470 | **35** |
+| Today | ~$40 | n/a (no revenue yet) |
+| MVP beta (Sprint 8, 2027-01-07) | ~$77 | **6** |
+| After launch, lean | ~$240 | **18** |
+| After launch, Modal Team plan | ~$490 | **37** |
 | After launch, plus 4 founder stipends of $1,500 | ~$6,500 | **~480** (~$9.2k MRR) |
 
 Infrastructure is not the constraint. Paying the team is.
@@ -26,9 +26,9 @@ Infrastructure is not the constraint. Paying the team is.
 | Sentry | $0 | $0 | ~$26 | **(list)** Free plan has one seat. Team seats need the owner's approval |
 | Transactional email | $0 | $0 | $0–20 | Supabase's default mailer is too rate-limited for real users. Resend's free tier covers beta |
 | Domain, Apple Developer | – | ~$2 | ~$10 | Apple Developer ($99/year) only if the Bridge (#32) ships a signed macOS binary |
-| Claude subscription for CI | ? | ? | ? | Armour, ticket sync and `@claude` use `CLAUDE_CODE_OAUTH_TOKEN`, a subscription, not API billing. Fill in the tier |
+| Claude Pro for CI | $20 | $20 | $20 | Armour, ticket sync and `@claude` use `CLAUDE_CODE_OAUTH_TOKEN` from a Claude Pro subscription, not API billing. If Pro's usage limits start throttling reviews as PR volume grows, Max costs more **(list)** |
 | GitHub, Discord, Stripe account | $0 | $0 | $0 | Stripe charges per transaction (below) |
-| **Total** | **~$20** | **~$57** | **~$220–470** | |
+| **Total** | **~$40** | **~$77** | **~$240–490** | |
 
 **One-time:** legal consult (#21), about $1–3k. Meta ads test (#121), budget not set.
 
@@ -73,11 +73,11 @@ paying users to break even = fixed cost per month / margin per user
 margin per user            = price − Stripe fees − cost to serve
 ```
 
-| Price | Margin per user | Beta ($57) | Lean ($220) | Modal Team ($470) | With stipends ($6,500) |
+| Price | Margin per user | Beta ($77) | Lean ($240) | Modal Team ($490) | With stipends ($6,500) |
 |---|---|---|---|---|---|
-| $12 | ~$6.50 | 9 | 34 | 73 | ~1,000 |
-| $19 | ~$13.50 | 4 | 17 | 35 | ~480 |
-| $29 | ~$23 | 3 | 10 | 21 | ~285 |
+| $12 | ~$6.50 | 12 | 37 | 76 | ~1,000 |
+| $19 | ~$13.50 | 6 | 18 | 37 | ~480 |
+| $29 | ~$23 | 4 | 11 | 22 | ~285 |
 
 Price moves break-even far more than infrastructure does. Interviews (#20) should test willingness to pay.
 
