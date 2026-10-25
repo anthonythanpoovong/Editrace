@@ -46,6 +46,13 @@ describe("generated Zod schema", () => {
     expect(templateSchema.safeParse(document).success).toBe(false);
   });
 
+  test("rejects the forward-compat vector", () => {
+    // Readers skip the unknown enum value (read-template.test.ts). Writers stay strict (docs/schema.md), so the same
+    // document, from a newer minor, must not parse as a template.
+    const { document } = JSON.parse(readFileSync(resolve(schemaDir, "test-vectors/forward-compat.json"), "utf8"));
+    expect(templateSchema.safeParse(document).success).toBe(false);
+  });
+
   test.each(invalid)("invalid fixture $name is rejected", ({ name, document }) => {
     const accepted = templateSchema.safeParse(document).success;
     // Still accepted today if it's a known gap. If this fails, the gap closed: remove it from knownGaps.

@@ -216,6 +216,7 @@ def main() -> None:
                 "labeling_minutes": None,
                 "notes": [],
                 "ambiguous": [],
+                "exclude": [],
             }
         )
         known.add(original_hash)
