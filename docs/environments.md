@@ -76,12 +76,19 @@ Each secret lives in **one** place. Don't copy values between systems except thr
 |---|---|---|
 | `VERCEL_TOKEN`, `VERCEL_ORG_ID` | GitHub repo secrets | `deploy.yml` |
 | `VERCEL_PROJECT_ID_NP`, `VERCEL_PROJECT_ID_PROD` | GitHub repo variables | `deploy.yml` |
-| `SUPABASE_ACCESS_TOKEN` | GitHub environment secret, a different token in `staging` and `Production`. Each is a read-only token scoped to that environment's one Supabase project, so the staging token can't reach prod | `deploy.yml` migration steps |
+| `SUPABASE_ACCESS_TOKEN` | GitHub environment secret, a different token in `staging` and `Production`. Each is scoped to that environment's one Supabase project, so the staging token can't reach prod | `deploy.yml` migration steps |
 | `SUPABASE_DB_PASSWORD` | GitHub environment secret, a different value in `staging` and `Production` | `deploy.yml` migration steps |
 | `SUPABASE_PROJECT_REF` | GitHub environment variable, a different value in `staging` and `Production` | `deploy.yml` migration steps |
 | `STAGING_ALIAS` | GitHub repo variable | `deploy.yml` (staging host shown on the environment and in the commit status) |
 | `CLAUDE_CODE_OAUTH_TOKEN` | GitHub repo secret | Armour review and `@claude` |
 | `DISCORD_REVIEW_WEBHOOK` | GitHub repo secret | Discord review notifications |
+| `DISCORD_ALERTS_WEBHOOK` | GitHub repo secret | Spend and error alerts in `#alerts` ([observability.md](observability.md#spend-alerts)) |
+| `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SERVICE_ROLE_KEY` | Vercel project env vars, per environment | Web app |
+| `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET` | GitHub repo secrets (deploys) and Modal (runtime) | Workers |
+| `ANTHROPIC_API_KEY`, `STRIPE_*` | Vercel project env vars, per environment | Web app and assistant |
+| `APP_ENV` | Vercel project env vars (`preview`, `staging`, `prod`) and Modal secrets, per environment | Logs and Sentry events ([observability.md](observability.md)) |
+| `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | Vercel project env vars (web DSN) and Modal secrets (workers DSN) | Error tracking |
+| `SENTRY_AUTH_TOKEN` | GitHub repo secret | Source map upload in `deploy.yml`, once the web SDK is set up |
 | `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SERVICE_ROLE_KEY` | Vercel project env vars: `editrace-np` (Preview and `staging` environments), `editrace-prod` (Production) | Web app |
 | `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET` | GitHub repo secrets (deploys) and Modal (runtime) | Workers |
 | `ANTHROPIC_API_KEY`, `STRIPE_*` | Vercel project env vars: `editrace-np` (Preview and `staging` environments), `editrace-prod` (Production) | Web app and assistant |

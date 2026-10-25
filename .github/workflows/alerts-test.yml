@@ -1,0 +1,40 @@
+name: Alerts test
+
+# Posts a test message to #alerts on Discord, to check DISCORD_ALERTS_WEBHOOK works (#50).
+# Runs by hand (Actions → Alerts test → Run workflow), e.g. after the webhook URL is rotated,
+# and automatically only when this file changes on a branch other than main, so a PR that edits
+# it sends one test message. Never pings anyone. Not a required check and not part of ci-ok.
+# Needs: secret DISCORD_ALERTS_WEBHOOK (docs/observability.md#spend-alerts).
+
+on:
+  workflow_dispatch:
+  push:
+    branches-ignore: [main]
+    paths: [.github/workflows/alerts-test.yml]
+
+permissions: {}
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Post test message to #alerts
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_ALERTS_WEBHOOK }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REF: ${{ github.ref_name }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          if [ -z "$WEBHOOK" ]; then
+            echo "::error::Secret DISCORD_ALERTS_WEBHOOK is not set"
+            exit 1
+          fi
+          payload=$(jq -n --arg run "$RUN_URL" --arg ref "$REF" --arg actor "$ACTOR" '{
+            username: "Editrace Alert",
+            content: "Test alert: if you can see this, #alerts delivery works. Branch `\($ref)`, started by \($actor). [Run](<\($run)>)",
+            allowed_mentions: { parse: [] }
+          }')
+          curl --fail-with-body --silent --show-error \
+            -H "Content-Type: application/json" -d "$payload" "$WEBHOOK"
+          echo "Posted test message to #alerts"
