@@ -76,7 +76,7 @@ Each secret lives in **one** place. Don't copy values between systems except thr
 |---|---|---|
 | `VERCEL_TOKEN`, `VERCEL_ORG_ID` | GitHub repo secrets | `deploy.yml` |
 | `VERCEL_PROJECT_ID_NP`, `VERCEL_PROJECT_ID_PROD` | GitHub repo variables | `deploy.yml` |
-| `SUPABASE_ACCESS_TOKEN` | GitHub environment secret, a different token in `staging` and `Production`. Each is a read-only token scoped to that environment's one Supabase project, so the staging token can't reach prod | `deploy.yml` migration steps |
+| `SUPABASE_ACCESS_TOKEN` | GitHub environment secret, a different token in `staging` and `Production`. Each is scoped to that environment's one Supabase project, so the staging token can't reach prod | `deploy.yml` migration steps |
 | `SUPABASE_DB_PASSWORD` | GitHub environment secret, a different value in `staging` and `Production` | `deploy.yml` migration steps |
 | `SUPABASE_PROJECT_REF` | GitHub environment variable, a different value in `staging` and `Production` | `deploy.yml` migration steps |
 | `STAGING_ALIAS` | GitHub repo variable | `deploy.yml` (staging host shown on the environment and in the commit status) |
