@@ -219,7 +219,8 @@ function loadVideo(file) {
 // timestamp of the last frame actually decoded: seek to the end and read it from the frame callback.
 function countFrames() {
   return new Promise((resolve) => {
-    const fallback = setTimeout(() => resolve(Math.floor(video.duration * fps())), 2000);
+    // Round, not floor: at a rounded fps like 23.976 for 24000/1001, duration × fps lands just under the frame count.
+    const fallback = setTimeout(() => resolve(Math.round(video.duration * fps())), 2000);
     video.requestVideoFrameCallback((_, meta) => {
       clearTimeout(fallback);
       resolve(Math.round(meta.mediaTime * fps()) + 1);
