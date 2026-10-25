@@ -42,6 +42,9 @@ Closes #<n>
 ## Acceptance criteria
 <copy each checkbox from the issue>
 
+## Test plan
+<one line per acceptance criterion: criterion → the test or evidence that proves it>
+
 ## Plan
 <3–6 bullet implementation plan>
 
@@ -49,6 +52,13 @@ Closes #<n>
 <decisions, open questions>"
 ```
 Move the item to "In progress" on the project board if the board has that status.
+
+**Test plan.** For each acceptance criterion, name what will prove it, before writing code. You don't write the tests first, only name them. Each line is one of:
+- **Automated:** the test file and what it checks, e.g. `web/lib/log.test.ts`: sensitive keys are redacted. Where a skill sets the test (two-user RLS test, golden eval, adapter contract test), name that.
+- **Manual:** the evidence that will go in the PR, e.g. a screenshot of the test alert or a log excerpt. Use this only when an automated test isn't practical, and say why.
+- **n/a:** docs-only criteria.
+
+If you can't name any test or evidence for a criterion, it's too vague: ask the author to sharpen it (as in the readiness check).
 
 ## 4. Point to the right skill
 Based on the story's area, tell the person which skill fits:
@@ -61,6 +71,7 @@ Based on the story's area, tell the person which skill fits:
 
 ## 5. Finishing (when asked)
 Ask whether the work taught the team anything worth keeping (a gotcha, a failed approach, a surprise). If so, add a note to `docs/learnings/` from `TEMPLATE.md` and the index, in this PR. Then tick the PR checklist from real evidence: tests or eval output, not claims. Mark the PR ready for review. `Closes #<n>` closes the issue on merge. If the story changed something large, remind them to run `/sync-docs` after merge.
+Tick the PR checklist from real evidence: tests or eval output, not claims. Check every line of the test plan exists: each named test is in the PR and passes, and each manual item has its evidence attached. If the plan changed while building, update it rather than leaving stale lines. Mark the PR ready for review. `Closes #<n>` closes the issue on merge. If the story changed something large, remind them to run `/sync-docs` after merge.
 
 ## Rules
 - Never start a story whose dependencies are open without the author explicitly accepting the risk.
