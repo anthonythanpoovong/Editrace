@@ -1,0 +1,43 @@
+name: Project intake (PRs)
+
+# A new pull request is assigned to its author (unless already assigned or opened by a bot).
+# Pull requests never get a card on the Editrace board (Project #2): only tickets are on the board,
+# and a PR is tracked by the ticket it closes (#178).
+# Not a required check and not part of ci-ok: a failed run shows as a red X.
+#
+# pull_request_target runs this file from the default branch, never the PR's copy. For that reason
+# nothing here checks out or runs PR code: only the default branch's scripts, and nothing from the PR
+# except its number, author and assignees (the title and body are never read).
+
+on:
+  pull_request_target:
+    types: [opened]
+
+permissions: {}
+
+jobs:
+  assign:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: .github/scripts
+      # Never fatal: an author who cannot be assigned (not a collaborator) is only a warning.
+      - name: Assign the author
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          ASSIGNEES: ${{ toJSON(github.event.pull_request.assignees.*.login) }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+        run: |
+          who=$(.github/scripts/project-intake-assignee.sh)
+          [ -z "$who" ] || gh api "repos/$REPO/issues/$PR/assignees" -f "assignees[]=$who" > /dev/null \
+            || echo "::warning::Could not assign $who to #$PR"

@@ -10,6 +10,7 @@ Project documentation, decisions, and customer research.
 - `architecture.md` — System architecture overview
 - `decisions/` — Architectural decision records (ADRs); propose with `/propose-adr`
 - `epics/` — Epic proposals, approved before any issues are created; propose with `/propose-epic`
+- `learnings/` — Short notes on what we learned (spike outcomes, gotchas, failed attempts); copy `learnings/TEMPLATE.md`
 - `customers/` — Customer interview notes and GTM research
 
 ## Writing Guidelines

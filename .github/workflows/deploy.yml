@@ -1,23 +1,32 @@
 name: Deploy
 
-# Staging deploys automatically when a merge lands on main; prod is a manual run of this workflow (#48).
-# PR previews are deployed here too, not by Vercel's Git integration: on Hobby it refuses commits from anyone who
-# isn't a member of the Vercel team, which blocks every collaborator. web/vercel.json turns the integration's deploys off.
-# Vercel still marks a deployment BLOCKED when the commit's author isn't on the team, even from the CLI. Vercel must never
-# fail or hang a collaborator's push, so vercel-deploy.sh reports BLOCKED and the preview and staging jobs end green
-# with a note. Only production, which the owner runs by hand, fails on it. Vercel Pro seats are the real fix.
+# Two Vercel projects: editrace-np holds PR previews and the `staging` custom environment, editrace-prod holds production (#48).
+# Staging deploys automatically when a merge lands on main. Production is a manual run that promotes a commit
+# already live on staging: staging records a `deployed/staging` commit status, and the prod run refuses any commit without it.
+# Separate projects can't share a build (env vars like NEXT_PUBLIC_* are baked in at build time), so promoting
+# means rebuilding that exact commit with production's env vars.
+# Deploys come from here, not Vercel's Git integration, so web/vercel.json turns the integration's deploys off.
+# On Hobby, Vercel marked a deployment BLOCKED when the commit's author wasn't on the team, even from the CLI, and the CLI
+# then hung. Pro no longer does (collaborator deploys have gone through since Oct 12), but Vercel must never fail or hang
+# a collaborator's push, so vercel-deploy.sh still reports BLOCKED and the preview and staging jobs end green with a note.
+# Only production, which the owner runs by hand, fails on it.
 on:
   push:
     branches: [main]
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
+    # A docs-only push has nothing to preview. Pushes to main are not filtered: staging must follow main.
+    paths-ignore: ["**.md", "docs/**"]
   workflow_dispatch:
     inputs:
-      target:
-        description: Where to deploy
-        type: choice
-        options: [production]
-        default: production
+      sha:
+        description: Commit to promote to production (blank = the newest commit live on staging)
+        type: string
+        default: ""
+      migrate:
+        description: Apply the commit's Supabase migrations to the prod database first. Untick for a rollback to an older commit, so the old app runs against the newer database
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -25,34 +34,28 @@ permissions:
 env:
   # Pinned: these jobs hold VERCEL_TOKEN, so bump the CLI deliberately in a PR, never via @latest.
   VERCEL_CLI_VERSION: 62.2.0
+  # Pinned for the same reason: the migration steps hold the database password.
+  SUPABASE_CLI_VERSION: 2.120.0
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
 jobs:
-  # Same convention as ci.yml: stay a no-op until web/ has an app, so this can merge before the app does.
-  detect:
-    runs-on: ubuntu-latest
-    outputs:
-      web: ${{ steps.d.outputs.web }}
-    steps:
-      - uses: actions/checkout@v6
-      - id: d
-        run: |
-          [ -e web/package.json ] && echo "web=true" >> "$GITHUB_OUTPUT" || echo "web=false" >> "$GITHUB_OUTPUT"
-
   # Same-repo PRs only: fork PRs can't read the Vercel secrets. The deploy runs under the token's owner, but Vercel
   # still blocks it when the commit's author isn't on the team: that ends as a note on the PR, not a failure.
   # Anyone with write access can edit this workflow in their branch and read the secrets, which is already true of
   # every secret in the repo.
+  # Armour eval PRs (#128, scripts/armour-eval) get no preview: they hold deliberately buggy code, and a
+  # preview would outlive the PR.
   preview:
-    needs: detect
     if: >-
       github.event_name == 'pull_request'
       && github.event.pull_request.head.repo.full_name == github.repository
-      && needs.detect.outputs.web == 'true'
+      && !github.event.pull_request.draft
+      && !startsWith(github.head_ref, 'armour-eval/')
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID_NP }}
     permissions:
       contents: read
       pull-requests: write
@@ -63,7 +66,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
       - run: npm install --global "vercel@$VERCEL_CLI_VERSION"
       - run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
       - run: vercel build --token="$VERCEL_TOKEN"
@@ -82,7 +85,7 @@ jobs:
         run: |
           case "$STATE" in
             READY) text="🔍 Preview for \`${SHA:0:7}\`: $URL" ;;
-            BLOCKED) text="⚠️ No preview for \`${SHA:0:7}\`: Vercel blocks deploys of commits whose author isn't on the Vercel team (Hobby has no seats). Nothing is wrong with this PR, and CI is unaffected." ;;
+            BLOCKED) text="⚠️ No preview for \`${SHA:0:7}\`: Vercel blocks deploys of commits whose author isn't on the Vercel team (not a Vercel team member). Nothing is wrong with this PR, and CI is unaffected." ;;
             *) text="❌ The preview for \`${SHA:0:7}\` didn't finish ($STATE). See the [run log]($RUN_URL)." ;;
           esac
           body=$(printf '%s\n%s' "$MARKER" "$text")
@@ -101,13 +104,17 @@ jobs:
           exit 1
 
   staging:
-    needs: detect
-    if: github.event_name == 'push' && needs.detect.outputs.web == 'true'
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID_NP }}
+    permissions:
+      contents: read
+      statuses: write
     environment:
       name: staging
-      url: ${{ steps.alias.outputs.url }}
+      url: https://${{ vars.STAGING_ALIAS }}
     concurrency:
       group: deploy-staging
       cancel-in-progress: false
@@ -115,35 +122,47 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
+      # Migrations go first: if one fails, the job stops before any deploy, so no `deployed/staging` status is posted
+      # and the commit can't be promoted. Inline here (not a script in the repo) so a rollback never runs an old
+      # commit's copy of this with the database password. `db push` skips seed.sql, so dev users never reach a cloud project.
+      - uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+      - name: Apply Supabase migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+        run: |
+          if [ -z "$SUPABASE_PROJECT_REF" ] || [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$SUPABASE_DB_PASSWORD" ]; then
+            echo "::error::SUPABASE_PROJECT_REF, SUPABASE_ACCESS_TOKEN and SUPABASE_DB_PASSWORD must be set on this GitHub environment (docs/environments.md)."
+            exit 1
+          fi
+          supabase link --project-ref "$SUPABASE_PROJECT_REF"
+          supabase db push --dry-run # the pending list stays in the log, for audit
+          supabase db push
       - run: npm install --global "vercel@$VERCEL_CLI_VERSION"
-      # Hobby has no custom environments, so staging is a preview build aliased to a stable URL.
-      - run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
-      - run: vercel build --token="$VERCEL_TOKEN"
+      # Staging is a custom environment in editrace-np with its own env vars; the staging domain follows its latest deploy.
+      - run: vercel pull --yes --environment=staging --token="$VERCEL_TOKEN"
+      - run: vercel build --target=staging --token="$VERCEL_TOKEN"
       - id: deploy
-        run: .github/scripts/vercel-deploy.sh
-      - id: alias
+        run: .github/scripts/vercel-deploy.sh --target=staging
+      # This is what lets the production run promote this commit. BLOCKED never gets here, so a commit that
+      # never reached staging can't be promoted.
+      - name: Mark the commit as live on staging
         if: steps.deploy.outputs.state == 'READY'
         env:
-          URL: ${{ steps.deploy.outputs.url }}
+          GH_TOKEN: ${{ github.token }}
           STAGING_ALIAS: ${{ vars.STAGING_ALIAS }}
         run: |
-          url=$URL
-          if [ -n "${STAGING_ALIAS:-}" ]; then
-            # Not `vercel alias set`: it looks up the token's user first, and this token can't read one
-            # ("User not found", with or without --scope). The REST API only needs the team id.
-            api=https://api.vercel.com
-            id=$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "$api/v13/deployments/${url#https://}?teamId=$VERCEL_ORG_ID" | jq -r .id)
-            curl -fsS -X POST -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" \
-              -d "{\"alias\":\"$STAGING_ALIAS\"}" "$api/v2/deployments/$id/aliases?teamId=$VERCEL_ORG_ID" >/dev/null
-            url="https://$STAGING_ALIAS"
-          fi
-          echo "url=$url" >> "$GITHUB_OUTPUT"
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            -f state=success -f context=deployed/staging -f target_url="https://$STAGING_ALIAS" -f description="Live on staging" >/dev/null
       # The latest commit on main was written by someone without a Vercel seat, so staging stays on the last good build.
       - name: Staging not updated
         if: steps.deploy.outputs.state == 'BLOCKED'
         run: |
-          echo "::warning title=Staging not updated::Vercel blocked this deploy because the commit author isn't on the Vercel team (Hobby has no seats). Staging still serves the previous build."
+          echo "::warning title=Staging not updated::Vercel blocked this deploy because the commit author isn't on the Vercel team (not a Vercel team member). Staging still serves the previous build."
       - name: Fail if the deploy broke
         if: steps.deploy.outputs.state != 'READY' && steps.deploy.outputs.state != 'BLOCKED'
         run: |
@@ -151,10 +170,14 @@ jobs:
           exit 1
 
   production:
-    needs: detect
-    if: github.event_name == 'workflow_dispatch' && needs.detect.outputs.web == 'true'
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID_PROD }}
+    permissions:
+      contents: read
+      statuses: read # the pick step reads deployed/staging; without it a private repo refuses every promotion
     # The Production environment only accepts protected branches, so run this from main.
     environment:
       name: Production
@@ -163,18 +186,86 @@ jobs:
       group: deploy-production
       cancel-in-progress: false
     steps:
+      # Pick the commit to promote and check it really is live on staging before building anything.
+      - id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_SHA: ${{ inputs.sha }}
+        run: |
+          # Newest status first; sed (not head) reads every page so pipefail never sees a closed pipe.
+          staged() { gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$1/statuses" \
+            --jq '.[] | select(.context == "deployed/staging") | .state' | sed -n 1p; }
+          sha=$INPUT_SHA
+          # The input ends up in an API path, so accept nothing but a (short) SHA.
+          if [ -n "$sha" ] && ! [[ $sha =~ ^[0-9a-fA-F]{7,40}$ ]]; then
+            echo "::error::sha must be 7 to 40 hex characters."
+            exit 1
+          fi
+          if [ -z "$sha" ]; then
+            for c in $(gh api "repos/$GITHUB_REPOSITORY/commits?sha=main&per_page=30" --jq '.[].sha'); do
+              [ "$(staged "$c")" = success ] && { sha=$c; break; }
+            done
+          fi
+          if [ -z "$sha" ]; then
+            echo "::error::None of the last 30 commits on main is live on staging, so there is nothing to promote."
+            exit 1
+          fi
+          sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/$sha" --jq .sha)
+          if [ "$(staged "$sha")" != success ]; then
+            echo "::error::${sha:0:7} was never deployed to staging. Merge it to main and let the staging deploy go green first."
+            exit 1
+          fi
+          # Anyone with write access can post a commit status, so the status alone isn't proof. Main is protected
+          # (PR plus approval), so also require the commit to be on it: a PR-branch commit can never reach prod.
+          rel=$(gh api "repos/$GITHUB_REPOSITORY/compare/$sha...main" --jq .status)
+          if [ "$rel" != identical ] && [ "$rel" != ahead ]; then
+            echo "::error::${sha:0:7} isn't on main (main is $rel of it), so it can't be promoted."
+            exit 1
+          fi
+          echo "Promoting $sha"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      # The promoted commit supplies the app to build (what was tested on staging). The deploy script that holds the
+      # prod token comes from the main commit this run was dispatched from, so a rollback to an old commit never
+      # runs that commit's copy of it.
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.pick.outputs.sha }}
+      - uses: actions/checkout@v6
+        with:
+          path: ci
+          sparse-checkout: .github/scripts
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
+      # Migrations come from the promoted commit and run before the build, so a failed one stops the job before any deploy.
+      # A rollback unticks `migrate`: the old app then runs against the newer database, which is why migrations must be
+      # backward compatible with the previous release (/db-migration). Inline, like staging, for the same reason.
+      - uses: supabase/setup-cli@v1
+        if: inputs.migrate
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+      - name: Apply Supabase migrations
+        if: inputs.migrate
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+        run: |
+          if [ -z "$SUPABASE_PROJECT_REF" ] || [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$SUPABASE_DB_PASSWORD" ]; then
+            echo "::error::SUPABASE_PROJECT_REF, SUPABASE_ACCESS_TOKEN and SUPABASE_DB_PASSWORD must be set on this GitHub environment (docs/environments.md)."
+            exit 1
+          fi
+          supabase link --project-ref "$SUPABASE_PROJECT_REF"
+          supabase db push --dry-run # the pending list stays in the log, for audit
+          supabase db push
       - run: npm install --global "vercel@$VERCEL_CLI_VERSION"
       - run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
       - run: vercel build --prod --token="$VERCEL_TOKEN"
       - id: deploy
-        run: .github/scripts/vercel-deploy.sh --prod
+        run: ci/.github/scripts/vercel-deploy.sh --prod
       # Unlike preview and staging, a blocked prod deploy is a failure: the owner asked for it by hand.
       - name: Fail unless the deploy is live
         if: steps.deploy.outputs.state != 'READY'
         run: |
-          echo "::error::Production deploy ended as ${{ steps.deploy.outputs.state }}. BLOCKED means Vercel rejected the commit author: run this from a commit authored by a Vercel team member."
+          echo "::error::Production deploy ended as ${{ steps.deploy.outputs.state }}. BLOCKED means Vercel rejected the commit author: promote a commit authored by a Vercel team member."
           exit 1

@@ -11,8 +11,10 @@ name: Discord reminders
 #
 # GitHub cron is UTC and ignores daylight saving, so each reminder has a summer and a winter UTC
 # entry; discord-reminder-due.sh sends only when the time in the config's timezone is inside the
-# reminder's window, so exactly one entry fires. Scheduled runs can be a few minutes late; the windows
-# allow for that. Not a required check and not part of ci-ok: a failed post, or a board that cannot
+# reminder's window. GitHub starts scheduled runs hours late (and sometimes drops one), so the eve and
+# sprint windows are 8 hours long (the "starts now" ping stays at 30 minutes). That means both entries
+# can land in a window, so each reminder is claimed first as a git ref refs/reminders/<key> and sent
+# only if it was not already taken; a failed post releases the claim. Not a required check and not part of ci-ok: a failed post, or a board that cannot
 # be read, shows as a red X.
 # Needs: secret DISCORD_REVIEW_WEBHOOK (or DISCORD_MEETING_WEBHOOK to use another channel), variable
 # DISCORD_REVIEW_ROLE_ID, and secret PROJECT_TOKEN (a token with the "project" scope, read only here;
@@ -48,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
-      contents: read
+      contents: write   # only to create and delete the refs/reminders/* claim refs
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -63,6 +65,7 @@ jobs:
           ROLE_ID: ${{ vars.DISCORD_REVIEW_ROLE_ID }}
           # Only used to read the Sprint field of the project board.
           GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          CLAIM_TOKEN: ${{ github.token }}
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
           NOW: ${{ github.event_name == 'workflow_dispatch' && inputs.now || '' }}
         run: .github/scripts/discord-reminders.sh

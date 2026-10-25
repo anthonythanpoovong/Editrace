@@ -49,3 +49,10 @@ htmlcov/
 # Claude Code (skills in .claude/skills/ are shared)
 .claude/worktrees/
 .claude/settings.local.json
+
+# Coverage output (#129)
+coverage/
+coverage.xml
+
+# Golden-set videos: private, never committed (#4, #52)
+eval/golden/videos/
