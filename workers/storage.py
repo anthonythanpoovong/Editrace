@@ -18,6 +18,12 @@ class HashMismatchError(ValueError):
 
 
 class HttpsFetcher:
+    """Checks only that the location is https. Today nothing fills `job.video` in production. Before the orchestrator
+    (#58, #59) does, it must only ever be a signed URL the orchestrator made itself, never anything a user supplied.
+    `urlopen` follows redirects, and this check sees only the first URL, so a redirect could still reach another host
+    or scheme. Add a host allowlist and refuse redirects before locations come from job records. The hash check means
+    a wrong response is never analyzed, not that the request was never made."""
+
     def __init__(self, timeout_s: float = 60) -> None:
         self.timeout_s = timeout_s
 

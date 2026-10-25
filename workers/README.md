@@ -6,8 +6,8 @@ Python analysis pipeline running on Modal (serverless GPU).
 
 - **Runtime:** Modal (serverless GPU)
 - **Language:** Python 3.11+
-- **ML Frameworks:** TBD (PyTorch, librosa, OpenCV recommended)
-- **Job Queue:** Trigger from web app via job queue
+- **ML frameworks:** chosen per worker (PyTorch, librosa and OpenCV are the likely ones)
+- **Orchestration:** the orchestrator (#59) dispatches jobs from the jobs table (#58). Neither exists yet.
 
 ## The worker base (#53)
 
@@ -42,16 +42,9 @@ python -m workers.run workers.reference:ReferenceWorker clip.mp4 --source source
 
 A second run prints `cache hit`. `workers/reference.py` is the smallest possible worker.
 
-## Workers
+## Writing a worker
 
-### CV1 — Visual Timeline (calvinkafaiyuen)
-- `cut_detection.py` — Detect cuts using TransNetV2 or PySceneDetect
-- `motion_estimation.py` — Estimate zooms, pans, speed ramps
-
-### CV2 — Signals & Scoring (sktchan)
-- `captions.py` — Speech-to-text (Whisper)
-- `ocr.py` — Text overlay detection (OCR)
-- `beat_detection.py` — Beat tracking and sound fingerprinting
+Subclass `Worker` as above. One worker per detector, each in its own module under `workers/`. `workers/reference.py` is the template to copy. The planned detectors are tracked as issues, not here.
 
 ## Output
 
