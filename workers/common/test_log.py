@@ -4,7 +4,7 @@ import unittest
 import uuid
 from datetime import UTC, datetime
 
-from common.log import bind, get_logger
+from workers.common.log import bind, get_logger
 
 
 def make_logger():
