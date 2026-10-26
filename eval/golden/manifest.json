@@ -169,6 +169,68 @@
       "notes": [],
       "ambiguous": [],
       "exclude": []
+    },
+    {
+      "id": "v06",
+      "content_hash": "sha256:e574c38519e6fb34bdf7e0a6d483045714c60318b96c600931a220ad88ae2fd7",
+      "original_sha256": "f2667390d354ebe6354bb1860ad5c8cfd160d6aa22c841faabd28c8f0c4b6fc8",
+      "fps": {
+        "num": 24000,
+        "den": 1001
+      },
+      "frames": 304,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": true,
+      "rights": "",
+      "edit_styles": [],
+      "music": null,
+      "labeled": true,
+      "labeling_minutes": 8,
+      "notes": [
+        "platform end card: frames 206-303 (1 black frame + Instagram end card), not part of the edit, unlabeled. Exclude from scoring. Start frame checked against the video (black frame at 206)"
+      ],
+      "ambiguous": [],
+      "exclude": [
+        {
+          "start": 206,
+          "duration": 98,
+          "reason": "platform end card"
+        }
+      ]
+    },
+    {
+      "id": "v07",
+      "content_hash": "sha256:31ea7790c7ae6dd6fdd9764a6e5b44960b200243073c65c83ddd4573084d71fd",
+      "original_sha256": "0c6323ae7bcbd316a44c2355d42c01cc3539835118fc9131a5778757c27cca41",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 524,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "",
+      "edit_styles": [],
+      "music": null,
+      "labeled": false,
+      "labeling_minutes": null,
+      "notes": [
+        "platform end card: frames 403-523 (black frames + Instagram end card), not part of the edit, unlabeled. Exclude from scoring. Start frame checked against the video (Instagram watermark gone at 403; frames 368-402 are the creator's own black ending, with the watermark, and are part of the edit)"
+      ],
+      "ambiguous": [],
+      "exclude": [
+        {
+          "start": 403,
+          "duration": 121,
+          "reason": "platform end card"
+        }
+      ]
     }
   ]
 }
