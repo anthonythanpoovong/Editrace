@@ -19,11 +19,8 @@ from typing import Any
 # ADR 0003. Any change here changes the output, so the worker reports these as its params (its cache key).
 ADAPTIVE_THRESHOLD = 2.0
 MIN_SCENE_LEN = 1  # frames; PySceneDetect's default of 15 drops fast cuts
-# Flagging (#7). PROVISIONAL: chosen on the first 5 golden videos, where detections this close together were almost
-# always a real cut plus a stray duplicate. Re-measure on #52's next 5 videos without re-tuning first, and again at
-# 30. Watch flash cuts: they are two real cuts 1-3 frames apart and would be flagged.
-FLAG_MAX_GAP = 8  # frames between neighbouring cuts for them to count as one burst (about 0.27 s at 30 fps)
-FLAG_MIN_CUTS = 2  # cuts in a burst before it is flagged
+# Flagging (#7). No rule yet: nothing is flagged. Closeness was tried and rejected: real cuts can be 2-3 frames apart
+# (v06's montage, and every flash cut), so "cuts close together" flagged good editing. A rule has to look at content.
 # The convention while the flag lives in `confidence` (no schema field yet): below this means "needs review".
 # Unflagged cuts score 0.5 or more; flagged ones are scaled into 0-0.4, so the most suspect still sort lowest.
 REVIEW_BELOW = 0.5
@@ -32,8 +29,7 @@ PARAMS: dict[str, Any] = {
     "detector": "pyscenedetect.AdaptiveDetector",
     "adaptive_threshold": ADAPTIVE_THRESHOLD,
     "min_scene_len": MIN_SCENE_LEN,
-    "flag_max_gap": FLAG_MAX_GAP,
-    "flag_min_cuts": FLAG_MIN_CUTS,
+    "flag_rule": None,
     "review_below": REVIEW_BELOW,
 }
 
@@ -83,30 +79,11 @@ def confidence(score: float) -> float:
 
     It measures how strongly a cut stands out, not whether it's real: on the golden set, split-screen false cuts score
     up to 28 and a picture-in-picture one 87, while some real cuts score 3. So it can't be the flag on its own (ADR 0003);
-    `flagged()` decides that, and `to_partial()` combines the two.
+    a flag rule has to decide that, and `to_partial()` combines the two.
     """
     if math.isnan(score) or score <= 0:
         return 0.0
     return min(1.0, max(0.0, 1 - ADAPTIVE_THRESHOLD / (2 * score)))
-
-
-def flagged(cuts: list[Cut]) -> set[int]:
-    """Frames of cuts in a burst: at least FLAG_MIN_CUTS cuts, each within FLAG_MAX_GAP frames of the next.
-
-    Real short-form edits cut fast too (montages 10 frames apart), so the gap is kept tight: on the golden set, wider
-    rules mostly flagged fast real editing rather than mistakes.
-    """
-    frames = sorted(c.frame for c in cuts)
-    out: set[int] = set()
-    burst: list[int] = []
-    for f in [*frames, None]:
-        if burst and (f is None or f - burst[-1] > FLAG_MAX_GAP):
-            if len(burst) >= FLAG_MIN_CUTS:
-                out.update(burst)
-            burst = []
-        if f is not None:
-            burst.append(f)
-    return out
 
 
 def cut_confidence(cut: Cut, is_flagged: bool) -> float:
@@ -118,15 +95,14 @@ def cut_confidence(cut: Cut, is_flagged: bool) -> float:
     return round(max(REVIEW_BELOW, strength), 4)
 
 
-def to_partial(detection: Detection) -> dict:
+def to_partial(detection: Detection, suspect: frozenset[int] = frozenset()) -> dict:
     """One video track with the cuts and the slots between them, for the worker base to stamp and validate.
 
-    Slots tile the video: a boundary at every cut. A slot is only as certain as its least certain boundary cut, so the
-    sliver between two near-duplicate cuts is flagged too; a video with no cuts is one slot, as certain as can be.
-    Confidence below REVIEW_BELOW means "needs review".
+    Slots tile the video: a boundary at every cut. A slot is only as certain as its least certain boundary cut, so a
+    slot next to a flagged cut is flagged too; a video with no cuts is one slot, as certain as can be. `suspect` holds
+    the frames of cuts a flag rule marks for review (none yet); confidence below REVIEW_BELOW means "needs review".
     """
     cuts = sorted(detection.cuts, key=lambda c: c.frame)
-    suspect = flagged(cuts)
     conf = {c.frame: cut_confidence(c, c.frame in suspect) for c in cuts}
     edges = [0, *(c.frame for c in cuts), detection.frames]
     slots = []

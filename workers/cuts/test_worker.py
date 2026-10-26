@@ -79,8 +79,7 @@ def test_params_carry_every_setting_that_changes_the_output(
     for setting in (
         "adaptive_threshold",
         "min_scene_len",
-        "flag_max_gap",
-        "flag_min_cuts",
+        "flag_rule",
         "review_below",
     ):
         assert setting in params
