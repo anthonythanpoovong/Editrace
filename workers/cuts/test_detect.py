@@ -17,6 +17,7 @@ from workers.cuts.detect import (
     confidence,
     cut_confidence,
     find_cuts,
+    suspect_cuts,
     to_partial,
 )
 
@@ -147,3 +148,47 @@ def test_unflagged_cuts_never_fall_below_the_line() -> None:
     weak = Cut(50, math.nan)  # a missing ratio maps to strength 0
     assert cut_confidence(weak, is_flagged=False) == REVIEW_BELOW
     assert cut_confidence(Cut(50, math.inf), is_flagged=True) == FLAGGED_MAX
+
+
+A, B, C, WHITE = (40, 40, 200), (200, 60, 40), (40, 180, 60), (255, 255, 255)
+
+
+def write_frames(path: Path, colors: list[tuple[int, int, int]]) -> Path:
+    """A video with one solid colour per frame (plus a little noise), for the content check."""
+    writer = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*"mp4v"), 30, (96, 64))
+    rng = np.random.default_rng(3)
+    for color in colors:
+        frame = np.full((64, 96, 3), color, np.uint8)
+        writer.write(cv2.add(frame, rng.integers(0, 6, frame.shape, dtype=np.uint8)))
+    writer.release()
+    return path
+
+
+def cuts_at(*frames: int) -> list[Cut]:
+    return [Cut(f, 3 * ADAPTIVE_THRESHOLD) for f in frames]
+
+
+def test_a_duplicate_detection_is_flagged(tmp_path: Path) -> None:
+    # One change from A to B, reported at 30 and again at 33: the frames between are already B.
+    video = write_frames(tmp_path / "dup.mp4", [A] * 30 + [B] * 30)
+    assert suspect_cuts(video, cuts_at(30, 33), fps=30) == {30, 33}
+
+
+def test_a_real_fast_cut_is_left_alone(tmp_path: Path) -> None:
+    # A 3-frame shot of its own (C) between A and B: two real cuts, however close.
+    video = write_frames(tmp_path / "fast.mp4", [A] * 30 + [C] * 3 + [B] * 27)
+    assert suspect_cuts(video, cuts_at(30, 33), fps=30) == frozenset()
+
+
+def test_a_flash_is_left_alone(tmp_path: Path) -> None:
+    # A one-frame white flash between two shots: two real cuts one frame apart (LABELING.md rule 3).
+    video = write_frames(tmp_path / "flash.mp4", [A] * 30 + [WHITE] + [B] * 29)
+    assert suspect_cuts(video, cuts_at(30, 31), fps=30) == frozenset()
+
+
+def test_the_pair_window_is_in_seconds(tmp_path: Path) -> None:
+    # Detections 15 frames apart with nothing new between them: 0.5 s at 30 fps is checked, 0.63 s at 24 fps isn't.
+    video = write_frames(tmp_path / "far.mp4", [A] * 30 + [B] * 40)
+    assert suspect_cuts(video, cuts_at(30, 45), fps=30) == {30, 45}
+    assert suspect_cuts(video, cuts_at(30, 45), fps=24000 / 1001) == frozenset()
+    assert suspect_cuts(video, cuts_at(10, 60), fps=30) == frozenset()

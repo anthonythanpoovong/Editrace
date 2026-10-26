@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from workers.cuts.detect import REVIEW_BELOW, find_cuts, to_partial
+from workers.cuts.detect import REVIEW_BELOW, find_cuts, suspect_cuts, to_partial
 
 pytest.importorskip("scenedetect")
 
@@ -81,9 +81,11 @@ def test_cuts_meet_the_floor_on_the_golden_set(tmp_path: Path) -> None:
     for vid in labeled:
         video = GOLDEN / "videos" / f"{vid}.mp4"
         label = json.loads((GOLDEN / "labels" / f"{vid}.json").read_text())
+        detection = find_cuts(video)
+        fps = label["source"]["fps"]["num"] / label["source"]["fps"]["den"]
         predicted = {
             "source": {**label["source"], "content_hash": _sha256(video)},
-            **to_partial(find_cuts(video)),
+            **to_partial(detection, suspect_cuts(video, detection.cuts, fps)),
         }
         (tmp_path / f"{vid}.json").write_text(json.dumps(predicted))
 

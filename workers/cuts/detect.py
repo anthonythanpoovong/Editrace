@@ -19,8 +19,18 @@ from typing import Any
 # ADR 0003. Any change here changes the output, so the worker reports these as its params (its cache key).
 ADAPTIVE_THRESHOLD = 2.0
 MIN_SCENE_LEN = 1  # frames; PySceneDetect's default of 15 drops fast cuts
-# Flagging (#7). No rule yet: nothing is flagged. Closeness was tried and rejected: real cuts can be 2-3 frames apart
-# (v06's montage, and every flash cut), so "cuts close together" flagged good editing. A rule has to look at content.
+# Flagging (#7): the content check in `suspect_cuts()`. For two detections close together, is what's between them a
+# shot of its own (a real fast cut, or a flash) or just the change from one shot to the next (a duplicate detection)?
+# Closeness alone was tried and rejected: real cuts can be 2-3 frames apart (v06's montage, every flash cut).
+# PROVISIONAL: DISTINCT_MIN was chosen after looking at v01-v06. Score v07-v10 with it unchanged before tuning on them.
+PAIR_WINDOW_S = (
+    0.5  # seconds; pairs of detections further apart than this aren't checked
+)
+DISTINCT_MIN = 30.0  # mean colour difference (0-255) the in-between frames need from both neighbouring shots
+SAMPLE_SIZE = (
+    64,
+    112,
+)  # frames are shrunk to this (width, height) before comparing, as when DISTINCT_MIN was chosen
 # The convention while the flag lives in `confidence` (no schema field yet): below this means "needs review".
 # Unflagged cuts score 0.5 or more; flagged ones are scaled into 0-0.4, so the most suspect still sort lowest.
 REVIEW_BELOW = 0.5
@@ -29,7 +39,10 @@ PARAMS: dict[str, Any] = {
     "detector": "pyscenedetect.AdaptiveDetector",
     "adaptive_threshold": ADAPTIVE_THRESHOLD,
     "min_scene_len": MIN_SCENE_LEN,
-    "flag_rule": None,
+    "flag_rule": "content",
+    "pair_window_s": PAIR_WINDOW_S,
+    "distinct_min": DISTINCT_MIN,
+    "sample_size": list(SAMPLE_SIZE),
     "review_below": REVIEW_BELOW,
 }
 
@@ -73,6 +86,49 @@ def find_cuts(video: Path) -> Detection:
     return Detection(cuts, frames)
 
 
+def suspect_cuts(video: Path, cuts: list[Cut], fps: float) -> frozenset[int]:
+    """Frames of cuts to flag for review: both cuts of any pair, at most PAIR_WINDOW_S apart, whose in-between frames
+    aren't a shot of their own.
+
+    The in-between frames are compared with the last frame before the pair and the first frame after it. A real fast
+    cut (or a flash) differs from both, so it's left alone however close the cuts are. A duplicate detection, where one
+    shot change was reported twice, comes out close to one of them. Cuts inside a labeled transition look the same way
+    (the frames between are a blend), so they can be flagged too until the transition detector (#23) can say so.
+    """
+    import cv2
+    import numpy as np
+
+    window = max(1, round(PAIR_WINDOW_S * fps))
+    frames = sorted(c.frame for c in cuts)
+    pairs = [(a, b) for a, b in itertools.pairwise(frames) if b - a <= window]
+    if not pairs:
+        return frozenset()
+
+    capture = cv2.VideoCapture(str(video))
+    try:
+
+        def read(n: int):
+            capture.set(cv2.CAP_PROP_POS_FRAMES, n)
+            ok, image = capture.read()
+            if not ok:
+                raise ValueError(f"can't read frame {n} of {video}")
+            return cv2.resize(image, SAMPLE_SIZE, interpolation=cv2.INTER_AREA).astype(
+                np.float32
+            )
+
+        out: set[int] = set()
+        for a, b in pairs:
+            before, after = read(a - 1), read(b)
+            between = [read(n) for n in range(a, b)]
+            to_before = min(float(np.abs(m - before).mean()) for m in between)
+            to_after = min(float(np.abs(m - after).mean()) for m in between)
+            if min(to_before, to_after) < DISTINCT_MIN:
+                out.update((a, b))
+        return frozenset(out)
+    finally:
+        capture.release()
+
+
 def confidence(score: float) -> float:
     """Map an adaptive ratio to 0-1: 0.5 at the threshold, rising towards 1 as the cut stands out more (0.75 at twice
     the threshold, 0.9 at five times). It never saturates, because real cuts on the golden set score 3 to 92.
@@ -100,7 +156,7 @@ def to_partial(detection: Detection, suspect: frozenset[int] = frozenset()) -> d
 
     Slots tile the video: a boundary at every cut. A slot is only as certain as its least certain boundary cut, so a
     slot next to a flagged cut is flagged too; a video with no cuts is one slot, as certain as can be. `suspect` holds
-    the frames of cuts a flag rule marks for review (none yet); confidence below REVIEW_BELOW means "needs review".
+    the frames of cuts `suspect_cuts()` marks for review; confidence below REVIEW_BELOW means "needs review".
     """
     cuts = sorted(detection.cuts, key=lambda c: c.frame)
     conf = {c.frame: cut_confidence(c, c.frame in suspect) for c in cuts}

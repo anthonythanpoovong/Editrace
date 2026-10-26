@@ -12,7 +12,7 @@ from typing import Any, ClassVar
 
 from workers.base import Compute, Job, Worker
 from workers.cache import Partial
-from workers.cuts.detect import PARAMS, find_cuts, to_partial
+from workers.cuts.detect import PARAMS, find_cuts, suspect_cuts, to_partial
 
 
 class CutsWorker(Worker):
@@ -35,4 +35,5 @@ class CutsWorker(Worker):
                 f"decoded {detection.frames} frames but the source says {expected}; "
                 "the video and its source section don't match"
             )
-        return to_partial(detection)
+        fps = job.source["fps"]["num"] / job.source["fps"]["den"]
+        return to_partial(detection, suspect_cuts(video, detection.cuts, fps))
