@@ -16,7 +16,7 @@ A spike exists to **answer a question**, not to ship code. It has a timebox, an 
 5. **Exit:** what result means "yes", "no" or "yes, but…". Decide this **before** starting.
 6. **Owner.**
 
-Check it doesn't already exist: `gh issue list --label type:spike --state all`. Then, after the author confirms:
+Check it doesn't already exist: `gh issue list --label type:spike --state all`, and search `docs/learnings/` for earlier findings on the same question. Then, after the author confirms:
 
 ```sh
 gh issue create --title "Spike: <question>" \
@@ -33,7 +33,8 @@ If it belongs to an epic, link it as a sub-issue (see `propose-epic` for the `su
 
 ## Mode C: close it
 
-1. Post a findings comment on the spike issue:
+1. Write a learning: copy `docs/learnings/TEMPLATE.md` to `docs/learnings/YYYY-MM-DD-<slug>.md`, fill it from the findings (even a "no" or "we don't know yet" answer), and add it to the index in `docs/learnings/README.md`. Link the spike issue. Don't skip this: the issue comment is the working record, the learning is what the team finds later.
+2. Post a findings comment on the spike issue:
    ```
    ## Findings
    **Answer:** yes / no / yes, but … (one line)
@@ -41,14 +42,16 @@ If it belongs to an epic, link it as a sub-issue (see `propose-epic` for the `su
    **Surprises / risks:**
    **Recommendation:** what to do next
    **Time spent:** X of Y days
+   **Learning:** link to the docs/learnings note
    ```
-2. Hand off based on the answer:
+3. Hand off based on the answer:
    - It settles a technical decision → `/propose-adr` (link the spike as evidence)
    - It unblocks a body of work → `/propose-epic`, or update the blocked story
    - It kills the idea → say so. Update `docs/plan.md` Open Questions via `/sync-docs`.
-3. Close the issue: `gh issue close <n> --reason completed`.
+4. Close the issue: `gh issue close <n> --reason completed`.
 
 ## Rules
 - One question per spike. No production code, and no merging spike branches into `main`.
 - Never extend the timebox silently. Ask the author, and record the new date on the issue.
+- A spike isn't closed until its learning note is written.
 - Legal and terms questions go to #21, not a code spike.
