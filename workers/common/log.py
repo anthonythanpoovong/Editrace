@@ -1,7 +1,7 @@
 """Structured JSON logging for workers. Field names and rules: docs/observability.md
 
 Usage:
-    from common.log import bind, get_logger
+    from workers.common.log import bind, get_logger
 
     log = get_logger("worker:cuts")
     with bind(job_id=job_id, user_id=user_id, template_id=template_id, request_id=request_id):
