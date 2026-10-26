@@ -76,11 +76,10 @@ These match #47's exit criteria (10 interviews, 5+ design partners).
 - **Labels:** `story`, `type:build`, `area:marketing`, `product`
 - **Owner:** @anthonythanpoovong · **Phase:** 0
 - **Context:** the audience is on TikTok and Reels; agencies also use LinkedIn and X.
-- **Scope:** claim `@editrace` (or the closest available, the same everywhere) on TikTok, Instagram, X and LinkedIn. Set up business/creator profiles with the brand kit and a link in bio to the waitlist. Create a UTM link per channel.
+- **Scope:** claim `@editrace` (or the closest available, the same everywhere) on TikTok, Instagram, X and LinkedIn. Set up business/creator profiles with the brand kit. The UTM-tagged waitlist link in each bio is part of #54.
 - **Acceptance criteria:**
   - [ ] Same handle (or documented variants) on all 4 platforms, with 2FA on and shared credentials in a password manager
-  - [ ] Each channel links to the waitlist with its own UTM tag, and signups show their source
-- **Depends on:** story 1, #54
+- **Depends on:** story 1
 
 ### 3. UGC agency outreach
 - **Labels:** `story`, `type:research`, `area:marketing`, `product`
