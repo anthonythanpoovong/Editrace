@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { WaitlistSignup } from "../components/waitlist-signup";
 import { getSupabaseConfig } from "../lib/supabase/config";
@@ -26,8 +27,9 @@ const FEATURES = [
   { title: "Text and titles", text: "Lower thirds and captions you can change after they are applied." },
 ];
 
-// The waitlist form posts straight to Supabase with the public anon key. Previews have no Supabase variables
-// (docs/environments.md) and must still serve this page, so a missing value is logged, not thrown.
+// Gates the waitlist form's own call to our /api/waitlist route (see web/lib/waitlist.ts), not a direct Supabase
+// call. Previews have no Supabase variables (docs/environments.md) and must still serve this page, so a missing
+// value is logged, not thrown.
 function publicSupabaseConfig() {
   try {
     return getSupabaseConfig();
@@ -61,11 +63,12 @@ export default function Home() {
             </p>
             <p className={styles.tools}>Planned for Premiere Pro, DaVinci Resolve, Final Cut Pro and CapCut.</p>
             <div className={styles.heroVisual}>
-              {/* eslint-disable-next-line @next/next/no-img-element -- art-directed crop via object-fit; the file is already sized */}
-              <img
-                src="/images/Cinematic_Video_Analysis_Interface_1-transparent.png?v=2"
+              <Image
+                src="/images/Cinematic_Video_Analysis_Interface_1-transparent.png"
                 width={1774}
                 height={887}
+                sizes="(min-width: 48rem) 20rem, 26rem"
+                priority
                 alt="A video's edit broken into the layers Editrace extracts: music, camera angles, editing and transitions, color grading, and other elements like location, objects and effects."
               />
             </div>

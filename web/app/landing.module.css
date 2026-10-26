@@ -321,6 +321,12 @@ body:has(.backdrop) {
   overflow: hidden;
 }
 
+.consentNotice {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--stone);
+}
+
 .tools {
   grid-area: tools;
   margin: 1.5rem 0 0;

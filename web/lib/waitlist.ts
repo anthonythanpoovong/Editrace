@@ -54,9 +54,10 @@ const RATE_LIMITED_CODE = "EDR01";
 
 export type JoinOutcome = "ok" | "rate_limited" | "failed";
 
-// Calls the join_waitlist RPC straight from the browser. It must not go through a Next server action: the per-IP rate
-// limit in Postgres reads the visitor's address from the request headers Supabase sees, and a server action would make
-// every visitor look like our server.
+// Posts to our own /api/waitlist route (#153 review, blocker 3), not straight to Supabase's join_waitlist RPC: that
+// route holds the service-role key server-side (join_waitlist no longer grants execute to anon) and reads the
+// visitor's real IP via Vercel's own trusted ipAddress() helper, instead of a client-suppliable header. config is
+// still checked here first, purely as a cheap "is Supabase configured at all" signal (see below).
 export async function joinWaitlist(
   config: SupabaseConfig | null,
   signup: WaitlistSignup,
@@ -65,19 +66,15 @@ export async function joinWaitlist(
   // Previews have no Supabase variables (docs/environments.md): the form still shows, and sending fails politely.
   if (!config) return "failed";
   try {
-    const response = await fetchImpl(`${config.url}/rest/v1/rpc/join_waitlist`, {
+    const response = await fetchImpl("/api/waitlist", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: config.anonKey,
-        Authorization: `Bearer ${config.anonKey}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        p_first_name: signup.firstName.trim(),
-        p_last_name: signup.lastName.trim(),
-        p_email: signup.email.trim(),
-        p_role: signup.role,
-        p_source: signup.source,
+        firstName: signup.firstName.trim(),
+        lastName: signup.lastName.trim(),
+        email: signup.email.trim(),
+        role: signup.role,
+        source: signup.source,
       }),
     });
     if (response.ok) return "ok";

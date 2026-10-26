@@ -99,6 +99,9 @@ jobs:
       - run: .github/scripts/test-discord-reminders.sh
       - run: .github/scripts/test-vercel-deploy.sh
       - run: .github/scripts/test-check-rls-tests.sh
+      - run: .github/scripts/test-check-impeccable-sync.sh
+      - name: The two vendored impeccable copies have the same files and versions
+        run: .github/scripts/check-impeccable-sync.sh
       - run: .github/scripts/test-coverage-exemption.sh
       - run: .github/scripts/test-coverage-gate.sh
       - run: .github/scripts/test-coverage-decide.sh

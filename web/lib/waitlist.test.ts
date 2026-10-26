@@ -26,19 +26,19 @@ describe("validateSignup", () => {
 });
 
 describe("joinWaitlist", () => {
-  test("posts the trimmed signup to the RPC with the anon key", async () => {
+  test("posts the trimmed signup to our own /api/waitlist route, not Supabase directly", async () => {
     const fetchImpl = vi.fn(async () => new Response(null, { status: 204 }));
     const outcome = await joinWaitlist(config, { ...valid, firstName: " Ada ", email: " ada@example.com " }, fetchImpl);
     expect(outcome).toBe("ok");
     const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe("https://example.supabase.co/rest/v1/rpc/join_waitlist");
-    expect(init.headers).toMatchObject({ apikey: "anon", Authorization: "Bearer anon" });
+    expect(url).toBe("/api/waitlist");
+    expect(init.headers).toMatchObject({ "Content-Type": "application/json" });
     expect(JSON.parse(init.body as string)).toEqual({
-      p_first_name: "Ada",
-      p_last_name: "Lovelace",
-      p_email: "ada@example.com",
-      p_role: "editor",
-      p_source: "tiktok",
+      firstName: "Ada",
+      lastName: "Lovelace",
+      email: "ada@example.com",
+      role: "editor",
+      source: "tiktok",
     });
   });
   test("returns failed, without a request, when Supabase isn't configured", async () => {

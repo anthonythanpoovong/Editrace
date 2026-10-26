@@ -7,6 +7,10 @@
 -- join_waitlist() RPC below, a SECURITY DEFINER function that bypasses RLS internally and never
 -- reveals whether an email was new or already registered (ON CONFLICT (email) DO NOTHING on insert,
 -- with no error either way).
+-- Retention (#153 review): unlike waitlist_attempts below, nothing prunes this table. Rows are kept
+-- indefinitely today -- there is no automatic expiry, scheduled deletion, or self-serve removal path.
+-- That's a known gap (tracked for a follow-up: a deletion request path, and a decision on how long a
+-- signup should be kept after launch), not a deliberate retention policy.
 create table if not exists public.waitlist_signups (
   id uuid primary key default gen_random_uuid(),
   first_name text not null check (char_length(trim(first_name)) > 0 and char_length(first_name) <= 100),
@@ -39,8 +43,9 @@ create trigger waitlist_signups_normalize_email
 -- A per-IP rate limit (5 signups per 10 minutes), logged in its own table rather than counted off
 -- waitlist_signups: join_waitlist() inserts with ON CONFLICT DO NOTHING, so a call that resubmits an
 -- already-registered email would otherwise never count against the limit — a script could hammer the
--- endpoint forever with one known email. Logging every attempt here, unconditionally, closes that
--- gap: a duplicate-email call spends its own place in the window exactly like a new signup would.
+-- endpoint forever with one known email. A duplicate-email call still spends its own place in the
+-- window, exactly like a new signup, because the attempt row below is inserted before we know whether
+-- the signup itself will succeed.
 --
 -- This is a soft, best-effort limit, not strict enforcement: concurrent inserts can each read a count
 -- under the cap and all succeed (acceptable here; a hard guarantee would need an advisory lock, not
@@ -49,6 +54,27 @@ create trigger waitlist_signups_normalize_email
 -- correlation once this table exists — the rate limit is the only reason an IP is ever collected, and
 -- it only needs the last 10 minutes of it). Rows here older than a day are pruned opportunistically by
 -- the trigger itself, so no separate cron job is needed either.
+--
+-- IP source (#153 review, blocker 3): the client IP is supplied by join_waitlist()'s caller as
+-- p_ip_address, not read from any header in here. That caller is now always trusted: execute on
+-- join_waitlist() is service_role only (see its grant below), so the only ways in are the web app's own
+-- /api/waitlist route (web/app/api/waitlist/route.ts), which reads the IP via Vercel's ipAddress()
+-- helper — Vercel's edge sets x-forwarded-for itself on every request a Function sees, overwriting
+-- whatever the client sent, so this doesn't rest on an unconfirmed assumption about *.supabase.co's own
+-- front door the way reading cf-connecting-ip in here used to — or someone/something already holding
+-- the service-role key. This also closes the previous design's anon-key bypass: anon and authenticated
+-- have no execute on join_waitlist() at all now, so the public anon key alone can't reach this trigger,
+-- let alone supply its own IP. One residual gap, local-dev only: plain `next dev`, not running on
+-- Vercel, gets nothing from ipAddress(), so every local call falls back to the shared 'unknown' bucket
+-- below, exactly as before this migration started passing the IP in explicitly — not a concern in any
+-- deployed environment, all of which run on Vercel.
+--
+-- Caveat (#153 review): this does NOT log every attempt unconditionally. The attempt insert below and
+-- the trigger's raise exception run in the same transaction as the signup it's guarding, so a *blocked*
+-- call's own attempt row is rolled back along with everything else when the exception propagates — only
+-- calls that stayed under the cap leave a row. The limit still works, because the committed rows from
+-- the window's earlier allowed calls are enough to keep blocking later ones, but this table can't be
+-- read as a count of how many signups were actually attempted or refused.
 create table if not exists public.waitlist_attempts (
   id bigint generated always as identity primary key,
   ip_address text not null check (char_length(ip_address) <= 45),
@@ -57,6 +83,11 @@ create table if not exists public.waitlist_attempts (
 
 create index waitlist_attempts_ip_time_idx
   on public.waitlist_attempts (ip_address, attempted_at);
+
+-- The prune below filters on attempted_at alone, which the composite index above can't serve (it leads
+-- with ip_address) -- without this, every signup pays a sequential scan of the whole table to prune it.
+create index waitlist_attempts_time_idx
+  on public.waitlist_attempts (attempted_at);
 
 alter table public.waitlist_attempts enable row level security;
 
@@ -72,42 +103,20 @@ security definer
 set search_path = public
 as $$
 declare
-  headers json;
-  xff_parts text[];
   client_ip text;
   recent_count int;
 begin
-  -- Prefer cf-connecting-ip: Cloudflare sets this at its edge and overwrites it on every request
-  -- regardless of what the client sends, and *.supabase.co is served through Cloudflare, so on the
-  -- deployed project this header is trustworthy (#153 review: that assumption isn't independently
-  -- confirmed anywhere in this repo — it rests on Supabase's own infrastructure, not ours). Fall back
-  -- to the LAST entry of x-forwarded-for (the nearest proxy's own observation, conventionally
-  -- appended, rather than the client-supplied first entry) only if cf-connecting-ip is absent.
-  --
-  -- Residual risk: in a topology with no trusted intermediary in front of Kong at all (this local
-  -- Docker stack has no CDN), neither header carries a trustworthy value and the limiter degrades to
-  -- one shared 'unknown' bucket, exactly as spoofable as having no limit — five signups from anyone
-  -- then lock out every other visitor until the window passes. That's a limitation of the topology,
-  -- not something fixable in SQL: closing it for real needs a CAPTCHA (e.g. Cloudflare Turnstile)
-  -- verified before insert, independent of any client-supplied header, or moving the limiter out of
-  -- SQL into an edge function or a Vercel API route (#153 review; not done here).
-  --
-  -- This also assumes the browser calls Supabase directly (web/lib/waitlist.ts), not through a Next
-  -- server action or any other server hop: every signup would otherwise arrive from that server's own
-  -- IP and collapse into one bucket again.
-  headers := current_setting('request.headers', true)::json;
-
-  client_ip := nullif(trim(headers ->> 'cf-connecting-ip'), '');
-
-  if client_ip is null then
-    xff_parts := regexp_split_to_array(coalesce(headers ->> 'x-forwarded-for', ''), '\s*,\s*');
-    client_ip := nullif(trim(xff_parts[array_length(xff_parts, 1)]), '');
-  end if;
-
-  client_ip := coalesce(client_ip, 'unknown');
+  -- Set by join_waitlist() below, for the rest of this transaction, to the IP its caller passed in as
+  -- p_ip_address -- see the comment above waitlist_attempts for where that value comes from and why
+  -- it's trusted now, instead of being read from request.headers in here. Reading a header in here had
+  -- no way to tell a PostgREST call from a plain psql session, and meant trusting an unconfirmed
+  -- assumption about Supabase's own front door (#153 review, blocker 3).
+  client_ip := coalesce(nullif(trim(current_setting('editrace.waitlist_client_ip', true)), ''), 'unknown');
 
   -- waitlist_attempts has no purpose once outside the 10-minute window either; prune opportunistically
-  -- on every call rather than keep an unbounded IP log or stand up a separate cron job for it.
+  -- on every call rather than keep an unbounded IP log or stand up a separate cron job for it. Served by
+  -- waitlist_attempts_time_idx below, not the (ip_address, attempted_at) index, since this filters on
+  -- attempted_at alone.
   delete from public.waitlist_attempts where attempted_at < now() - interval '1 day';
 
   insert into public.waitlist_attempts (ip_address) values (client_ip);
@@ -138,7 +147,8 @@ create or replace function public.join_waitlist(
   p_last_name text,
   p_email text,
   p_role text,
-  p_source text
+  p_source text,
+  p_ip_address text
 )
 returns void
 language plpgsql
@@ -146,11 +156,20 @@ security definer
 set search_path = public
 as $$
 begin
+  -- Read by enforce_waitlist_rate_limit() (fired by the insert below, in the same transaction) via
+  -- current_setting('editrace.waitlist_client_ip', true) -- see the comment above waitlist_attempts.
+  perform set_config('editrace.waitlist_client_ip', coalesce(p_ip_address, ''), true);
+
   insert into public.waitlist_signups (first_name, last_name, email, role, source)
   values (p_first_name, p_last_name, p_email, p_role, p_source)
   on conflict (email) do nothing;
 end;
 $$;
 
-revoke execute on function public.join_waitlist(text, text, text, text, text) from public;
-grant execute on function public.join_waitlist(text, text, text, text, text) to anon, authenticated;
+-- Execute is service_role only (#153 review, blocker 3): the previous anon/authenticated grant meant
+-- anyone holding the public anon key could call this directly, bypassing the web app entirely and
+-- supplying whatever IP (or none) they liked. Now the only ways in are the web app's own /api/waitlist
+-- route (web/app/api/waitlist/route.ts, which holds the service-role key server-side and passes a real
+-- p_ip_address) or someone/something already trusted with that key.
+revoke execute on function public.join_waitlist(text, text, text, text, text, text) from public;
+grant execute on function public.join_waitlist(text, text, text, text, text, text) to service_role;

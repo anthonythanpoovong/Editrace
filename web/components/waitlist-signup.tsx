@@ -7,8 +7,8 @@ import { ROLES, SOURCES, submitSignup, type SubmitResult, type WaitlistField, ty
 
 type Note = SubmitResult["note"];
 
-// The "Get notified" button and the waitlist form it opens (#149). The form posts from the browser on purpose: see
-// joinWaitlist for why it can't be a server action.
+// The "Get notified" button and the waitlist form it opens (#149). The form posts a fetch from the browser to our
+// own /api/waitlist route, not directly to Supabase: see joinWaitlist (#153 review, blocker 3).
 export function WaitlistSignup({ config }: { config: SupabaseConfig | null }) {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -111,6 +111,9 @@ export function WaitlistSignup({ config }: { config: SupabaseConfig | null }) {
               <label htmlFor="hpField">Leave this field blank</label>
               <input id="hpField" name="hpField" type="text" tabIndex={-1} autoComplete="off" />
             </div>
+            <p className={`${styles.fieldFull} ${styles.consentNotice}`}>
+              We&apos;ll only use this to tell you when Editrace launches. We don&apos;t share or sell it.
+            </p>
             <div className={`${styles.fieldFull} ${styles.signupActions}`}>
               <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={pending}>
                 Notify me at launch
