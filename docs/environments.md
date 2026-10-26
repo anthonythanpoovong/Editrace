@@ -20,6 +20,8 @@ How Editrace's environments are deployed and where each secret lives (#48). The 
 
 Roll back by running the workflow again with an older `sha` and **`migrate` unticked**: the older commit doesn't have the newer migrations, so the old app runs against the newer database. It must be on `main` and have been live on staging after this workflow landed, because earlier commits have no `deployed/staging` status. The app is built from that commit, but the deploy script comes from the `main` commit the run started from.
 
+> **Don't leave `migrate` ticked on a rollback, and don't run `supabase migration repair`.** With `migrate` ticked, the job fails at the migration step, before any build or deploy, with `DbPushMissingLocalError` ("Remote migration versions not found in local migrations directory"). The error suggests `supabase migration repair`, which edits the migration history: don't. Untick `migrate` and run the rollback again. Checked on Supabase CLI 2.120.0 (the version `deploy.yml` pins) with `supabase db push --dry-run` from a commit older than the newest migration, against staging (#163). The error name is a CLI detail, so recheck it when the pin changes.
+
 Repo variables (Settings → Secrets and variables → Actions → Variables): `VERCEL_PROJECT_ID_NP` and `VERCEL_PROJECT_ID_PROD` are the two Vercel project ids. They aren't secrets.
 
 Vercel's own Git deploys are turned off for every branch in `web/vercel.json`, so nothing reaches prod without `deploy.yml`. Branches created before that file changed still carry the old setting until they merge `main`.
