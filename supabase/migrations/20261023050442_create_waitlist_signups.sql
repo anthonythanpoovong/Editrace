@@ -171,5 +171,8 @@ $$;
 -- supplying whatever IP (or none) they liked. Now the only ways in are the web app's own /api/waitlist
 -- route (web/app/api/waitlist/route.ts, which holds the service-role key server-side and passes a real
 -- p_ip_address) or someone/something already trusted with that key.
-revoke execute on function public.join_waitlist(text, text, text, text, text, text) from public;
+-- Supabase grants execute on every new function to anon/authenticated via default privileges set for
+-- the postgres role, separately from the PUBLIC pseudo-role -- revoking from public alone leaves those
+-- two grants in place, so they're named here explicitly too.
+revoke execute on function public.join_waitlist(text, text, text, text, text, text) from public, anon, authenticated;
 grant execute on function public.join_waitlist(text, text, text, text, text, text) to service_role;
