@@ -76,7 +76,7 @@ These match #47's exit criteria (10 interviews, 5+ design partners).
 - **Labels:** `story`, `type:build`, `area:marketing`, `product`
 - **Owner:** @anthonythanpoovong · **Phase:** 0
 - **Context:** the audience is on TikTok and Reels; agencies also use LinkedIn and X.
-- **Scope:** claim `@editrace` (or the closest available, the same everywhere) on TikTok, Instagram, X and LinkedIn. Set up business/creator profiles with the brand kit and a link in bio to the waitlist. Create a UTM link per channel. Add a "how did you hear about us" field to the waitlist (#54).
+- **Scope:** claim `@editrace` (or the closest available, the same everywhere) on TikTok, Instagram, X and LinkedIn. Set up business/creator profiles with the brand kit and a link in bio to the waitlist. Create a UTM link per channel.
 - **Acceptance criteria:**
   - [ ] Same handle (or documented variants) on all 4 platforms, with 2FA on and shared credentials in a password manager
   - [ ] Each channel links to the waitlist with its own UTM tag, and signups show their source
