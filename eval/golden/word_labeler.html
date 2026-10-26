@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Golden Set Word Labeler</title>
+<!-- Frame-by-frame caption word-timing labeling for the golden set (LABELING.md). Runs locally: the video never
+     leaves this browser. Saves vNN.words.json for words_to_label.py. Open this file directly in Chrome.
+     Unlike labeler.html (cuts/transitions, muted), this plays audio: word timing has to be heard, not seen. -->
+<style>
+  :root { --bg: #15171c; --panel: #1e2128; --line: #2e323c; --text: #e6e8ec; --muted: #9aa0ab;
+          --accent: #6aa9ff; --word: #6aa9ff; --line-break: #5fd39a; --block-break: #ffb35c; --amb: #c79bff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 -apple-system, system-ui, sans-serif; }
+  header { display: flex; gap: 12px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  header h1 { font-size: 15px; margin: 0 8px 0 0; }
+  button, select, input { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px; font: inherit; }
+  button:hover { border-color: var(--accent); cursor: pointer; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; padding: 16px; }
+  video { width: 100%; max-height: 60vh; object-fit: contain; background: #000; border-radius: 6px; display: block; }
+  .readout { display: flex; gap: 18px; align-items: baseline; margin: 10px 0; flex-wrap: wrap; }
+  .big { font-size: 26px; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .muted { color: var(--muted); }
+  #timeline { position: relative; height: 34px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; cursor: pointer; }
+  #timeline .tick { position: absolute; top: 0; bottom: 0; width: 2px; }
+  #timeline .span { position: absolute; top: 22px; bottom: 2px; opacity: .6; background: var(--word); }
+  #timeline .head { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text); }
+  #wordInput { font-size: 16px; padding: 8px 10px; width: 100%; }
+  aside { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+  aside h2 { font-size: 13px; margin: 0; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  #list { list-style: none; margin: 0; padding: 0; overflow: auto; max-height: 34vh; }
+  #list li { display: flex; gap: 8px; padding: 4px 6px; border-radius: 4px; cursor: pointer; font-variant-numeric: tabular-nums; align-items: center; }
+  #list li:hover, #list li.here { background: #2a2f3a; }
+  #list li.sel { outline: 1px solid var(--accent); }
+  #list .text { flex: 1; font-variant-numeric: normal; }
+  #list .brk { font-size: 11px; padding: 0 5px; border-radius: 3px; }
+  #list .brk.line { background: var(--line-break); color: #06281a; }
+  #list .brk.block { background: var(--block-break); color: #2a1700; }
+  .mini { padding: 0 6px; font-size: 12px; line-height: 18px; }
+  kbd { background: #2a2f3a; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font-size: 12px; }
+  .keys { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 13px; }
+  #status { color: var(--muted); font-size: 12px; min-height: 1.4em; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  #drop { padding: 60px 20px; text-align: center; border: 2px dashed var(--line); border-radius: 8px; color: var(--muted); }
+  #pending { font-weight: 600; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Golden Set Word Labeler</h1>
+  <label class="row">Video <input type="file" id="videoFile" accept="video/*"></label>
+  <label class="row">fps <input type="number" id="fps" value="30" min="1" step="any" style="width:70px"></label>
+  <label class="row">Language <input id="language" value="en" style="width:60px" placeholder="en"></label>
+  <label class="row">Rate
+    <select id="rate">
+      <option value="1">1x</option>
+      <option value="0.5">0.5x</option>
+      <option value="0.35">0.35x</option>
+      <option value="0.25">0.25x</option>
+    </select>
+  </label>
+  <label class="row">Resume <input type="file" id="wordsFile" accept=".json"></label>
+  <button id="save">Save words (S)</button>
+  <span id="status"></span>
+</header>
+<main>
+  <section>
+    <div id="drop">Pick or drop a conformed video (<code>eval/golden/videos/vNN.mp4</code>). It stays on this computer. Audio plays — listen for word boundaries.</div>
+    <video id="video" preload="auto" playsinline hidden></video>
+    <div class="readout">
+      <span>Frame <span class="big" id="frame">–</span> <span class="muted">/ <span id="total">–</span></span></span>
+      <span class="muted" id="time"></span>
+      <span id="pending"></span>
+    </div>
+    <div id="timeline"><div class="head" id="head"></div></div>
+    <h2 style="margin-top:10px">Word text <span class="muted" id="count"></span></h2>
+    <input id="wordInput" placeholder="type the word, then [ to mark its start and ] (or Enter) to mark its end">
+  </section>
+  <aside>
+    <h2>Words</h2>
+    <ul id="list"></ul>
+    <h2>Keys</h2>
+    <div class="keys">
+      <span><kbd>←</kbd> <kbd>→</kbd></span><span>step one frame (<kbd>Shift</kbd> = 10)</span>
+      <span><kbd>Space</kbd></span><span>play / pause</span>
+      <span><kbd>[</kbd></span><span>mark this frame as the word's start</span>
+      <span><kbd>]</kbd> / <kbd>Enter</kbd></span><span>mark this frame as the word's end, commit the typed text</span>
+      <span><kbd>L</kbd></span><span>next word starts a new caption line</span>
+      <span><kbd>B</kbd></span><span>next word starts a new caption block</span>
+      <span><kbd>A</kbd></span><span>toggle ambiguous (?) on the selected word</span>
+      <span><kbd>⌫</kbd></span><span>delete the selected word (click one in the list to select it)</span>
+      <span><kbd>J</kbd> <kbd>K</kbd></span><span>previous / next word</span>
+      <span><kbd>Esc</kbd></span><span>cancel a started word</span>
+    </div>
+    <p class="muted" style="margin:0;font-size:12px">Label blind: don't look at the captions worker's output first. Slow playback down (Rate) for precise boundaries. Rules: <code>LABELING.md</code>.</p>
+  </aside>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const video = $("video");
+const state = { id: null, frames: 0, frame: 0, words: [], selected: null, pendingStart: null, pendingBreak: null, activeMs: 0, lastInput: 0 };
+
+const fps = () => parseFloat($("fps").value) || 30;
+const storageKey = () => `golden-word-labeler:${state.id}`;
+
+function status(text) { $("status").textContent = text; }
+
+function persist() {
+  try { localStorage.setItem(storageKey(), JSON.stringify({ words: state.words, activeMs: state.activeMs })); } catch {}
+}
+
+function restore() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(storageKey()) || "null");
+    if (saved) { state.words = saved.words || []; state.activeMs = saved.activeMs || 0; status("Restored autosaved words"); }
+  } catch {}
+}
+
+function seek(frame) {
+  state.frame = Math.max(0, Math.min(state.frames - 1, frame));
+  video.currentTime = (state.frame + 0.5) / fps();
+  render();
+}
+
+function step(delta) {
+  if (!video.paused) video.pause();
+  seek(state.frame + delta);
+}
+
+function timecode(frame) {
+  const f = Math.round(fps()), s = Math.floor(frame / f);
+  return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}:${String(frame % f).padStart(2, "0")}`;
+}
+
+function addWord(word) {
+  state.words.push(word);
+  state.selected = word;
+  state.words.sort((a, b) => a.frame - b.frame);
+  persist(); render();
+}
+
+function toggleAmbiguous(w) { w.ambiguous = !w.ambiguous; persist(); render(); }
+
+function removeWord(w) {
+  state.words = state.words.filter((x) => x !== w);
+  if (state.selected === w) state.selected = null;
+  persist(); render();
+}
+
+function render() {
+  $("frame").textContent = state.frames ? state.frame : "–";
+  $("total").textContent = state.frames ? state.frames - 1 : "–";
+  $("time").textContent = state.frames ? timecode(state.frame) : "";
+  $("pending").textContent = state.pendingStart !== null
+    ? `Word started at frame ${state.pendingStart}; press ] or Enter on its last frame`
+    : state.pendingBreak ? `Next word starts a new ${state.pendingBreak}` : "";
+  $("count").textContent = `(${state.words.length})`;
+  const list = $("list"); list.innerHTML = "";
+  for (const w of state.words) {
+    const li = document.createElement("li");
+    if (w.frame === state.frame) li.classList.add("here");
+    if (w === state.selected) li.classList.add("sel");
+    const label = w.duration > 1 ? `${w.frame}–${w.frame + w.duration - 1}` : `${w.frame}`;
+    li.innerHTML = `<span style="width:76px" class="muted">${label}</span><span class="text"></span>` +
+      (w.break ? `<span class="brk ${w.break}">${w.break}</span>` : "") +
+      (w.ambiguous ? `<span class="brk" style="background:var(--amb);color:#1c0a33">?</span>` : "") +
+      `<button class="mini" title="Toggle ambiguous">?</button><button class="mini" title="Delete">✕</button>`;
+    li.querySelector(".text").textContent = w.text;
+    li.onclick = () => { state.selected = w; seek(w.frame); };
+    const [amb, del] = li.querySelectorAll("button");
+    amb.onclick = (e) => { e.stopPropagation(); toggleAmbiguous(w); };
+    del.onclick = (e) => { e.stopPropagation(); removeWord(w); };
+    list.appendChild(li);
+  }
+  const tl = $("timeline");
+  tl.querySelectorAll(".tick, .span").forEach((e) => e.remove());
+  if (!state.frames) return;
+  for (const w of state.words) {
+    const el = document.createElement("div");
+    el.className = w.duration > 1 ? "span" : "tick";
+    el.style.left = `${(w.frame / state.frames) * 100}%`;
+    el.style.background = w.ambiguous ? "var(--amb)" : w.break === "block" ? "var(--block-break)" : w.break === "line" ? "var(--line-break)" : "var(--word)";
+    if (w.duration > 1) el.style.width = `${(w.duration / state.frames) * 100}%`;
+    tl.appendChild(el);
+  }
+  $("head").style.left = `${(state.frame / state.frames) * 100}%`;
+}
+
+function loadVideo(file) {
+  state.id = (file.name.match(/^(v\d+)/i) || [null, file.name.replace(/\.[^.]+$/, "")])[1].toLowerCase();
+  state.words = []; state.activeMs = 0; state.pendingStart = null; state.pendingBreak = null;
+  video.src = URL.createObjectURL(file);
+  video.muted = false;
+  $("drop").hidden = true; video.hidden = false;
+  status(`Loading ${file.name}…`);
+}
+
+function countFrames() {
+  return new Promise((resolve) => {
+    const fallback = setTimeout(() => resolve(Math.round(video.duration * fps())), 2000);
+    video.requestVideoFrameCallback((_, meta) => {
+      clearTimeout(fallback);
+      resolve(Math.round(meta.mediaTime * fps()) + 1);
+    });
+    video.currentTime = video.duration;
+  });
+}
+
+video.addEventListener("loadedmetadata", async () => {
+  state.frames = await countFrames();
+  restore(); seek(0);
+  status(`${state.id}: ${state.frames} frames at ${fps()} fps`);
+});
+
+function followPlayback(_, meta) {
+  if (video.paused) return;
+  state.frame = Math.min(state.frames - 1, Math.floor(meta.mediaTime * fps() + 1e-3));
+  render();
+  video.requestVideoFrameCallback(followPlayback);
+}
+video.addEventListener("play", () => video.requestVideoFrameCallback(followPlayback));
+video.addEventListener("pause", () => seek(state.frame));
+
+$("rate").addEventListener("change", () => { video.playbackRate = parseFloat($("rate").value); });
+$("videoFile").addEventListener("change", (e) => e.target.files[0] && loadVideo(e.target.files[0]));
+document.addEventListener("dragover", (e) => e.preventDefault());
+document.addEventListener("drop", (e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) loadVideo(f); });
+
+$("wordsFile").addEventListener("change", async (e) => {
+  const file = e.target.files[0]; if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    if (state.id && data.video_id !== state.id) { status(`That file is for ${data.video_id}, not ${state.id}`); return; }
+    state.words = data.words || []; state.activeMs = (data.labeling_minutes || 0) * 60000;
+    if (data.language) $("language").value = data.language;
+    persist(); render(); status(`Loaded ${state.words.length} words`);
+  } catch { status("Couldn't read that words file"); }
+  e.target.value = "";
+});
+
+function save() {
+  if (!state.id) return;
+  const data = {
+    video_id: state.id, fps: fps(), frames: state.frames, language: $("language").value.trim() || null,
+    labeling_minutes: Math.round(state.activeMs / 60000),
+    words: state.words.map(({ frame, duration, text, break: brk, ambiguous }) => ({ frame, duration, text, break: brk ?? null, ambiguous: !!ambiguous })),
+  };
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2) + "\n"], { type: "application/json" }));
+  a.download = `${state.id}.words.json`;
+  a.click();
+  status(`Saved ${a.download}. Run: python3.11 eval/golden/words_to_label.py ${state.id} ~/Downloads/${a.download}`);
+}
+$("save").onclick = save;
+
+$("timeline").addEventListener("click", (e) => {
+  if (!state.frames) return;
+  const r = e.currentTarget.getBoundingClientRect();
+  seek(Math.round(((e.clientX - r.left) / r.width) * (state.frames - 1)));
+});
+
+function commitWord() {
+  const text = $("wordInput").value.trim();
+  if (state.pendingStart === null) { status("Press [ at the word's first frame before ] or Enter"); return; }
+  if (!text) { status("Type the word's text before committing it"); return; }
+  const frame = Math.min(state.pendingStart, state.frame), end = Math.max(state.pendingStart, state.frame);
+  addWord({ frame, duration: end - frame + 1, text, break: state.pendingBreak, ambiguous: false });
+  state.pendingStart = null; state.pendingBreak = null;
+  $("wordInput").value = ""; $("wordInput").focus();
+  render();
+}
+
+$("wordInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); commitWord(); }
+});
+
+document.addEventListener("keydown", (e) => {
+  const inText = e.target === $("wordInput");
+  if (!state.frames || (e.target.matches?.("input, select") && !inText) || e.metaKey || e.ctrlKey) return;
+  if (inText && e.key !== "Enter") return; // let typing through; Enter is handled by the input's own listener
+  const now = Date.now();
+  if (state.lastInput && now - state.lastInput < 120000) state.activeMs += now - state.lastInput;
+  state.lastInput = now;
+  const k = e.key;
+  if (k === "Enter") return; // handled above
+  if (k === "ArrowRight" || k === "ArrowLeft") { step((k === "ArrowRight" ? 1 : -1) * (e.shiftKey ? 10 : 1)); }
+  else if (k === " ") { video.paused ? video.play() : video.pause(); }
+  else if (k === "[") {
+    if (state.pendingStart === null) { state.pendingStart = state.frame; render(); $("wordInput").focus(); }
+    else status("Already started a word; press ] or Enter to end it, or Esc to cancel");
+  }
+  else if (k === "]") { commitWord(); }
+  else if (k === "l" || k === "L") { state.pendingBreak = state.pendingBreak === "line" ? null : "line"; render(); }
+  else if (k === "b" || k === "B") { state.pendingBreak = state.pendingBreak === "block" ? null : "block"; render(); }
+  else if (k === "Escape") { state.pendingStart = null; render(); }
+  else if (k === "a" || k === "A") { if (state.selected) toggleAmbiguous(state.selected); }
+  else if (k === "Backspace" || k === "Delete") { if (state.selected) removeWord(state.selected); }
+  else if (k === "j" || k === "J" || k === "k" || k === "K") {
+    const forward = k.toLowerCase() === "k";
+    const frames = state.words.map((w) => w.frame);
+    const target = forward ? frames.find((f) => f > state.frame) : frames.slice().reverse().find((f) => f < state.frame);
+    if (target !== undefined) seek(target);
+  }
+  else if (k === "s" || k === "S") { save(); }
+  else return;
+  e.preventDefault();
+});
+</script>
+</body>
+</html>
