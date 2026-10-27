@@ -200,3 +200,86 @@ def test_missing_ffmpeg_stops(
     with pytest.raises(SystemExit, match="ffmpeg not found on PATH"):
         run(monkeypatch, FakeTools([]), str(original(tmp_path)))
     assert not (golden / "manifest.json").exists()
+
+
+CFR = [i / 30 for i in range(90)]
+
+
+def existing(golden: Path, *ids: str) -> None:
+    videos = [{"id": i, "original_sha256": f"hash-of-{i}"} for i in ids]
+    (golden / "manifest.json").write_text(json.dumps({"videos": videos}))
+
+
+def ids(golden: Path) -> list[str]:
+    return [v["id"] for v in manifest(golden)["videos"]]
+
+
+def test_a_vnn_file_name_is_the_id(
+    golden: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    existing(golden, "v01", "v02")
+    run(monkeypatch, FakeTools(CFR), str(original(tmp_path, "v13.mov")))
+    assert ids(golden) == ["v01", "v02", "v13"]
+    assert (golden / "videos" / "v13.mp4").exists() and (
+        golden / "labels" / "v13.json"
+    ).exists()
+
+
+def test_other_names_get_one_more_than_the_highest_id(
+    golden: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Counting entries would give v04 here, which is taken; the highest id is v08, so the next is v09.
+    existing(golden, "v01", "v05", "v08")
+    run(monkeypatch, FakeTools(CFR), str(original(tmp_path, "IMG_4821.mov")))
+    assert ids(golden)[-1] == "v09"
+
+
+def test_names_that_only_look_like_ids_are_numbered(
+    golden: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run(
+        monkeypatch,
+        FakeTools(CFR),
+        str(original(tmp_path, "v1.mov", b"a")),
+        str(original(tmp_path, "clip2.mov", b"b")),
+    )
+    assert ids(golden) == ["v01", "v02"]
+
+
+def test_a_batch_numbers_past_the_named_files_in_it(
+    golden: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    existing(golden, "v01")
+    run(
+        monkeypatch,
+        FakeTools(CFR),
+        str(original(tmp_path, "v13.mov", b"a")),
+        str(original(tmp_path, "clip.mov", b"b")),
+    )
+    assert ids(golden) == ["v01", "v13", "v14"]
+
+
+def test_a_taken_id_stops_the_run_before_anything_is_written(
+    golden: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    existing(golden, "v13")
+    before = (golden / "manifest.json").read_text()
+    clean, taken = (
+        original(tmp_path, "clip.mov", b"a"),
+        original(tmp_path, "v13.mov", b"b"),
+    )
+    with pytest.raises(SystemExit, match="v13 is already in the manifest"):
+        run(monkeypatch, FakeTools(CFR), str(clean), str(taken))
+    assert (golden / "manifest.json").read_text() == before
+    assert not (golden / "videos").exists() or not any((golden / "videos").iterdir())
+
+
+def test_an_original_already_at_its_output_path_is_refused(
+    golden: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (golden / "videos").mkdir()
+    inside = golden / "videos" / "v13.mp4"
+    inside.write_bytes(b"the only copy")
+    with pytest.raises(SystemExit, match="move it out of videos/"):
+        run(monkeypatch, FakeTools(CFR), str(inside))
+    assert inside.read_bytes() == b"the only copy"

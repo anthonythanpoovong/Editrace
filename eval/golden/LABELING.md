@@ -38,7 +38,7 @@ Labels are schema templates (`schema/template.schema.json`) with one video track
 
 ## Workflow
 
-Videos are ingested first (`python3.11 eval/golden/ingest.py <originals>`). That writes `videos/vNN.mp4`, the manifest entry and an empty `labels/vNN.json`.
+Videos are ingested first (`python3.11 eval/golden/ingest.py <originals>`). That writes `videos/vNN.mp4`, the manifest entry and an empty `labels/vNN.json`. Name an original after the id you've claimed (`v13.mp4` becomes v13) so two labelers working in parallel don't collide; any other name gets the next free number. Keep originals outside `videos/` (e.g. in `videos/originals/`), since ingesting writes there.
 
 ### Labeler (default)
 

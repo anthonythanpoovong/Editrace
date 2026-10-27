@@ -6,6 +6,9 @@
 - Outputs are `videos/vNN.mp4` (never committed), a `manifest.json` entry and `labels/vNN.json`, a schema template with
   `source` filled in and empty `cuts` and `transitions` for the labeler (LABELING.md).
 - Re-running skips any original whose sha256 is already in the manifest, so ids stay stable.
+- Ids come from the file name: `v13.mp4` is ingested as v13, so labelers can split numbers between them. Any other
+  name gets one more than the highest id in the manifest (and in this run). An id that's already taken, or an original
+  that already sits where its output would go, stops the run before anything is written.
 
 Usage: python3.11 ingest.py [--ffmpeg-dir DIR] ORIGINAL.mp4 [...]
 """
@@ -16,6 +19,7 @@ import argparse
 import hashlib
 import itertools
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -91,6 +95,43 @@ def manifest() -> dict:
     return {"videos": []}
 
 
+VIDEO_ID = re.compile(r"v\d{2,}")
+
+
+def plan_ids(
+    originals: list[Path], hashes: list[str], videos: list[dict]
+) -> list[str | None]:
+    """The id each original gets, or None for one that's already ingested. Checked for the whole run up front, so a bad
+    name never leaves a half-written manifest."""
+    taken = {v["id"] for v in videos}
+    known = {v["original_sha256"] for v in videos}
+    named = [o.stem for o in originals if VIDEO_ID.fullmatch(o.stem)]
+    numbers = [int(i[1:]) for i in taken | set(named) if VIDEO_ID.fullmatch(i)]
+    highest = max(numbers, default=0)
+    ids: list[str | None] = []
+    for original, digest in zip(originals, hashes, strict=True):
+        if digest in known:
+            ids.append(None)
+            continue
+        if VIDEO_ID.fullmatch(original.stem):
+            vid = original.stem
+        else:
+            highest += 1
+            vid = f"v{highest:02d}"
+        if vid in taken:
+            sys.exit(
+                f"{original.name}: {vid} is already in the manifest; rename the file to a free id"
+            )
+        if (ROOT / "videos" / f"{vid}.mp4").resolve() == original.resolve():
+            sys.exit(
+                f"{original} is where {vid}'s output goes; move it out of videos/ first (e.g. into videos/originals/)"
+            )
+        taken.add(vid)
+        known.add(digest)
+        ids.append(vid)
+    return ids
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -112,16 +153,15 @@ def main() -> None:
 
     ffmpeg, ffprobe = tool("ffmpeg"), tool("ffprobe")
     data = manifest()
-    known = {v["original_sha256"] for v in data["videos"]}
+    hashes = [sha256(o) for o in args.originals]
+    ids = plan_ids(args.originals, hashes, data["videos"])
     (ROOT / "videos").mkdir(exist_ok=True)
     (ROOT / "labels").mkdir(exist_ok=True)
 
-    for original in args.originals:
-        original_hash = sha256(original)
-        if original_hash in known:
+    for original, original_hash, vid in zip(args.originals, hashes, ids, strict=True):
+        if vid is None:
             print(f"skip {original.name}: already ingested")
             continue
-        vid = f"v{len(data['videos']) + 1:02d}"
         out = ROOT / "videos" / f"{vid}.mp4"
         info = probe(ffprobe, original)
         if info["cfr"]:
@@ -219,7 +259,6 @@ def main() -> None:
                 "exclude": [],
             }
         )
-        known.add(original_hash)
         print(
             f"{original.name} -> {vid}.mp4 ({'remuxed, CFR' if info['cfr'] else 'conformed from VFR'}, {conformed['frames']} frames)"
         )
