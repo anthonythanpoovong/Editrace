@@ -42,7 +42,7 @@ Videos are ingested first (`python3.11 eval/golden/ingest.py <originals>`). That
 
 ### Labeler (default)
 
-1. Open `eval/golden/labeler.html` in Chrome (double-click it). Pick `videos/vNN.mp4` and check the fps (30 for the current set). The video stays on your computer.
+1. Open `eval/golden/labeler.html` in Chrome (double-click it). Pick `videos/vNN.mp4` and set the fps to the video's `fps` in `manifest.json` (most are 30; v08 and v12 are 24, v06 is 23.976). With the wrong fps, every marker lands on the wrong frame. The video stays on your computer.
 2. Step with `←`/`→` (`Shift` for 10 frames), comparing the previous and current frame side by side. Then mark:
 
    | Key | Marks |
