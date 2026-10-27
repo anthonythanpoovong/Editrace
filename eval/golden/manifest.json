@@ -231,6 +231,255 @@
           "reason": "platform end card"
         }
       ]
+    },
+    {
+      "id": "v08",
+      "content_hash": "sha256:5a094576bc531254a76c27c15b67ae9ef07e93d51475da8f9e84279b37752930",
+      "original_sha256": "ed0900dbcd96e7d83cde0bd13e04e289f6c527df8d83e3baa1e40ebcb41897f6",
+      "fps": {
+        "num": 24,
+        "den": 1
+      },
+      "frames": 521,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": true,
+      "rights": "full",
+      "edit_styles": [
+        "beat-synced",
+        "flash",
+        "whip",
+        "speed-ramp",
+        "zoom",
+        "fast-cuts"
+      ],
+      "music": "released",
+      "labeled": true,
+      "labeling_minutes": 9,
+      "notes": [
+        "flash: cut at frame 39",
+        "flash: cut at frame 50",
+        "flash: cut at frame 94",
+        "flash: cut at frame 105",
+        "flash: cut at frame 165",
+        "flash: cut at frame 176",
+        "flash: cut at frame 231",
+        "flash: cut at frame 247",
+        "flash: cut at frame 263",
+        "flash: cut at frame 275",
+        "flash: cut at frame 281",
+        "flash: cut at frame 286",
+        "flash: cut at frame 298",
+        "flash: cut at frame 319",
+        "flash: cut at frame 354",
+        "flash: cut at frame 383",
+        "platform end card: frames 423-520, fades in over the last shot (marked at 30 fps frame 529 in the labeler)"
+      ],
+      "ambiguous": [],
+      "exclude": [
+        {
+          "start": 423,
+          "duration": 98,
+          "reason": "platform end card"
+        }
+      ]
+    },
+    {
+      "id": "v09",
+      "content_hash": "sha256:350dc23503787f498b000ff69ada5ca0cb49528dd9a907f5c70889e61090d850",
+      "original_sha256": "9ac6b7ef3777e52c03dcf89b9bc9bd2575966d41782b03e54f968664413f5b42",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 483,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "beat-synced",
+        "slow-paced",
+        "whip",
+        "fast-cuts",
+        "zoom",
+        "montage"
+      ],
+      "music": "released",
+      "labeled": false,
+      "labeling_minutes": null,
+      "notes": [],
+      "ambiguous": [],
+      "exclude": []
+    },
+    {
+      "id": "v10",
+      "content_hash": "sha256:ad4c676737939735fac6d22f923ff04accca9576a0672590b6c641b027b63204",
+      "original_sha256": "00619815eab91eadb9be01316786e009fbc87a030b58bdaab65997ff651cc93f",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 729,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "fast-cuts",
+        "beat-synced"
+      ],
+      "music": "original",
+      "labeled": false,
+      "labeling_minutes": null,
+      "notes": [],
+      "ambiguous": [],
+      "exclude": []
+    },
+    {
+      "id": "v11",
+      "content_hash": "sha256:c6fc5345ebe7d447b1f30643943e7ed9a50b1eefd9e81e79f65a92ea7a4bd5f5",
+      "original_sha256": "d768065efbae96e5a743bf28b96ad316b6dd913c97ec5027f25a4862d9a01683",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 303,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "zoom",
+        "slow-paced"
+      ],
+      "music": "original",
+      "labeled": false,
+      "labeling_minutes": null,
+      "notes": [],
+      "ambiguous": [],
+      "exclude": []
+    },
+    {
+      "id": "v12",
+      "content_hash": "sha256:63458430397e3e789478ed472dce66911d007d33a45b851fdee97f57b2c25a6d",
+      "original_sha256": "53c6eb153dbaf26c0eb518ea8d9fc2505e3c1823c28270ef21b632ae74dcab70",
+      "fps": {
+        "num": 24,
+        "den": 1
+      },
+      "frames": 680,
+      "resolution": {
+        "width": 720,
+        "height": 540
+      },
+      "vfr": true,
+      "rights": "full",
+      "edit_styles": [
+        "fast-cuts",
+        "beat-synced",
+        "whip",
+        "montage",
+        "speed-ramp",
+        "zoom",
+        "flash"
+      ],
+      "music": "released",
+      "labeled": false,
+      "labeling_minutes": null,
+      "notes": [],
+      "ambiguous": [],
+      "exclude": []
+    },
+    {
+      "id": "v13",
+      "content_hash": "sha256:d9f006c6775651f7cc0bc0e7758f0ca023c283bbe382c9993a17befea3e334a0",
+      "original_sha256": "89fdb94fa82a605a63801ebab5bce753414d93a342fb31f705d771f3db01fb9a",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 336,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "beat-synced",
+        "flash",
+        "zoom"
+      ],
+      "music": "original",
+      "labeled": false,
+      "labeling_minutes": null,
+      "notes": [],
+      "ambiguous": [],
+      "exclude": []
+    },
+    {
+      "id": "v14",
+      "content_hash": "sha256:8199319e45328f28bd3a3efa5f152dcf5847cc331e3f06949095f385ef0e4cde",
+      "original_sha256": "340040a176eb47cbdd1b006d698bb3cc113696d62661eaa65081a76a645e1cc1",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 396,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "fast-cuts",
+        "beat-synced",
+        "whip",
+        "zoom"
+      ],
+      "music": "released",
+      "labeled": false,
+      "labeling_minutes": null,
+      "notes": [],
+      "ambiguous": [],
+      "exclude": []
+    },
+    {
+      "id": "v15",
+      "content_hash": "sha256:3d15a58825679f5148db4e0a0b626ad90d87ef970219fc1ac32e2b8a625011e7",
+      "original_sha256": "1f6b91a39132e5076c773fc51e8f2f0ca7ab7e652da9b108be8a5d5bd70fc7ce",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 483,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "talking-head",
+        "zoom",
+        "slow-paced"
+      ],
+      "music": "original",
+      "labeled": false,
+      "labeling_minutes": null,
+      "notes": [],
+      "ambiguous": [],
+      "exclude": []
     }
   ]
 }

@@ -1,0 +1,37 @@
+{
+  "schema_version": "0.1.0",
+  "source": {
+    "duration": 680,
+    "fps": {
+      "num": 24,
+      "den": 1
+    },
+    "resolution": {
+      "width": 720,
+      "height": 540
+    },
+    "aspect_ratio": {
+      "num": 4,
+      "den": 3
+    },
+    "content_hash": "sha256:63458430397e3e789478ed472dce66911d007d33a45b851fdee97f57b2c25a6d",
+    "vfr": true,
+    "original_fps": {
+      "num": 24,
+      "den": 1
+    },
+    "conform": {
+      "detector": "ffmpeg",
+      "version": "7.0"
+    }
+  },
+  "tracks": [
+    {
+      "id": "video-1",
+      "kind": "video",
+      "slots": [],
+      "cuts": [],
+      "transitions": []
+    }
+  ]
+}
