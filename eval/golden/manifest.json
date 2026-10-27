@@ -185,8 +185,12 @@
       },
       "vfr": true,
       "rights": "",
-      "edit_styles": [],
-      "music": null,
+      "edit_styles": [
+        "fast-cuts",
+        "montage",
+        "beat-synced"
+      ],
+      "music": "released",
       "labeled": true,
       "labeling_minutes": 8,
       "notes": [
@@ -216,8 +220,11 @@
       },
       "vfr": false,
       "rights": "",
-      "edit_styles": [],
-      "music": null,
+      "edit_styles": [
+        "beat-synced",
+        "montage"
+      ],
+      "music": "released",
       "labeled": true,
       "labeling_minutes": 6,
       "notes": [
