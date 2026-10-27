@@ -5,6 +5,12 @@ description = "Editrace Python code: the shared template models, the analysis wo
 requires-python = ">=3.11"
 dependencies = ["pydantic>=2"]
 
+# A worker-specific, opt-in dependency, pulled in by `uv sync --all-extras` (what CI runs) but not by a plain
+# `uv sync`. Keeps the heavy ML stack (ctranslate2, numpy, tokenizers -- no torch) out of the base install for
+# schema/exporter work that never imports workers.captions.
+[project.optional-dependencies]
+captions = ["faster-whisper>=1.0,<2"]
+
 # Not an installable package: the folders below are plain top-level packages, imported from the repo root
 # (`from editrace_schema import Template`). CI runs `uv sync`, `ruff`, `pyright` and `pytest` from the root.
 [dependency-groups]
