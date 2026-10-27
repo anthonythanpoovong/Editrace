@@ -7,7 +7,10 @@ A job is `{"job_id": ..., "video": <signed https URL>, "source": <the template's
 returns `{"partial": ..., "cached": ...}`. The worker base (#53) does the fetching, caching, provenance, validation and
 status. Results are cached on a Modal Volume per environment until the shared Postgres store (#301) replaces it.
 
-Importing this file needs `modal` (the `deploy` extra) but no Modal account: nothing talks to Modal until a deploy or run.
+`modal deploy` loads this file on the deploy runner, where only `modal` is installed (#302). So nothing at the top level
+may need the worker stack: the workers are imported inside `image.imports()` (in the container only), and each
+function's resources are written out here. test_modal_app.py loads the file with the worker stack blocked, and checks
+the resources still match each worker's `compute`.
 """
 
 from __future__ import annotations
@@ -15,23 +18,25 @@ from __future__ import annotations
 import json
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import modal
 
-from workers.base import Compute, Job, Worker
-from workers.cache import FileResultStore, ResultStore
-from workers.common.log import get_logger
-from workers.cuts.worker import CutsWorker
-from workers.storage import Fetcher, HttpsFetcher
+if TYPE_CHECKING:
+    from workers.base import Worker
+    from workers.cache import ResultStore
+    from workers.storage import Fetcher
 
 APP_NAME = "editrace-workers"
 RESULTS_DIR = Path("/results")
 
-# The same pins as pyproject.toml's extras, so the container runs what the tests and the golden set measured.
-# test_modal_app.py fails if they drift apart.
+# The container runs the versions the tests and the golden set measured: pydantic as pinned in uv.lock, the detector
+# as pinned in pyproject.toml's `cuts` extra. test_modal_app.py fails if they drift apart.
+BASE_PACKAGES = ["pydantic==2.14.1"]
 CUTS_PACKAGES = ["scenedetect==0.7.2", "opencv-python==5.0.0.93"]
-BASE_PACKAGES = ["pydantic>=2"]
+
+# Each worker's `compute`, as Modal function arguments (test_modal_app.py checks they match).
+CUTS_RESOURCES: dict[str, Any] = {"cpu": 2.0, "memory": 4096, "timeout": 300}
 
 app = modal.App(APP_NAME)
 image = (
@@ -43,17 +48,13 @@ image = (
 # Volumes belong to one Modal environment, so staging and prod keep separate caches.
 results = modal.Volume.from_name("editrace-worker-results", create_if_missing=True)
 
-
-def resources(compute: Compute) -> dict[str, Any]:
-    """A worker's `compute`, as Modal function arguments."""
-    out: dict[str, Any] = {
-        "cpu": compute.cpu,
-        "memory": compute.memory_mb,
-        "timeout": compute.timeout_s,
-    }
-    if compute.gpu:
-        out["gpu"] = compute.gpu
-    return out
+# Imported in the container, and locally only when the worker stack is installed.
+with image.imports():
+    from workers.base import Job
+    from workers.cache import FileResultStore
+    from workers.common.log import get_logger
+    from workers.cuts.worker import CutsWorker
+    from workers.storage import HttpsFetcher
 
 
 def run(
@@ -73,9 +74,7 @@ def run(
     return {"partial": result.partial, "cached": result.cached}
 
 
-@app.function(
-    image=image, volumes={str(RESULTS_DIR): results}, **resources(CutsWorker.compute)
-)
+@app.function(image=image, volumes={str(RESULTS_DIR): results}, **CUTS_RESOURCES)
 def cuts(job: dict[str, Any]) -> dict[str, Any]:
     return run(
         CutsWorker, job, FileResultStore(RESULTS_DIR), HttpsFetcher(), results.commit

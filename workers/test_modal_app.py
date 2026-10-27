@@ -1,9 +1,13 @@
-"""The Modal app (#7, #320), checked without a Modal account: the function wiring, the container's pins, and a job run
-end to end through `run()` on a synthetic video."""
+"""The Modal app (#7, #320), checked without a Modal account: it loads where deploy.yml loads it, its container pins
+and resources match what was tested, and a job runs end to end through `run()` on a synthetic video."""
 
 from __future__ import annotations
 
 import hashlib
+import re
+import subprocess
+import sys
+import textwrap
 import tomllib
 from pathlib import Path
 
@@ -13,37 +17,66 @@ modal = pytest.importorskip("modal")
 pytest.importorskip("scenedetect")
 
 from workers import modal_app
-from workers.base import Compute
 from workers.cache import FileResultStore
 from workers.cuts.test_detect import make_video
 from workers.cuts.worker import CutsWorker
 from workers.storage import LocalFetcher
 
-PYPROJECT = Path(__file__).resolve().parents[1] / "pyproject.toml"
+REPO = Path(__file__).resolve().parents[1]
 
 
-def test_the_container_pins_match_pyproject() -> None:
-    """The container must run the versions the tests and the golden set measured."""
-    project = tomllib.loads(PYPROJECT.read_text())["project"]
+def test_it_loads_with_only_modal_installed() -> None:
+    """deploy.yml (#302) runs `modal deploy workers/modal_app.py` with nothing but `modal` installed. Block the worker
+    stack and load the file the way the Modal CLI does."""
+    script = textwrap.dedent(
+        """
+        import importlib.abc, sys
+        BLOCKED = {"pydantic", "scenedetect", "cv2", "numpy", "editrace_schema"}
+        class Block(importlib.abc.MetaPathFinder):
+            def find_spec(self, name, path, target=None):
+                if name.split(".")[0] in BLOCKED:
+                    raise ModuleNotFoundError(f"No module named {name!r} (blocked)")
+        sys.meta_path.insert(0, Block())
+        import modal.cli.import_refs as refs
+        refs.import_file_or_module(refs.parse_import_ref("workers/modal_app.py"), base_cmd="modal deploy")
+        print("loaded")
+        """
+    )
+    done = subprocess.run(
+        [sys.executable, "-c", script],
+        check=False,
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+    )
+    assert done.returncode == 0, done.stderr[-2000:]
+    assert "loaded" in done.stdout
+
+
+def test_the_container_pins_match_what_was_tested() -> None:
+    project = tomllib.loads((REPO / "pyproject.toml").read_text())["project"]
     assert modal_app.CUTS_PACKAGES == project["optional-dependencies"]["cuts"]
-    assert modal_app.BASE_PACKAGES == project["dependencies"]
-    deploy = project["optional-dependencies"]["deploy"]
-    assert deploy == [f"modal=={modal.__version__}"]
+    assert project["optional-dependencies"]["deploy"] == [f"modal=={modal.__version__}"]
+    locked = re.search(
+        r'^name = "pydantic"\nversion = "([^"]+)"',
+        (REPO / "uv.lock").read_text(),
+        re.MULTILINE,
+    )
+    assert locked and modal_app.BASE_PACKAGES == [f"pydantic=={locked.group(1)}"]
 
 
-def test_the_cut_worker_is_a_function_sized_from_its_compute() -> None:
-    assert modal_app.app.name == modal_app.APP_NAME
-    assert isinstance(modal_app.cuts, modal.Function)
-    assert modal_app.resources(CutsWorker.compute) == {
-        "cpu": CutsWorker.compute.cpu,
-        "memory": CutsWorker.compute.memory_mb,
-        "timeout": CutsWorker.compute.timeout_s,
+def test_the_function_resources_match_the_workers_compute() -> None:
+    compute = CutsWorker.compute
+    expected = {
+        "cpu": compute.cpu,
+        "memory": compute.memory_mb,
+        "timeout": compute.timeout_s,
     }
-
-
-def test_a_gpu_is_only_requested_when_the_worker_asks() -> None:
-    assert "gpu" not in modal_app.resources(Compute())
-    assert modal_app.resources(Compute(gpu="T4"))["gpu"] == "T4"
+    if compute.gpu:
+        expected["gpu"] = compute.gpu
+    assert modal_app.CUTS_RESOURCES == expected
+    assert isinstance(modal_app.cuts, modal.Function)
+    assert modal_app.app.name == modal_app.APP_NAME
 
 
 def test_a_job_runs_through_the_worker_and_persists_only_new_results(
