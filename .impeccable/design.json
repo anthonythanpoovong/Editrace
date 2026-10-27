@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-17T19:45:00Z",
+  "title": "Design System: Editrace",
+  "extensions": {
+    "colorMeta": {
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#141412", "tonalRamp": ["#141412", "#1e1e1b", "#2b2b27", "#3c3c36", "#55554c", "#75756a", "#9e9e8f", "#cfcfbe"] },
+      "bone": { "role": "neutral", "displayName": "Bone", "canonical": "#fbf9f5", "tonalRamp": ["#28271f", "#43422f", "#605f45", "#807e5e", "#a19f7a", "#c3c19b", "#e5e3c1", "#fbf9f5"] },
+      "paper": { "role": "neutral", "displayName": "Paper", "canonical": "#efebe3", "tonalRamp": ["#262420", "#403d35", "#5c584c", "#7a7568", "#9a958a", "#bcb8ad", "#dcd9d1", "#efebe3"] },
+      "stone": { "role": "neutral", "displayName": "Stone", "canonical": "#6e6a62", "tonalRamp": ["#15140f", "#262418", "#3c3927", "#564f39", "#6e6a62", "#8b887f", "#b0ada6", "#d7d5d0"] },
+      "rule": { "role": "neutral", "displayName": "Rule", "canonical": "#d3cdc0", "tonalRamp": ["#2c2820", "#473f33", "#655c48", "#857a61", "#a7997c", "#c6bba0", "#e2dbc8", "#f3eee2"] },
+      "muted-dark": { "role": "neutral", "displayName": "Muted · on dark", "canonical": "#a8a399", "tonalRamp": ["#232119", "#3b372b", "#55503f", "#726c57", "#908972", "#a8a399", "#c8c3b8", "#e8e4dc"] },
+      "secondary-dark": { "role": "neutral", "displayName": "Secondary text · on dark", "canonical": "#d6d1c6", "tonalRamp": ["#2b2822", "#48443a", "#686353", "#8a8470", "#ada78f", "#c5c0ae", "#d6d1c6", "#ece9e0"] },
+      "leader-red": { "role": "secondary", "displayName": "Leader Red", "canonical": "#d8432e", "tonalRamp": ["#381006", "#5c1b0d", "#872713", "#b4341c", "#d8432e", "#e26c53", "#ec9988", "#f6c7bd"] },
+      "red-on-dark": { "role": "neutral", "displayName": "Red · on dark", "canonical": "#e5553f", "tonalRamp": ["#3a1108", "#5f1c0f", "#8b2a16", "#ba391f", "#e5553f", "#ec7d6a", "#f3a79a", "#f9d2cb"] },
+      "ui-red": { "role": "primary", "displayName": "UI Red", "canonical": "#c23a26", "tonalRamp": ["#33100a", "#541a0f", "#7c2616", "#a2311f", "#c23a26", "#d3634e", "#e3917f", "#f1c0b5"] },
+      "brass": { "role": "tertiary", "displayName": "Brass", "canonical": "#a88a55", "tonalRamp": ["#2c2213", "#483920", "#695331", "#8c6f43", "#a88a55", "#c0a97f", "#d8c7ab", "#ece3d5"] },
+      "white": { "role": "neutral", "displayName": "White", "canonical": "#ffffff", "tonalRamp": [] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The headline only; trailing full stop set in Leader Red." },
+      "lede": { "displayName": "Lede", "purpose": "The supporting promise under the headline." },
+      "body": { "displayName": "Body", "purpose": "Feature copy." },
+      "small": { "displayName": "Small", "purpose": "The tools line." },
+      "note": { "displayName": "Note", "purpose": "Signup status line and per-field error text; color switches by state." },
+      "label": { "displayName": "Label", "purpose": "Field labels, status badge, cancel link, footer credit — all JetBrains Mono." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "rise", "value": "0.6s cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Single hero entrance: fade up 8px. Disabled under prefers-reduced-motion." }
+    ],
+    "breakpoints": [
+      { "name": "signup-grid", "value": "30rem" },
+      { "name": "features", "value": "40rem" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The form's actual commitment action (\"Notify me at launch\"). UI Red fill, the brand's documented 5.35:1 white-on-UI-Red button combination.",
+      "html": "<button class=\"ds-btn-primary\" type=\"submit\">Notify me at launch</button>",
+      "css": ".ds-btn-primary { height: 4.25rem; padding: 0 2rem; border: 0; border-radius: 0.5rem; background: #c23a26; color: #ffffff; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 1rem; cursor: pointer; } .ds-btn-primary:hover { opacity: 0.88; } .ds-btn-primary:focus-visible { outline: 2px solid #c23a26; outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "The lower-commitment teaser (\"Get notified\") that only reveals the form. BRAND.md's \"Paper on Ink\" default-button pairing: solid Ink fill, Bone text.",
+      "html": "<button class=\"ds-btn-secondary\" type=\"button\">Get notified</button>",
+      "css": ".ds-btn-secondary { height: 4.25rem; padding: 0 2rem; border: 0; border-radius: 0.5rem; background: #141412; color: #fbf9f5; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 1rem; cursor: pointer; } .ds-btn-secondary:hover { opacity: 0.88; } .ds-btn-secondary:focus-visible { outline: 2px solid #c23a26; outline-offset: 2px; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Email field for the signup form, with a persistent mono label above it.",
+      "html": "<label class=\"ds-field-label\" for=\"ds-input\">Email address</label><input id=\"ds-input\" class=\"ds-input\" type=\"email\" placeholder=\"you@example.com\" />",
+      "css": ".ds-field-label { display: block; margin: 0 0 0.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; letter-spacing: 0.02em; color: #6e6a62; } .ds-input { width: 100%; height: 4.25rem; padding: 0 1.25rem; border: 1px solid #d3cdc0; border-radius: 0.5rem; background: #ffffff; color: #141412; font-family: 'Space Grotesk', sans-serif; } .ds-input::placeholder { color: #6e6a62; } .ds-input:focus-visible { outline: 2px solid #c23a26; outline-offset: 2px; } .ds-input[aria-invalid=\"true\"] { border-color: #c23a26; }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "custom",
+      "refersTo": "status-badge",
+      "description": "Pill showing the page state, such as Coming soon. JetBrains Mono, the brand's small-caps-style UI tag role.",
+      "html": "<span class=\"ds-status\">Coming soon</span>",
+      "css": ".ds-status { font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; letter-spacing: 0.02em; color: #6e6a62; border: 1px solid #6e6a62; border-radius: 999px; padding: 0.3rem 0.75rem; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Scan Line",
+    "overview": "Editrace reverse-engineers short-form video: the mark is a 9:16 frame cut by a single horizontal scan line, a video being read layer by layer. The system carries that idea through every surface: Ink and Bone/Paper hold the page like a light table and film stock, red is the one signal that moves, and JetBrains Mono gives UI chrome a measured, technical register. The voice is precise, calm and engineered. This page ships the brand's light register: Bone background, Ink text.",
+    "keyCharacteristics": [
+      "Warm off-white and warm near-black, never cool/neutral greys: the palette is ink-and-paper, not slate-and-white.",
+      "One moving accent: red, split between Leader Red (graphics/large display only) and UI Red (every small-scale interactive or error signal) per the brand's own AA-contrast split.",
+      "Two-font system: Space Grotesk for reading, JetBrains Mono for the system's own labels.",
+      "Flat. No shadows, no gradients. Depth from surface value only."
+    ],
+    "rules": [
+      { "name": "The Scan-Line Rule", "body": "Red is the only accent on this page. It appears exactly four ways: the logo's own scan line, the primary CTA fill, the focus ring, and error state. It never decorates.", "section": "colors" },
+      { "name": "The Two-Red Rule", "body": "Leader Red is for graphics and large display text only. UI Red is for every small-scale interactive or error signal. Using Leader Red for small text is an accessibility regression, not a stylistic choice.", "section": "colors" },
+      { "name": "No Recolouring the Logo Rule", "body": "The logo and wordmark ship only as the brand's own supplied SVG/PNG files. Never retype \"Editrace\" in a font, recolour the mark, or rebuild the lockup.", "section": "colors" },
+      { "name": "The Two-Voice Rule", "body": "Space Grotesk reads; JetBrains Mono operates. A sentence is never set in mono, and a label, badge, or timecode-style value is never set in Space Grotesk.", "section": "typography" },
+      { "name": "The Approved Full Stop", "body": "A hero headline's trailing period may be set in Leader Red. This is the brand's only sanctioned full-word-level colour break, not a general licence to recolour individual characters elsewhere.", "section": "typography" }
+    ],
+    "dos": [
+      "Do keep red to exactly four jobs: the logo's scan line, the primary CTA, focus rings, error state.",
+      "Do use UI Red (not Leader Red) for any small-scale text or interactive state.",
+      "Do use the brand's own logo/wordmark SVG files, never retyped text.",
+      "Do keep Space Grotesk for anything a visitor reads, JetBrains Mono for anything the system labels.",
+      "Do give every form field a persistent visible mono label; a placeholder is an example value, never the only label."
+    ],
+    "donts": [
+      "Don't recolour, rotate, skew, or rebuild the logo lockup.",
+      "Don't add a second accent colour outside the approved palette.",
+      "Don't use shadows or gradients to create depth.",
+      "Don't set UI chrome (labels, badges, timecodes) in Space Grotesk, or body prose in JetBrains Mono.",
+      "Don't link a social or external account that doesn't exist yet. Omit the row until it does."
+    ]
+  }
+}
