@@ -218,8 +218,8 @@
       "rights": "",
       "edit_styles": [],
       "music": null,
-      "labeled": false,
-      "labeling_minutes": null,
+      "labeled": true,
+      "labeling_minutes": 6,
       "notes": [
         "platform end card: frames 403-523 (black frames + Instagram end card), not part of the edit, unlabeled. Exclude from scoring. Start frame checked against the video (Instagram watermark gone at 403; frames 368-402 are the creator's own black ending, with the watermark, and are part of the edit)"
       ],

@@ -20,8 +20,190 @@
     {
       "id": "video-1",
       "kind": "video",
-      "slots": [],
-      "cuts": [],
+      "slots": [
+        {
+          "id": "slot-1",
+          "range": {
+            "start": 0,
+            "duration": 106
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-2",
+          "range": {
+            "start": 106,
+            "duration": 27
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-3",
+          "range": {
+            "start": 133,
+            "duration": 45
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-4",
+          "range": {
+            "start": 178,
+            "duration": 27
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-5",
+          "range": {
+            "start": 205,
+            "duration": 47
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-6",
+          "range": {
+            "start": 252,
+            "duration": 28
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-7",
+          "range": {
+            "start": 280,
+            "duration": 61
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-8",
+          "range": {
+            "start": 341,
+            "duration": 27
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-9",
+          "range": {
+            "start": 368,
+            "duration": 156
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        }
+      ],
+      "cuts": [
+        {
+          "id": "cut-1",
+          "frame": 106,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-2",
+          "frame": 133,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-3",
+          "frame": 178,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-4",
+          "frame": 205,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-5",
+          "frame": 252,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-6",
+          "frame": 280,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-7",
+          "frame": 341,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "cut-8",
+          "frame": 368,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        }
+      ],
       "transitions": []
     }
   ]
