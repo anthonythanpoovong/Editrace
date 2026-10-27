@@ -55,9 +55,21 @@ test("returns 429 with the EDR01 code when the rate limiter trips", async () => 
   expect(res.status).toBe(429);
   expect(await res.json()).toMatchObject({ code: "EDR01" });
 });
-test("returns 500 on any other RPC error", async () => {
-  rpc.mockResolvedValue({ error: { code: "23514", message: "some other constraint" } });
+test("returns a generic 500, without leaking the database error, on any other RPC error", async () => {
+  const log = vi.spyOn(console, "error").mockImplementation(() => {});
+  rpc.mockResolvedValue({ error: { code: "23514", message: "violates check constraint waitlist_signups_role_check" } });
   const res = await post(valid);
   expect(res.status).toBe(500);
-  expect(await res.json()).toMatchObject({ code: "23514" });
+  expect(await res.json()).toEqual({ code: "failed" });
+  expect(log).toHaveBeenCalledWith("waitlist: join_waitlist failed", "23514", expect.stringContaining("check constraint"));
+  log.mockRestore();
+});
+test("logs when a Vercel deployment gets no client IP", async () => {
+  const log = vi.spyOn(console, "error").mockImplementation(() => {});
+  vi.stubEnv("VERCEL", "1");
+  ipAddress.mockReturnValue(undefined);
+  await post(valid);
+  expect(log).toHaveBeenCalledWith("waitlist: no client IP from ipAddress() on Vercel");
+  vi.unstubAllEnvs();
+  log.mockRestore();
 });

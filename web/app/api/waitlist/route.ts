@@ -35,6 +35,9 @@ export async function POST(request: NextRequest) {
   // Local `next dev` isn't running on Vercel, so this is null there and every local signup shares the
   // rate limiter's 'unknown' bucket -- documented as a known, local-only limitation in the migration.
   const ip = ipAddress(request) ?? null;
+  // Deployed on Vercel this should never be null; if it is, every visitor lands in the shared 'unknown' bucket
+  // and five signups would lock everyone out, so make that loud instead of silent.
+  if (ip === null && process.env.VERCEL) console.error("waitlist: no client IP from ipAddress() on Vercel");
 
   const { error } = await createAdminClient().rpc("join_waitlist", {
     p_first_name: signup.firstName.trim(),
@@ -46,6 +49,8 @@ export async function POST(request: NextRequest) {
   });
 
   if (!error) return NextResponse.json({ ok: true });
-  const rateLimited = error.code === "EDR01";
-  return NextResponse.json({ code: error.code, message: error.message }, { status: rateLimited ? 429 : 500 });
+  if (error.code === "EDR01") return NextResponse.json({ code: "EDR01" }, { status: 429 });
+  // Keep Postgres' code and message server-side: echoing them to the browser leaks schema and constraint names.
+  console.error("waitlist: join_waitlist failed", error.code, error.message);
+  return NextResponse.json({ code: "failed" }, { status: 500 });
 }
