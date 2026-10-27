@@ -69,6 +69,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          check-latest: true
       - run: npm install --global "vercel@$VERCEL_CLI_VERSION"
       - run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
       - run: vercel build --token="$VERCEL_TOKEN"
@@ -125,6 +126,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          check-latest: true
       # Migrations go first: if one fails, the job stops before any deploy, so no `deployed/staging` status is posted
       # and the commit can't be promoted. Inline here (not a script in the repo) so a rollback never runs an old
       # commit's copy of this with the database password. `db push` skips seed.sql, so dev users never reach a cloud project.
@@ -259,6 +261,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          check-latest: true
       # Migrations come from the promoted commit and run before the build, so a failed one stops the job before any deploy.
       # A rollback unticks `migrate`: the old app then runs against the newer database, which is why migrations must be
       # backward compatible with the previous release (/db-migration). Inline, like staging, for the same reason.

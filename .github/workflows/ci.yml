@@ -90,6 +90,7 @@ jobs:
       - run: .github/scripts/test-discord-review-payload.sh
       - run: .github/scripts/test-discord-review-ack.sh
       - run: .github/scripts/test-discord-review-comment.sh
+      - run: .github/scripts/test-discord-review-announced.sh
       - run: .github/scripts/test-sync-docs-paths.sh
       - run: .github/scripts/test-project-intake.sh
       - run: .github/scripts/test-project-carry-over.sh
@@ -98,6 +99,9 @@ jobs:
       - run: .github/scripts/test-discord-reminders.sh
       - run: .github/scripts/test-vercel-deploy.sh
       - run: .github/scripts/test-check-rls-tests.sh
+      - run: .github/scripts/test-check-impeccable-sync.sh
+      - name: The two vendored impeccable copies have the same files and versions
+        run: .github/scripts/check-impeccable-sync.sh
       - run: .github/scripts/test-coverage-exemption.sh
       - run: .github/scripts/test-coverage-gate.sh
       - run: .github/scripts/test-coverage-decide.sh
@@ -156,6 +160,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          check-latest: true
           cache: npm
           cache-dependency-path: web/package-lock.json
       - uses: astral-sh/setup-uv@v6

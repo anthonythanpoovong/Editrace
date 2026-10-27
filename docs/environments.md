@@ -20,6 +20,8 @@ How Editrace's environments are deployed and where each secret lives (#48). The 
 
 Roll back by running the workflow again with an older `sha` and **`migrate` unticked**: the older commit doesn't have the newer migrations, so the old app runs against the newer database. It must be on `main` and have been live on staging after this workflow landed, because earlier commits have no `deployed/staging` status. The app is built from that commit, but the deploy script comes from the `main` commit the run started from.
 
+> **Don't leave `migrate` ticked on a rollback, and don't run `supabase migration repair`.** With `migrate` ticked, the job fails at the migration step, before any build or deploy, with `DbPushMissingLocalError` ("Remote migration versions not found in local migrations directory"). The error suggests `supabase migration repair`, which edits the migration history: don't. Untick `migrate` and run the rollback again. Checked on Supabase CLI 2.120.0 (the version `deploy.yml` pins) with `supabase db push --dry-run` from a commit older than the newest migration, against staging (#163). The error name is a CLI detail, so recheck it when the pin changes.
+
 Repo variables (Settings → Secrets and variables → Actions → Variables): `VERCEL_PROJECT_ID_NP` and `VERCEL_PROJECT_ID_PROD` are the two Vercel project ids. They aren't secrets.
 
 Vercel's own Git deploys are turned off for every branch in `web/vercel.json`, so nothing reaches prod without `deploy.yml`. Branches created before that file changed still carry the old setting until they merge `main`.
@@ -91,12 +93,19 @@ Each secret lives in **one** place. Don't copy values between systems except thr
 |---|---|---|
 | `VERCEL_TOKEN`, `VERCEL_ORG_ID` | GitHub repo secrets | `deploy.yml` |
 | `VERCEL_PROJECT_ID_NP`, `VERCEL_PROJECT_ID_PROD` | GitHub repo variables | `deploy.yml` |
-| `SUPABASE_ACCESS_TOKEN` | GitHub environment secret, a different token in `staging` and `Production`. Each is a read-only token scoped to that environment's one Supabase project, so the staging token can't reach prod | `deploy.yml` migration steps |
+| `SUPABASE_ACCESS_TOKEN` | GitHub environment secret, a different token in `staging` and `Production`. Each is scoped to that environment's one Supabase project, so the staging token can't reach prod | `deploy.yml` migration steps |
 | `SUPABASE_DB_PASSWORD` | GitHub environment secret, a different value in `staging` and `Production` | `deploy.yml` migration steps |
 | `SUPABASE_PROJECT_REF` | GitHub environment variable, a different value in `staging` and `Production` | `deploy.yml` migration steps |
 | `STAGING_ALIAS` | GitHub repo variable | `deploy.yml` (staging host shown on the environment and in the commit status) |
 | `CLAUDE_CODE_OAUTH_TOKEN` | GitHub repo secret | Armour review and `@claude` |
 | `DISCORD_REVIEW_WEBHOOK` | GitHub repo secret | Discord review notifications |
+| `DISCORD_ALERTS_WEBHOOK` | GitHub repo secret | Spend and error alerts in `#alerts` ([observability.md](observability.md#spend-alerts)) |
+| `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SERVICE_ROLE_KEY` | Vercel project env vars, per environment | Web app |
+| `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET` | GitHub repo secrets (deploys) and Modal (runtime) | Workers |
+| `ANTHROPIC_API_KEY`, `STRIPE_*` | Vercel project env vars, per environment | Web app and assistant |
+| `APP_ENV` | Vercel project env vars (`preview`, `staging`, `prod`) and Modal secrets, per environment | Logs and Sentry events ([observability.md](observability.md)) |
+| `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | Vercel project env vars (web DSN) and Modal secrets (workers DSN) | Error tracking |
+| `SENTRY_AUTH_TOKEN` | GitHub repo secret | Source map upload in `deploy.yml`, once the web SDK is set up |
 | `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SERVICE_ROLE_KEY` | Vercel project env vars: `editrace-np` (Preview and `staging` environments), `editrace-prod` (Production) | Web app |
 | `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET` | GitHub environment secrets, a different service-user token in `staging` and `Production`. Each token has the Contributor role on that one Modal environment and no role on the other, so the staging token can't deploy to prod | `deploy.yml` Modal steps |
 | Worker runtime secrets | Modal secrets, created in each Modal environment (none yet: workers get a signed video URL and return results to the orchestrator) | Workers |

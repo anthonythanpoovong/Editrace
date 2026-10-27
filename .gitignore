@@ -53,3 +53,18 @@ htmlcov/
 # Coverage output (#129)
 coverage/
 coverage.xml
+.worker-cache/
+
+# Golden-set videos: private, never committed (#4, #52)
+eval/golden/videos/
+
+# Impeccable (per-developer state; config.json and design.json are shared)
+.impeccable/config.local.json
+.impeccable/hook.cache.json
+.impeccable/critique/
+.impeccable/live/
+
+# Impeccable engine binary (#153 review): the launcher self-downloads and checksum-verifies this per
+# platform (github.com/pbakaus/impeccable releases) into ~/.impeccable/bin/ on first use. Don't vendor it.
+.claude/skills/impeccable/scripts/bin/
+.github/skills/impeccable/scripts/bin/

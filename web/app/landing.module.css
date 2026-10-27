@@ -1,0 +1,432 @@
+/* Coming-soon page (#149). Scoped to .backdrop so none of it reaches the login and account pages. */
+
+.backdrop {
+  --bg: #fbf9f5;
+  --ink: #141412;
+  --stone: #6e6a62;
+  --rule: #d3cdc0;
+  --field: #ffffff;
+  --red: #d8432e;
+  --red-ui: #c23a26;
+  --white: #ffffff;
+  --sans: var(--font-space-grotesk), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme: light;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 1rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* The browser gives <body> an 8px margin; the cream background has to reach the window edge. Only while this page shows. */
+body:has(.backdrop) {
+  margin: 0;
+}
+
+/* The page column is narrower than the window, so the cream background sits on the full-width .backdrop around it. */
+.page {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.backdrop *,
+.backdrop *::before,
+.backdrop *::after {
+  box-sizing: border-box;
+}
+
+.backdrop ::selection {
+  background: var(--red-ui);
+  color: var(--white);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 0;
+}
+
+.logo {
+  display: block;
+  width: clamp(7.5rem, 24vw, 10rem);
+  height: auto;
+}
+
+.status {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+  color: var(--stone);
+  border: 1px solid var(--stone);
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 6.4rem 0 8rem;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+  max-width: none;
+  grid-area: heading;
+}
+
+.accent {
+  color: var(--red);
+}
+
+.lede {
+  margin: 0.75rem 0 0;
+  font-size: 1.125rem;
+  line-height: 1.5;
+  color: var(--stone);
+  max-width: 42ch;
+  grid-area: lede;
+}
+
+.hero {
+  display: grid;
+  column-gap: 3rem;
+  grid-template-areas:
+    "heading"
+    "lede"
+    "tools"
+    "visual"
+    "cta";
+}
+
+.heroVisual {
+  grid-area: visual;
+  margin: 3rem 0 0;
+  max-width: 26rem;
+  aspect-ratio: 5 / 6;
+  overflow: hidden;
+}
+
+.heroVisual img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: right center;
+}
+
+@media (min-width: 48rem) {
+  .hero {
+    grid-template-columns: 1fr 20rem;
+    column-gap: 3rem;
+    align-items: start;
+    grid-template-areas:
+      "heading visual"
+      "lede    visual"
+      "tools   visual"
+      "cta     visual";
+  }
+
+  .heroVisual {
+    margin-top: 0;
+    max-width: none;
+  }
+}
+
+.signupBlock {
+  grid-area: cta;
+  margin: 4rem 0 0;
+}
+
+.btn {
+  height: 4.25rem;
+  padding: 0 2rem;
+  border-radius: 0.5rem;
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.btnPrimary {
+  border: 0;
+  background: var(--red-ui);
+  color: var(--white);
+}
+
+.btnPrimary:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.btnSecondary {
+  border: 0;
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.btnSecondary:hover {
+  opacity: 0.88;
+}
+
+.signupTrigger {
+  width: 100%;
+  max-width: 18rem;
+}
+
+.signupPanel {
+  grid-column: 1 / -1;
+  margin: 4rem 0 0;
+  max-width: 56rem;
+}
+
+.fieldLabel {
+  display: block;
+  margin: 0 0 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+  color: var(--stone);
+}
+
+.signup {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  font-size: 1rem;
+}
+
+@media (min-width: 30rem) {
+  .signup {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .fieldFull {
+    grid-column: 1 / -1;
+  }
+}
+
+.signup input,
+.signup select {
+  width: 100%;
+  height: 4.25rem;
+  padding: 0 1.25rem;
+  border: 1px solid var(--rule);
+  border-radius: 0.5rem;
+  background: var(--field);
+  color: var(--ink);
+  font: inherit;
+  font-family: var(--sans);
+}
+
+.signup select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 5.5 8 10l4.5-4.5' fill='none' stroke='%236E6A62' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1.25rem center;
+  background-size: 0.75rem;
+  padding-right: 2.75rem;
+}
+
+.signup select:invalid {
+  color: var(--stone);
+}
+
+.signup input::placeholder {
+  color: var(--stone);
+}
+
+.signup input[aria-invalid="true"],
+.signup select[aria-invalid="true"] {
+  border-color: var(--red-ui);
+}
+
+.signupActions {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.signupCancel {
+  border: 0;
+  background: none;
+  padding: 0.5rem 0;
+  color: var(--stone);
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  cursor: pointer;
+}
+
+.signupCancel:hover,
+.signupCancel:focus-visible {
+  text-decoration-color: var(--stone);
+}
+
+.backdrop :is(input, select, button, a):focus-visible {
+  outline: 2px solid var(--red-ui);
+  outline-offset: 2px;
+}
+
+.signupNote {
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+  color: var(--stone);
+  min-height: 1.5em;
+  text-align: center;
+}
+
+.signupNote[data-state="error"] {
+  color: var(--red-ui);
+}
+
+.signupNote[data-state="success"] {
+  color: var(--ink);
+}
+
+.fieldError {
+  margin: 0.375rem 0 0;
+  font-size: 0.875rem;
+  color: var(--red-ui);
+}
+
+.honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.consentNotice {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--stone);
+}
+
+.tools {
+  grid-area: tools;
+  margin: 1.5rem 0 0;
+  font-size: 0.9375rem;
+  color: var(--stone);
+}
+
+.features {
+  margin: 8rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 2.5rem;
+}
+
+.features h2 {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.features p {
+  margin: 0.375rem 0 0;
+  color: var(--stone);
+  font-size: 1rem;
+  max-width: none;
+}
+
+.footer {
+  border-top: 1px solid var(--rule);
+  padding: 1.5rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.footerWordmark {
+  display: block;
+  width: 7.5rem;
+  height: auto;
+}
+
+.copyright {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  color: var(--stone);
+}
+
+@media (min-width: 40rem) {
+  .features {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4rem;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .title,
+  .lede,
+  .signupBlock {
+    animation: rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .lede {
+    animation-delay: 0.08s;
+  }
+
+  .signupBlock {
+    animation-delay: 0.2s;
+  }
+
+  .heroVisual img {
+    animation: reveal-down 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: 0.14s;
+  }
+
+  .signupPanel {
+    animation: rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+@keyframes reveal-down {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0% 0);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
