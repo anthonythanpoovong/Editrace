@@ -1,11 +1,14 @@
 """The Modal app for the analysis workers (#7, #320): each worker becomes a Modal function sized from its `compute`.
 
-    modal deploy --env staging workers/modal_app.py                          # what deploy.yml runs (#302)
-    modal run --env staging workers/modal_app.py --job-file job.json         # one job, e.g. to time it
+    modal deploy --env main workers/modal_app.py                             # what deploy.yml runs (#302)
+    modal run --env main workers/modal_app.py --job-file job.json            # one job, e.g. to time it
+
+Staging and prod are separate Modal workspaces, each deploying to its default `main` environment (ADR 0004, #337). The
+token picks the workspace, so check `modal profile current` is the staging one before a run by hand.
 
 A job is `{"job_id": ..., "video": <signed https URL>, "source": <the template's source section>}`; the function
 returns `{"partial": ..., "cached": ...}`. The worker base (#53) does the fetching, caching, provenance, validation and
-status. Results are cached on a Modal Volume per environment until the shared Postgres store (#301) replaces it.
+status. Results are cached on a Modal Volume per workspace until the shared Postgres store (#301) replaces it.
 
 `modal deploy` loads this file on the deploy runner, where only `modal` is installed (#302). So nothing at the top level
 may need the worker stack: the workers are imported inside `image.imports()` (in the container only), and each
@@ -45,7 +48,7 @@ image = (
     .pip_install(*BASE_PACKAGES, *CUTS_PACKAGES)
     .add_local_python_source("workers", "editrace_schema")
 )
-# Volumes belong to one Modal environment, so staging and prod keep separate caches.
+# Volumes belong to one workspace, so staging and prod keep separate caches.
 results = modal.Volume.from_name("editrace-worker-results", create_if_missing=True)
 
 # Imported in the container, and locally only when the worker stack is installed.
