@@ -105,7 +105,7 @@ The repo ships Claude Code skills in `.claude/skills/`. They're available automa
 
 The build skills check their prerequisites first (e.g. `/new-detector` needs the worker base #53). If a prerequisite doesn't exist yet, they stop and point to its issue.
 
-**New features and architecture changes are drafted, grilled and approved before they become issues or code.** Approval = code-owner review and merge of the proposal PR (CODEOWNERS covers `docs/decisions/`, `docs/epics/` and `.claude/`). See the [Claude Code Skills wiki page](https://github.com/anthonythanpoovong/Editrace/wiki/Claude-Code-Skills) for walkthroughs.
+**New features and architecture changes are drafted, grilled and approved before they become issues or code.** Approval = code-owner review and merge of the proposal PR (CODEOWNERS covers `docs/decisions/`, `docs/epics/` and `.claude/`). See the [Claude Code Skills wiki page](https://github.com/editrace-app/Editrace/wiki/Claude-Code-Skills) for walkthroughs.
 
 ## CI & AI Code Review
 
@@ -134,4 +134,4 @@ The Discord workflows are not required checks and never touch the PR's code: the
 
 **Gotcha:** a PR that changes a Claude workflow file skips its own Armour/`@claude` run ("workflow validation failed"). The action only runs when the workflow matches `main`, so a green check on that PR doesn't mean Claude ran (for `ai-review.yml`, the skip notice says so). Merge it first, then test on another PR (for example, close and reopen it).
 
-See the [wiki](https://github.com/anthonythanpoovong/Editrace/wiki) for per-feature documentation (web app, analysis pipeline, schema, editor integrations, MCP, RAG assistant, billing) and CI details.
+See the [wiki](https://github.com/editrace-app/Editrace/wiki) for per-feature documentation (web app, analysis pipeline, schema, editor integrations, MCP, RAG assistant, billing) and CI details.

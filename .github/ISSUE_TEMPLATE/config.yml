@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: 💡 Propose a feature or decision
-    url: https://github.com/anthonythanpoovong/Editrace/blob/main/CONTRIBUTING.md#where-new-work-comes-from
+    url: https://github.com/editrace-app/Editrace/blob/main/CONTRIBUTING.md#where-new-work-comes-from
     about: Stories come from approved proposals. Use /grill, then /propose-epic or /propose-adr.
