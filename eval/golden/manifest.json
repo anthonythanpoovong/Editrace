@@ -364,6 +364,7 @@
       "labeled": true,
       "labeling_minutes": 1,
       "notes": [
+        "platform end card: frames 608-728",
         "flash: cut at frame 35",
         "flash: cut at frame 54",
         "flash: cut at frame 68",
@@ -415,12 +416,9 @@
         "flash: cut at frame 415",
         "flash: cut at frame 465",
         "flash: cut at frame 516",
-        "flash: cut at frame 560",
-        "platform end card: frames 608-728"
+        "flash: cut at frame 560"
       ],
-      "ambiguous": [
-        257
-      ],
+      "ambiguous": [],
       "exclude": [
         {
           "start": 608,
