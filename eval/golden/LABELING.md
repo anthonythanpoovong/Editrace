@@ -38,25 +38,41 @@ Labels are schema templates (`schema/template.schema.json`) with one video track
 
 ## Workflow
 
-Videos are ingested first (`python3.11 eval/golden/ingest.py <originals>`). That writes `videos/vNN.mp4`, the manifest entry and an empty `labels/vNN.json`.
+Videos are ingested first (`uv run python eval/golden/ingest.py <originals>`). That writes `videos/vNN.mp4`, the manifest entry and an empty `labels/vNN.json`.
 
 ### Labeler (default)
 
-1. Open `eval/golden/labeler.html` in Chrome (double-click it). Pick `videos/vNN.mp4` and check the fps (30 for the current set). The video stays on your computer.
-2. Step with `←`/`→` (`Shift` for 10 frames), comparing the previous and current frame side by side. Then mark:
+`eval/golden/labeler.html` runs in Chrome straight from disk (double-click it). The video never leaves your computer.
+
+1. **Set the fps first.** Type the video's `fps` from `manifest.json` in the **fps** box: most are 30, v08 and v12 are 24, v06 is 23.976. The labeler counts frames when the video loads, so set the fps **before** picking the video; to change it later, reload the page and load the video again. With the wrong fps, every marker lands on the wrong frame.
+2. **Load the video.** Pick (or drop) `videos/vNN.mp4`, the conformed file, never the one in `originals/`. The status line should read e.g. `v09: 483 frames at 30 fps`, and the count must match `frames` in the manifest; if it doesn't, the fps is wrong. "Restored autosaved markers" means earlier work on this video is back.
+3. **Find each change.** The **Previous frame** is on the left and the **Current frame** on the right: a cut is where they're different shots. Play with `Space` until you see a change, pause (it stops on the frame shown), then step back with `←` until the current frame is the **first frame of the new shot**.
+
+   | Key | Does |
+   |---|---|
+   | `←` / `→` | one frame back / forward (`Shift` = 10) |
+   | `Space` | play / pause |
+   | `J` / `K` | previous / next marker |
+   | click the timeline | jump there (ticks: orange = cut, pink = flash, green = transition) |
+
+4. **Mark it.**
 
    | Key | Marks |
    |---|---|
-   | `C` | a cut at this frame (the first frame of the new shot) |
-   | `F` | a flash cut (rule 3) |
-   | `T` … `T` | a transition: press on its first frame and again on its last, with the type chosen in the sidebar (rules 5–8) |
-   | `A` | toggles ambiguous (`?`) on the marker at this frame (rule 13) |
-   | `⌫` | deletes the marker at this frame |
+   | `C` | a cut on this frame, the first frame of the new shot (rules 1–2, and the inside of a whip, rule 6) |
+   | `F` | a flash cut (rule 3): only for a 1–3 frame blip. Press `F` on the first flash frame, then `C` on the first frame after it. A different shot that lasts longer is a plain `C` |
+   | `T` … `T` | a transition (rules 5–8): choose the type in the sidebar (`other` needs a detail, e.g. `split screen in`), press `T` on the first frame that's visibly mid-transition and again on its last frame. `Esc` cancels one you started |
+   | `A` | toggles ambiguous (`?`) on the marker here (rule 13) |
+   | `⌫` | deletes the marker here |
 
-   A whip gets both: a `whip` transition over the blur, and a `C` cut inside it. For stacked transitions, mark each with `T`…`T`, changing the type in between. To delete or flag one of several overlapping markers, click it in the list first (or use its ✕ / ? buttons). Markers autosave in the browser, but **Save** (`S`) is what counts.
-3. Save to download `vNN.markers.json`. Labeling time is tracked while you press keys and is saved with it.
-4. Convert: `python3.11 eval/golden/markers_to_label.py vNN ~/Downloads/vNN.markers.json`. This fills `labels/vNN.json` (cuts, transitions, and slots derived from them) and the manifest's `notes`, `ambiguous` and `labeling_minutes`. Re-running replaces the previous labels. To keep editing later, load the markers file back into the labeler with **Resume**.
-5. Spot-check 2–3 cut frames, then fill in `rights`, `edit_styles` and `music` in `manifest.json` (see below).
+   A whip gets both a `whip` transition over the blur and a `C` where the new shot takes over. For stacked transitions, do `T`…`T` for each, changing the type in between. Where markers overlap (a cut inside a whip), click the one you mean in the list first, or use its ✕ / ? buttons. To move a marker, delete it and mark the right frame; a second `C` on the same frame replaces the first.
+
+   Leave unmarked: zooms, speed ramps and reframes inside one shot (rule 10), brightness flashes on the same shot (rule 4), text and stickers (rule 9), and panels filling in inside a split screen (rule 11, note it in `notes`). Mark nothing from the first frame of a platform end card, even if its logo only fades in over the last shot; write that frame down for `exclude` (rule 12).
+5. **Check, then save.** Step through 2–3 cuts with `K`: the previous frame should be the old shot and the current frame the new one. Then press `S` (**Save markers**) to download `vNN.markers.json`. Markers autosave in the browser, but only the downloaded file counts. Chrome names a second save `vNN.markers (1).json`, so use the newest. Labeling time is counted while you press keys, ignoring gaps over 2 minutes, and saved with it.
+6. **Convert:** `uv run python eval/golden/markers_to_label.py vNN ~/Downloads/vNN.markers.json`. This fills `labels/vNN.json` (cuts, transitions, and slots derived from them) and the manifest's `notes`, `ambiguous` and `labeling_minutes`, and refuses a file whose frame count doesn't match. Re-running replaces the previous labels and keeps `exclude`.
+7. **Finish the manifest entry:** add the end card to `exclude` (rule 12), and fill in `rights`, `edit_styles` and `music` (see below).
+
+To keep editing later: set the fps, load the same video, then **Resume** with your saved `vNN.markers.json`, which replaces whatever the browser autosaved.
 
 ### DaVinci Resolve (alternative)
 
