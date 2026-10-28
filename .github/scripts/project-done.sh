@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Sets Status Done on the Editrace project board for each issue a merged PR closes. Idempotent: an issue
 # already Done is left alone, and one not on the board yet is added first. Needs a token with "project"
-# scope in GH_TOKEN (GITHUB_TOKEN cannot write to a user-owned project) and a repo token in LIST_TOKEN
+# scope in GH_TOKEN (GITHUB_TOKEN cannot access Projects v2) and a repo token in LIST_TOKEN
 # to resolve issue node IDs.
 # Inputs (env): ISSUES (whitespace-separated issue numbers), REPO, PROJECT_OWNER, PROJECT_NUMBER.
 # Optional (env): OWNER_TYPE (user | organization; default user).
@@ -30,7 +30,7 @@ gql() { # query, then -f/-F variables
 proj=$(gql "query(\$owner: String!, \$n: Int!) { $owner_type(login: \$owner) { projectV2(number: \$n) { id
   fields(first: 50) { nodes { ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }" \
   -f owner="$PROJECT_OWNER" -F n="$PROJECT_NUMBER" | jq -c ".data.$owner_type.projectV2")
-[ "$proj" != null ] || { echo "Project #$PROJECT_NUMBER not found for $PROJECT_OWNER" >&2; exit 1; }
+[ "$proj" != null ] || { echo "Project #$PROJECT_NUMBER not found for $PROJECT_OWNER, or PROJECT_TOKEN cannot access it (it needs the project scope and access to that project)" >&2; exit 1; }
 project_id=$(jq -r .id <<<"$proj")
 status_field=$(jq -r '.fields.nodes[] | select(.name == "Status") | .id' <<<"$proj")
 done_opt=$(jq -r '.fields.nodes[] | select(.name == "Status") | .options[] | select(.name == "Done") | .id' <<<"$proj")
