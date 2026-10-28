@@ -1,6 +1,6 @@
 # Contributing to Editrace
 
-For per-feature detail (architecture, CI and Armour, MCP, schema, skills), see the [Editrace wiki](https://github.com/anthonythanpoovong/Editrace/wiki). The plan is in [`docs/plan.md`](docs/plan.md).
+For per-feature detail (architecture, CI and Armour, MCP, schema, skills), see the [Editrace wiki](https://github.com/editrace-app/Editrace/wiki). The plan is in [`docs/plan.md`](docs/plan.md).
 
 ## Ways of working
 
