@@ -193,6 +193,8 @@ if [ "$1" = api ] && [[ "$*" == *git/refs* ]]; then # claim refs: POST creates, 
 fi
 echo gh >> "$FAKE_GH_CALLS"
 [ -z "${FAKE_GH_FAIL:-}" ] || { echo "HTTP 401: Bad credentials" >&2; exit 1; }
+[[ "$*" == *'repositoryOwner(login'* ]] || { echo "unexpected query: $*" >&2; exit 1; } # users and orgs both resolve through repositoryOwner
+[ -z "${FAKE_NO_PROJECT:-}" ] || { echo '{"data":{"repositoryOwner":{"projectV2":null}}}'; exit 0; }
 echo '{"data":{"repositoryOwner":{"projectV2":{"field":{"configuration":{"iterations":[{"title":"Sprint 1","startDate":"2026-10-05","duration":14}]}}}}}}'
 FAKE
 chmod +x "$tmp/curl" "$tmp/gh"
@@ -212,6 +214,8 @@ run DRY_RUN=true NOW=2026-10-17T13:00:00Z; [ "$?" -eq 0 ] && grep -q 'Sprint due
 check "orchestrator: the sprint reminder reads the board once" $?
 run DRY_RUN=true NOW=2026-10-17T13:00:00Z FAKE_GH_FAIL=1; [ "$?" -ne 0 ] && grep -q "PROJECT_TOKEN" "$tmp/out"
 check "orchestrator: an unreadable board fails loudly and names PROJECT_TOKEN" $?
+run DRY_RUN=true NOW=2026-10-17T13:00:00Z FAKE_NO_PROJECT=1; [ "$?" -ne 0 ] && grep -q "PROJECT_TOKEN cannot access it" "$tmp/out"
+check "orchestrator: a project the token cannot see says so, not 'no Sprint field'" $?
 run DRY_RUN=false NOW=2026-10-14T18:30:00Z; [ "$?" -ne 0 ] && grep -q "DRY_RUN=true" "$tmp/out"
 check "orchestrator: a simulated time can never post" $?
 run DRY_RUN=true NOW=2026-10-14T18:30:00 ; [ "$?" -ne 0 ]
