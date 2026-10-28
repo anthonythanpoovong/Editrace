@@ -184,7 +184,7 @@
         "height": 1280
       },
       "vfr": true,
-      "rights": "",
+      "rights": "full",
       "edit_styles": [
         "fast-cuts",
         "montage",
@@ -219,7 +219,7 @@
         "height": 1280
       },
       "vfr": false,
-      "rights": "",
+      "rights": "full",
       "edit_styles": [
         "beat-synced",
         "montage"
