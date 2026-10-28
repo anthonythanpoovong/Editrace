@@ -310,11 +310,36 @@
         "montage"
       ],
       "music": "released",
-      "labeled": false,
-      "labeling_minutes": null,
-      "notes": [],
+      "labeled": true,
+      "labeling_minutes": 2,
+      "notes": [
+        "flash: cut at frame 24",
+        "flash: cut at frame 41",
+        "flash: cut at frame 56",
+        "flash: cut at frame 68",
+        "flash: cut at frame 77",
+        "flash: cut at frame 84",
+        "flash: cut at frame 89",
+        "flash: cut at frame 103",
+        "flash: cut at frame 150",
+        "flash: cut at frame 182",
+        "flash: cut at frame 199",
+        "flash: cut at frame 214",
+        "flash: cut at frame 230",
+        "flash: cut at frame 246",
+        "flash: cut at frame 277",
+        "flash: cut at frame 293",
+        "flash: cut at frame 324",
+        "platform end card: frames 362-482"
+      ],
       "ambiguous": [],
-      "exclude": []
+      "exclude": [
+        {
+          "start": 362,
+          "duration": 121,
+          "reason": "platform end card"
+        }
+      ]
     },
     {
       "id": "v10",
@@ -336,11 +361,73 @@
         "beat-synced"
       ],
       "music": "original",
-      "labeled": false,
-      "labeling_minutes": null,
-      "notes": [],
-      "ambiguous": [],
-      "exclude": []
+      "labeled": true,
+      "labeling_minutes": 1,
+      "notes": [
+        "flash: cut at frame 35",
+        "flash: cut at frame 54",
+        "flash: cut at frame 68",
+        "flash: cut at frame 75",
+        "flash: cut at frame 86",
+        "flash: cut at frame 93",
+        "flash: cut at frame 101",
+        "flash: cut at frame 106",
+        "flash: cut at frame 247",
+        "flash: cut at frame 257",
+        "flash: cut at frame 303",
+        "flash: cut at frame 306",
+        "flash: cut at frame 309",
+        "flash: cut at frame 312",
+        "flash: cut at frame 315",
+        "flash: cut at frame 318",
+        "flash: cut at frame 321",
+        "flash: cut at frame 324",
+        "flash: cut at frame 327",
+        "flash: cut at frame 330",
+        "flash: cut at frame 333",
+        "flash: cut at frame 336",
+        "flash: cut at frame 339",
+        "flash: cut at frame 342",
+        "flash: cut at frame 347",
+        "flash: cut at frame 348",
+        "flash: cut at frame 351",
+        "flash: cut at frame 354",
+        "flash: cut at frame 357",
+        "flash: cut at frame 360",
+        "flash: cut at frame 363",
+        "flash: cut at frame 366",
+        "flash: cut at frame 369",
+        "flash: cut at frame 372",
+        "flash: cut at frame 375",
+        "flash: cut at frame 378",
+        "flash: cut at frame 381",
+        "flash: cut at frame 384",
+        "flash: cut at frame 387",
+        "flash: cut at frame 390",
+        "flash: cut at frame 393",
+        "flash: cut at frame 396",
+        "flash: cut at frame 399",
+        "flash: cut at frame 402",
+        "flash: cut at frame 405",
+        "flash: cut at frame 408",
+        "flash: cut at frame 411",
+        "flash: cut at frame 414",
+        "flash: cut at frame 415",
+        "flash: cut at frame 465",
+        "flash: cut at frame 516",
+        "flash: cut at frame 560",
+        "platform end card: frames 608-728"
+      ],
+      "ambiguous": [
+        257
+      ],
+      "exclude": [
+        {
+          "start": 608,
+          "duration": 121,
+          "reason": "platform end card"
+        }
+      ]
     },
     {
       "id": "v11",
@@ -362,11 +449,20 @@
         "slow-paced"
       ],
       "music": "original",
-      "labeled": false,
-      "labeling_minutes": null,
-      "notes": [],
+      "labeled": true,
+      "labeling_minutes": 1,
+      "notes": [
+        "flash: cut at frame 101",
+        "platform end card: frames 183-302"
+      ],
       "ambiguous": [],
-      "exclude": []
+      "exclude": [
+        {
+          "start": 183,
+          "duration": 120,
+          "reason": "platform end card"
+        }
+      ]
     },
     {
       "id": "v12",
@@ -393,11 +489,39 @@
         "flash"
       ],
       "music": "released",
-      "labeled": false,
-      "labeling_minutes": null,
-      "notes": [],
+      "labeled": true,
+      "labeling_minutes": 9,
+      "notes": [
+        "flash: cut at frame 44",
+        "flash: cut at frame 196",
+        "flash: cut at frame 223",
+        "flash: cut at frame 265",
+        "flash: cut at frame 267",
+        "flash: cut at frame 269",
+        "flash: cut at frame 271",
+        "flash: cut at frame 273",
+        "flash: cut at frame 274",
+        "flash: cut at frame 275",
+        "flash: cut at frame 277",
+        "flash: cut at frame 279",
+        "flash: cut at frame 281",
+        "flash: cut at frame 283",
+        "flash: cut at frame 311",
+        "flash: cut at frame 354",
+        "flash: cut at frame 418",
+        "flash: cut at frame 439",
+        "flash: cut at frame 506",
+        "flash: cut at frame 525",
+        "platform end card: frames 569-679 (marked at 30 fps frame 711 in the labeler)"
+      ],
       "ambiguous": [],
-      "exclude": []
+      "exclude": [
+        {
+          "start": 569,
+          "duration": 111,
+          "reason": "platform end card"
+        }
+      ]
     },
     {
       "id": "v13",
