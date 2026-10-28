@@ -4,6 +4,11 @@ The golden videos are private and never committed, so this runs only where all o
 `eval/golden/videos/`) and is skipped elsewhere, including CI. It scores with the golden set's own scorer, so the
 numbers match `/golden-eval` and ADR 0003. #7 is signed off on #52's 10-video set; until then it covers the labeled
 videos there are.
+
+Results can differ by a cut between platforms: video decoding isn't bit-identical, so a cut whose adaptive ratio sits
+right at the threshold can be detected on one machine and not another (v05 frame 229 scores 1.9939 on macOS arm64 and
+just over 2.0 on Windows, giving recall 0.953 vs 0.965 on v01-v05). The numbers that count for sign-off are the ones
+from the Modal container production runs in (#7, #330).
 """
 
 from __future__ import annotations
