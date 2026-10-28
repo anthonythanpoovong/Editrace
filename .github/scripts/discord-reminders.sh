@@ -37,12 +37,12 @@ result=$(CONFIG="$config" NOW="$now_epoch" SPRINTS=null "$here/discord-reminder-
 if [ "$(jq -r .sprint_window <<<"$result")" = true ]; then
   owner=$(jq -r .project.owner <<<"$config"); number=$(jq -r .project.number <<<"$config")
   [[ "$owner" =~ ^[A-Za-z0-9-]{1,39}$ && "$number" =~ ^[0-9]+$ ]] || { echo "reminders.json project owner or number is invalid" >&2; exit 1; }
-  if ! board=$(gh api graphql -f query='query($o: String!, $n: Int!) { user(login: $o) { projectV2(number: $n) {
-        field(name: "Sprint") { ... on ProjectV2IterationField { configuration { iterations { title startDate duration } } } } } } }' \
+  if ! board=$(gh api graphql -f query='query($o: String!, $n: Int!) { repositoryOwner(login: $o) { ... on ProjectV2Owner { projectV2(number: $n) {
+        field(name: "Sprint") { ... on ProjectV2IterationField { configuration { iterations { title startDate duration } } } } } } } }' \
         -f o="$owner" -F n="$number" 2>&1); then
     echo "Could not read the sprints from the board (is PROJECT_TOKEN valid and has the project scope?): $board" >&2; exit 1
   fi
-  sprints=$(jq -ce '.data.user.projectV2.field.configuration.iterations' <<<"$board") \
+  sprints=$(jq -ce '.data.repositoryOwner.projectV2.field.configuration.iterations' <<<"$board") \
     || { echo "The board has no Sprint iteration field" >&2; exit 1; }
   result=$(CONFIG="$config" NOW="$now_epoch" SPRINTS="$sprints" "$here/discord-reminder-due.sh")
 fi

@@ -59,7 +59,7 @@ If the grill says "Needs a spike first", use `/spike`. Bugs and spikes have issu
 
 `project-intake.yml` runs on every new issue (#178). You do not add it to the board by hand.
 
-- It is added to the [Project Board](https://github.com/users/anthonythanpoovong/projects/2) in the **current sprint** with Status **Backlog**. Between sprints it uses the next upcoming one; if no sprint exists, the run fails and comments on the issue. Create the next iteration on the board before a sprint ends.
+- It is added to the [Project Board](https://github.com/orgs/editrace-app/projects/1) in the **current sprint** with Status **Backlog**. Between sprints it uses the next upcoming one; if no sprint exists, the run fails and comments on the issue. Create the next iteration on the board before a sprint ends.
 - It gets any **missing labels**: a level (`subtask` if its parent is a story or subtask, otherwise `story`; being under an epic does not make it a subtask), `type:build`, and a domain/area from the issue form's Area answer. With no domain it gets `needs-triage`; set `platform`, `product` or `ml` and the workflow removes it. Labels you set yourself are never changed.
 - It is assigned to whoever opened it, unless it already has an assignee or a bot opened it. Reopening does not reassign.
 - A sprint or status that is already set is never overwritten, so moving a card is safe.
@@ -68,7 +68,7 @@ If the grill says "Needs a spike first", use `/spike`. Bugs and spikes have issu
 
 **Marking tickets Done.** `project-done.yml` runs when a PR merges and sets Status Done for every ticket the PR closes (`Closes`/`Fixes`/`Resolves #n` at the start of a line in the PR body, or a link GitHub already shows), whatever the base branch. `Part of #n` does not count. A re-run changes nothing.
 
-**Carrying over unfinished work.** `project-carry-over.yml` (Sprint carry-over) runs daily and, while a sprint is running, moves every open card that is not Done from an earlier sprint into the running one. Done cards, closed issues and PRs, cards with no sprint and cards on a later sprint stay put, and nothing moves between sprints. A re-run changes nothing. To preview: **Actions → Sprint carry-over → Run workflow** (*dry_run* is on by default). Locally: `DRY_RUN=true PROJECT_OWNER=anthonythanpoovong PROJECT_NUMBER=2 .github/scripts/project-carry-over.sh`.
+**Carrying over unfinished work.** `project-carry-over.yml` (Sprint carry-over) runs daily and, while a sprint is running, moves every open card that is not Done from an earlier sprint into the running one. Done cards, closed issues and PRs, cards with no sprint and cards on a later sprint stay put, and nothing moves between sprints. A re-run changes nothing. To preview: **Actions → Sprint carry-over → Run workflow** (*dry_run* is on by default). Locally: `DRY_RUN=true OWNER_TYPE=organization PROJECT_OWNER=editrace-app PROJECT_NUMBER=1 .github/scripts/project-carry-over.sh`.
 
 It needs the secret `PROJECT_TOKEN`: a token with the `project` scope, because `GITHUB_TOKEN` cannot write to a user-owned project. It is Anthony's personal token. Note its expiry date when you create it and rotate it before then (**Settings → Secrets and variables → Actions**). A run that fails with "PROJECT_TOKEN expired, revoked or missing the project scope" means it needs replacing. If the repo moves to an organisation or the token owner changes, switch to a GitHub App.
 

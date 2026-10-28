@@ -21,8 +21,9 @@ on:
 permissions: {}
 
 env:
-  PROJECT_OWNER: anthonythanpoovong
-  PROJECT_NUMBER: "2"
+  PROJECT_OWNER: editrace-app
+  OWNER_TYPE: organization
+  PROJECT_NUMBER: "1"
 
 jobs:
   labels:

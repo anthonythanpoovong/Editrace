@@ -234,6 +234,6 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 ## Links
 
 - GitHub: https://github.com/anthonythanpoovong/Editrace
-- Project Board: https://github.com/users/anthonythanpoovong/projects/2 (views: Spikes, Blocked, Quick wins, per-area incl. MCP and RAG)
+- Project Board: https://github.com/orgs/editrace-app/projects/1 (views: Spikes, Blocked, Quick wins, per-area incl. MCP and RAG)
 - Wiki (per-feature docs): https://github.com/anthonythanpoovong/Editrace/wiki
 - Proposals: [`docs/epics/`](epics/README.md) (epics) · [`docs/decisions/`](decisions/README.md) (ADRs)

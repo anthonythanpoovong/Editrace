@@ -53,7 +53,7 @@ The Editrace Bridge (local MCP server + editor adapters) gets its own folder onc
 
 1. Read [`docs/plan.md`](docs/plan.md) and [`CONTRIBUTING.md`](CONTRIBUTING.md) (branches, PRs, review rules)
 2. Install the pre-commit hooks once per clone: `pip install pre-commit && pre-commit install` (ruff, prettier, gitleaks, schema check; see CONTRIBUTING.md)
-3. Check the [Project Board](https://github.com/users/anthonythanpoovong/projects/2) (views per area, incl. MCP and RAG). New issues are added to it automatically.
+3. Check the [Project Board](https://github.com/orgs/editrace-app/projects/1) (views per area, incl. MCP and RAG). New issues are added to it automatically.
 4. Start with Phase 0 issues
 
 ## Schema

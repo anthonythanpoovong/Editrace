@@ -109,7 +109,7 @@ out=$(pl meeting_eve)
 d=$(jq -r '.embeds[0].description' <<<"$out"); [[ "$d" == *'Come prepared'* && "$d" == *'What you are blocked by'* && "$d" == *'(https://meet.google.com/xmq-csjt-npw)' ]]
 check "payload: eve lists the agenda and the Meet link" $?
 out=$(pl sprint_due)
-[ "$(jq -r .content <<<"$out")" = '<@&999> ⏰ Sprint due tomorrow' ] && [ "$(jq -r '.embeds[0].title' <<<"$out")" = 'Sprint 1 ends Sunday, October 18' ] && jq -r '.embeds[0].description' <<<"$out" | grep -q 'projects/2'
+[ "$(jq -r .content <<<"$out")" = '<@&999> ⏰ Sprint due tomorrow' ] && [ "$(jq -r '.embeds[0].title' <<<"$out")" = 'Sprint 1 ends Sunday, October 18' ] && jq -r '.embeds[0].description' <<<"$out" | grep -q 'projects/1'
 check "payload: 'Sprint due tomorrow' with the sprint, due date and board link" $?
 out=$(SPRINT_TITLE='@everyone **x** [a](http://evil.test)' pl sprint_due)
 ! jq -r '.embeds[0].title' <<<"$out" | grep -qE '@everyone|\]\(http' && [ "$(jq -c .allowed_mentions <<<"$out")" = '{"parse":[],"roles":["999"]}' ]
@@ -193,7 +193,7 @@ if [ "$1" = api ] && [[ "$*" == *git/refs* ]]; then # claim refs: POST creates, 
 fi
 echo gh >> "$FAKE_GH_CALLS"
 [ -z "${FAKE_GH_FAIL:-}" ] || { echo "HTTP 401: Bad credentials" >&2; exit 1; }
-echo '{"data":{"user":{"projectV2":{"field":{"configuration":{"iterations":[{"title":"Sprint 1","startDate":"2026-10-05","duration":14}]}}}}}}'
+echo '{"data":{"repositoryOwner":{"projectV2":{"field":{"configuration":{"iterations":[{"title":"Sprint 1","startDate":"2026-10-05","duration":14}]}}}}}}'
 FAKE
 chmod +x "$tmp/curl" "$tmp/gh"
 export FAKE_SENT="$tmp/sent" FAKE_GH_CALLS="$tmp/gh_calls" FAKE_REF_CALLS="$tmp/ref_calls" FAKE_REFS="$tmp/refs"

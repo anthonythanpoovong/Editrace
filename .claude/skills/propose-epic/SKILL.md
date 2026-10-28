@@ -59,7 +59,7 @@ Then:
    ```sh
    gh api repos/{owner}/{repo}/issues/<epic>/sub_issues -X POST -F sub_issue_id=<story issue id, not number>
    ```
-4. Edit the epic body to list the stories, and add both to the project board if possible (`gh project item-add 2 --owner anthonythanpoovong --url <issue url>`).
+4. Edit the epic body to list the stories, and add both to the project board if possible (`gh project item-add 1 --owner editrace-app --url <issue url>`).
 5. On a new branch, update the proposal file: `Status: Accepted`, the epic number, and the story numbers. Add the epic to the Epics table in `docs/plan.md`. Open a normal PR.
 
 Show the author the list of issues before creating them and get a yes. Creating issues notifies the team.
