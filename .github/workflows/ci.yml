@@ -66,9 +66,33 @@ jobs:
           fi
           echo "code=$code" >> "$GITHUB_OUTPUT"
           echo "supabase=$supabase" >> "$GITHUB_OUTPUT"
-      - uses: gitleaks/gitleaks-action@v2
+      # The CLI, not gitleaks-action: the action needs a paid GITLEAKS_LICENSE on organization repos. Same version as
+      # the pre-commit hook; bump both together. Reads .gitleaks.toml. Scans the PR's commits, or the pushed ones on main.
+      - name: Scan for secrets (gitleaks)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_VERSION: 8.30.0
+          # From the release's gitleaks_8.30.0_checksums.txt (linux_x64)
+          GITLEAKS_SHA256: 79a3ab579b53f71efd634f3aaf7e04a0fa0cf206b7ed434638d1547a2470a66e
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.sha }}
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/gitleaks.tgz" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "$GITLEAKS_SHA256  $RUNNER_TEMP/gitleaks.tgz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/gitleaks.tgz" -C "$RUNNER_TEMP" gitleaks
+          range=""
+          if [ "$EVENT_NAME" = pull_request ]; then
+            range="$PR_BASE..$PR_HEAD"
+          elif git cat-file -e "${PUSH_BEFORE}^{commit}" 2> /dev/null; then
+            range="$PUSH_BEFORE..$PUSH_AFTER"
+          fi
+          args=(git --no-banner --redact -v)
+          if [ -n "$range" ]; then args+=(--log-opts="--no-merges $range"); fi
+          echo "gitleaks range: ${range:-full history}"
+          "$RUNNER_TEMP/gitleaks" "${args[@]}" .
 
   # Unit tests for the CI helper scripts (e.g. the Discord review payload's @-defusing, #140).
   # Also lints the workflow files themselves (syntax, expressions, shellcheck on run: steps; added with deploy.yml, #48)
