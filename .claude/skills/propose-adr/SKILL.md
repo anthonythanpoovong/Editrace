@@ -36,7 +36,19 @@ gh pr create --draft --label proposal,adr \
   --title "ADR NNNN: <title>" \
   --body "<summary + grill scorecard + 'Approval = code-owner review and merge'>"
 ```
-Tell the author: the PR is a draft. Mark it **Ready for review** when discussion is done. It merges only with code-owner approval (CODEOWNERS covers `docs/decisions/`).
+Then start the discussion thread in the **ADR** category of GitHub Discussions, so the team can talk it through, and link the two:
+```sh
+read -r REPO_ID OWNER NAME < <(gh repo view --json id,owner,name --jq '[.id,.owner.login,.name]|@tsv')
+CAT_ID=$(gh api graphql -f query='query($o:String!,$n:String!){repository(owner:$o,name:$n){discussionCategories(first:20){nodes{id name}}}}' \
+  -f o="$OWNER" -f n="$NAME" --jq '.data.repository.discussionCategories.nodes[]|select(.name=="ADR").id')
+gh api graphql -f query='mutation($r:ID!,$c:ID!,$t:String!,$b:String!){createDiscussion(input:{repositoryId:$r,categoryId:$c,title:$t,body:$b}){discussion{url}}}' \
+  -f r="$REPO_ID" -f c="$CAT_ID" -f t="ADR NNNN: <title>" -f b="<decision in short, options, open questions, PR link>" \
+  --jq '.data.createDiscussion.discussion.url'
+gh pr comment <pr-number> --body "Discussion thread for this ADR: <discussion-url>"
+```
+The body is the decision in short, the options, the open questions and the PR link, and says approval happens on the PR. If there is no `ADR` category (empty `CAT_ID`), skip the thread and tell the author.
+
+Tell the author: the PR is a draft and the discussion thread is open. Mark the PR **Ready for review** when discussion is done. It merges only with code-owner approval (CODEOWNERS covers `docs/decisions/`).
 
 ### 5. After approval (only when asked, and only once merged)
 Check the PR is merged (`gh pr view <n> --json state` must be `MERGED`) and the file on `origin/main` still says `Status: Proposed`. A merged `Rejected` file is a record, not an approval. If either check fails, stop. Merging a Proposed ADR is the approval. Status isn't flipped inside the proposal PR, because `main` dismisses approvals on new commits. Then, on a new branch:
