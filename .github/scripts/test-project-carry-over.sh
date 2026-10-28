@@ -24,7 +24,8 @@ case "$q" in
   *updateProjectV2ItemFieldValue*)
     [ "$item" != "${FAIL_ITEM:-}" ] || { echo "boom" >&2; exit 1; }
     echo "$item $iter" >> "$FAKE/moved"; echo '{"data":{}}' ;;
-  *) if [ -z "$after" ]; then cat "$FAKE/page1.json"; else cat "$FAKE/page2.json"; fi ;;
+  *"${FAKE_OWNER_KEY:-user}(login"*) if [ -z "$after" ]; then cat "$FAKE/page1.json"; else cat "$FAKE/page2.json"; fi ;;
+  *) echo '{"data":{"user":null,"organization":null}}' ;; # the other owner type finds no such project
 esac
 FAKE
 chmod +x "$tmp/bin/gh"
@@ -38,10 +39,10 @@ item() { # id, type, state, status, sprint json or null
       sprint: $sp, status: (if $status == "" then null else {name: $status} end)}'; }
 s1=$(it s1 "Sprint 1" 2026-09-30); s2=$(it s2 "Sprint 2" 2026-10-14); s3=$(it s3 "Sprint 3" 2026-10-28)
 write() { # page1 items, page2 items (JSON arrays)
-  jq -n --argjson a "$1" '{data: {user: {projectV2: {id: "PVT_1",
+  jq -n --arg k "${FAKE_OWNER_KEY:-user}" --argjson a "$1" '{data: {($k): {projectV2: {id: "PVT_1",
     field: {id: "PVTIF_1", configuration: {iterations: [{id: "s2", title: "Sprint 2", startDate: "2026-10-14", duration: 14}, {id: "s3", title: "Sprint 3", startDate: "2026-10-28", duration: 14}]}},
     items: {pageInfo: {hasNextPage: true, endCursor: "C1"}, nodes: $a}}}}}' > "$tmp/page1.json"
-  jq -n --argjson a "$2" '{data: {user: {projectV2: {id: "PVT_1",
+  jq -n --arg k "${FAKE_OWNER_KEY:-user}" --argjson a "$2" '{data: {($k): {projectV2: {id: "PVT_1",
     field: {id: "PVTIF_1", configuration: {iterations: [{id: "s2", title: "Sprint 2", startDate: "2026-10-14", duration: 14}, {id: "s3", title: "Sprint 3", startDate: "2026-10-28", duration: 14}]}},
     items: {pageInfo: {hasNextPage: false, endCursor: null}, nodes: $b}}}}}' --argjson b "$2" > "$tmp/page2.json"; }
 run() { rm -f "$tmp/moved"; env PATH="$tmp/bin:$PATH" PROJECT_OWNER=o PROJECT_NUMBER=2 TODAY="${TODAY:-2026-10-16}" "$@" ./project-carry-over.sh > "$tmp/log" 2>&1; }
@@ -75,4 +76,10 @@ check "a failed move fails the run but the other items still move" $?
 
 run FAKE_FAIL_ALL=1; code=$?
 [ "$code" -ne 0 ] && grep -q 'PROJECT_TOKEN expired' "$tmp/log"; check "an unreadable board fails the run and names the token" $?
+
+FAKE_OWNER_KEY=organization write "[$(item a Issue OPEN Backlog "$s1")]" "[]"
+run OWNER_TYPE=organization FAKE_OWNER_KEY=organization; [ $? -eq 0 ] && [ "$(moved)" = "a s2," ]
+check "OWNER_TYPE=organization queries organization(login:) and reads the board" $?
+run FAKE_OWNER_KEY=organization; [ $? -ne 0 ] && grep -q 'PROJECT_TOKEN cannot access it' "$tmp/log"
+check "a project the query cannot see fails and names the token" $?
 exit $fail
