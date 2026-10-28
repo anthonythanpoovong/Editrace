@@ -18,7 +18,7 @@ name: Discord reminders
 # be read, shows as a red X.
 # Needs: secret DISCORD_REVIEW_WEBHOOK (or DISCORD_MEETING_WEBHOOK to use another channel), variable
 # DISCORD_REVIEW_ROLE_ID, and secret PROJECT_TOKEN (a token with the "project" scope, read only here;
-# GITHUB_TOKEN cannot read a user-owned project).
+# GITHUB_TOKEN cannot read Projects v2).
 # Manual run: dry_run prints the messages without posting; now simulates a time, e.g. 2026-10-13T18:30:00Z.
 #
 # Scheduled runs always use the default branch; the scripts and config are checked out from it too.

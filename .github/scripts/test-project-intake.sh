@@ -90,12 +90,13 @@ cat > "$tmp/gh" <<'FAKE'
 q=$(printf '%s\n' "$@")
 printf '%s\n' "$q" | tr '\n' ' ' >> "$FAKE_LOG"; echo >> "$FAKE_LOG"
 case "$q" in
-  *projectV2\(number*) cat <<JSON
-{"data":{"user":{"projectV2":{"id":"P1","fields":{"nodes":[{},
+  *"${FAKE_OWNER_KEY:-user}(login"*projectV2\(number*) cat <<JSON
+{"data":{"${FAKE_OWNER_KEY:-user}":{"projectV2":{"id":"P1","fields":{"nodes":[{},
  {"id":"S1","name":"Status","options":[{"id":"o1","name":"Backlog"},{"id":"o2","name":"Done"}]},
  {"id":"F1","name":"Sprint","configuration":{"iterations":[{"id":"it1","title":"Sprint 1","startDate":"2026-10-05","duration":14}]}}]}}}}}
 JSON
   ;;
+  *projectV2\(number*) echo '{"data":{"user":null,"organization":null}}' ;;
   *addProjectV2ItemById*) cat <<JSON
 {"data":{"addProjectV2ItemById":{"item":{"id":"I1","fieldValues":{"nodes":${FAKE_VALUES:-[]}}}}}}
 JSON
@@ -117,6 +118,13 @@ check "an item with Sprint and Status set is not overwritten" $?
 : > "$tmp/log"; FAKE_VALUES='[{"field":{"name":"Sprint"}}]' run > /dev/null
 [ "$(grep -c 'updateProjectV2ItemFieldValue' "$tmp/log")" -eq 1 ] && grep -q 'singleSelectOptionId' "$tmp/log"
 check "only the missing field is filled" $?
+
+: > "$tmp/log"; FAKE_OWNER_KEY=organization OWNER_TYPE=organization run > /dev/null
+[ "$(grep -c 'updateProjectV2ItemFieldValue' "$tmp/log")" -eq 2 ] && grep -q 'organization(login' "$tmp/log"
+check "OWNER_TYPE=organization queries organization(login:) and fills the new item" $?
+
+: > "$tmp/log"; FAKE_OWNER_KEY=organization run > "$tmp/out" 2>&1; [ $? -ne 0 ] && grep -q 'PROJECT_TOKEN cannot access it' "$tmp/out"
+check "a project the query cannot see fails and names the token" $?
 
 ISSUE_NODE_ID='x";drop' PROJECT_OWNER=me PROJECT_NUMBER=2 ./project-intake.sh > /dev/null 2>&1; [ $? -ne 0 ]
 check "a bad node ID is rejected" $?
