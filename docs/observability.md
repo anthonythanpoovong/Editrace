@@ -89,7 +89,7 @@ Alerts are delivered to the **`#alerts`** channel on Discord through a webhook. 
 
 | Provider | Guardrail | Where it's set | Status |
 |---|---|---|---|
-| Modal (GPU, CPU) | Workspace spend limit + usage notifications | Modal dashboard → workspace settings | **Not set up yet.** No Editrace workspace exists. Set up and tested when it's created (#163) |
+| Modal (GPU, CPU) | Workspace spend limit + usage notifications | Modal dashboard → each workspace's Usage & billing and Resource limits | **Not set up yet.** Both Modal workspaces exist (`editrace-app` for prod, a personal one for staging for now) but neither has a spend limit or alert yet. Set up on each and tested on `editrace-app`, since staging is under a personal account until it moves (#320) |
 | Anthropic (assistant, LLM tokens) | Monthly spend limit + notification thresholds | Anthropic Console → Settings → Limits | **Not set up yet.** No Editrace organisation exists. Set up and tested when the assistant's API key is created (#65) |
 
 Setting up a provider's alert means: set the monthly limit, add notifications at 50% and 80%, add the team to the notification list, then cross a temporary low threshold and confirm the alert is posted in `#alerts`. Test on the real Editrace account, not a personal one: alerts belong to one account, so a test elsewhere proves nothing.
@@ -98,7 +98,7 @@ Budgets (the owner sets these when the accounts are created):
 
 | Provider | Monthly limit | Alert at |
 |---|---|---|
-| Modal | TBD (#163) | 50%, 80% |
+| Modal | TBD per workspace, $0 beyond the free credit until we start spending (#320) | 50%, 80% |
 | Anthropic | TBD (#65) | 50%, 80% |
 
 When an alert fires, follow [`runbooks/spend-alert.md`](runbooks/spend-alert.md). Per-job cost tracking (`job_costs`) and a daily budget check come with the worker base (#53) and jobs table (#58).
