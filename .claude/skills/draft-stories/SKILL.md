@@ -50,7 +50,7 @@ For each story:
 gh issue create --title "<title>" --label "story,<other labels>" --milestone "<phase>" --assignee <owner> --body-file <file>
 gh api repos/{owner}/{repo}/issues/<story> -q .id          # numeric id, not the issue number
 gh api repos/{owner}/{repo}/issues/<epic>/sub_issues -X POST -F sub_issue_id=<id>
-gh project item-add 2 --owner anthonythanpoovong --url <story url>
+gh project item-add 1 --owner editrace-app --url <story url>
 ```
 Then add the new story numbers to the epic's `## Stories` or equivalent list, keeping the rest of its body exactly as is (`gh issue edit <epic> --body-file`). Pull requests don't go on the board: only these story issues.
 
