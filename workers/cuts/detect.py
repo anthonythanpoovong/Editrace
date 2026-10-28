@@ -104,29 +104,32 @@ def suspect_cuts(video: Path, cuts: list[Cut], fps: float) -> frozenset[int]:
     if not pairs:
         return frozenset()
 
+    # Read forward once and keep only the frames the pairs need. Seeking (CAP_PROP_POS_FRAMES) isn't guaranteed to land
+    # on the exact frame in H.264 files, and seeking per frame is slow.
+    needed = {n for a, b in pairs for n in range(a - 1, b + 1)}
+    sampled: dict[int, Any] = {}
     capture = cv2.VideoCapture(str(video))
     try:
-
-        def read(n: int):
-            capture.set(cv2.CAP_PROP_POS_FRAMES, n)
+        for n in range(max(needed) + 1):
             ok, image = capture.read()
             if not ok:
                 raise ValueError(f"can't read frame {n} of {video}")
-            return cv2.resize(image, SAMPLE_SIZE, interpolation=cv2.INTER_AREA).astype(
-                np.float32
-            )
-
-        out: set[int] = set()
-        for a, b in pairs:
-            before, after = read(a - 1), read(b)
-            between = [read(n) for n in range(a, b)]
-            to_before = min(float(np.abs(m - before).mean()) for m in between)
-            to_after = min(float(np.abs(m - after).mean()) for m in between)
-            if min(to_before, to_after) < DISTINCT_MIN:
-                out.update((a, b))
-        return frozenset(out)
+            if n in needed:
+                sampled[n] = cv2.resize(
+                    image, SAMPLE_SIZE, interpolation=cv2.INTER_AREA
+                ).astype(np.float32)
     finally:
         capture.release()
+
+    out: set[int] = set()
+    for a, b in pairs:
+        before, after = sampled[a - 1], sampled[b]
+        between = [sampled[n] for n in range(a, b)]
+        to_before = min(float(np.abs(m - before).mean()) for m in between)
+        to_after = min(float(np.abs(m - after).mean()) for m in between)
+        if min(to_before, to_after) < DISTINCT_MIN:
+            out.update((a, b))
+    return frozenset(out)
 
 
 def confidence(score: float) -> float:

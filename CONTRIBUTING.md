@@ -1,6 +1,6 @@
 # Contributing to Editrace
 
-For per-feature detail (architecture, CI and Armour, MCP, schema, skills), see the [Editrace wiki](https://github.com/anthonythanpoovong/Editrace/wiki). The plan is in [`docs/plan.md`](docs/plan.md).
+For per-feature detail (architecture, CI and Armour, MCP, schema, skills), see the [Editrace wiki](https://github.com/editrace-app/Editrace/wiki). The plan is in [`docs/plan.md`](docs/plan.md).
 
 ## Ways of working
 
@@ -43,7 +43,7 @@ From then on, every `git commit` runs ruff + ruff-format (Python), prettier (`we
 - Open a draft PR early. CI and Armour don't run on drafts (to save GitHub Actions minutes), so run the checks locally before marking it ready: `npm run lint`, `npm run typecheck` and `npm test` in `web/`, `make codegen` after a schema change, and `supabase test db` for migrations. Marking the PR ready runs CI and Armour once. After later pushes CI reruns automatically; add the `armour` label to ask Armour for another review.
 - The PR template opens pre-filled. Use `Closes #n` so the issue closes on merge.
 - **Keep PRs small.** Aim for under about 400 changed lines and one concern per PR. If a change is bigger, split it (schema first, then code that uses it) or say in the PR why it can't be split.
-- A PR that changes how the system works for others (new service, schema or MCP contract change, new setup steps, CI changes, new skills) is a **large change**: tick the `/sync-docs` box in the template and run `/sync-docs` after it merges.
+- A PR that changes how the system works for others (new service, schema or MCP contract change, new setup steps, CI changes, new skills) is a **large change**: tick the `/sync-docs` box in the template and run `/sync-docs` after it merges. If it slips, a weekly check (`sync-docs-due.yml`) opens one "Docs sync due" issue while a large-change area has changed on `main` since the wiki's last sync, and closes it once `/sync-docs` has caught up.
 
 ### Where new work comes from
 
@@ -59,7 +59,7 @@ If the grill says "Needs a spike first", use `/spike`. Bugs and spikes have issu
 
 `project-intake.yml` runs on every new issue (#178). You do not add it to the board by hand.
 
-- It is added to the [Project Board](https://github.com/users/anthonythanpoovong/projects/2) in the **current sprint** with Status **Backlog**. Between sprints it uses the next upcoming one; if no sprint exists, the run fails and comments on the issue. Create the next iteration on the board before a sprint ends.
+- It is added to the [Project Board](https://github.com/orgs/editrace-app/projects/1) in the **current sprint** with Status **Backlog**. Between sprints it uses the next upcoming one; if no sprint exists, the run fails and comments on the issue. Create the next iteration on the board before a sprint ends.
 - It gets any **missing labels**: a level (`subtask` if its parent is a story or subtask, otherwise `story`; being under an epic does not make it a subtask), `type:build`, and a domain/area from the issue form's Area answer. With no domain it gets `needs-triage`; set `platform`, `product` or `ml` and the workflow removes it. Labels you set yourself are never changed.
 - It is assigned to whoever opened it, unless it already has an assignee or a bot opened it. Reopening does not reassign.
 - A sprint or status that is already set is never overwritten, so moving a card is safe.
@@ -68,9 +68,9 @@ If the grill says "Needs a spike first", use `/spike`. Bugs and spikes have issu
 
 **Marking tickets Done.** `project-done.yml` runs when a PR merges and sets Status Done for every ticket the PR closes (`Closes`/`Fixes`/`Resolves #n` at the start of a line in the PR body, or a link GitHub already shows), whatever the base branch. `Part of #n` does not count. A re-run changes nothing.
 
-**Carrying over unfinished work.** `project-carry-over.yml` (Sprint carry-over) runs daily and, while a sprint is running, moves every open card that is not Done from an earlier sprint into the running one. Done cards, closed issues and PRs, cards with no sprint and cards on a later sprint stay put, and nothing moves between sprints. A re-run changes nothing. To preview: **Actions → Sprint carry-over → Run workflow** (*dry_run* is on by default). Locally: `DRY_RUN=true PROJECT_OWNER=anthonythanpoovong PROJECT_NUMBER=2 .github/scripts/project-carry-over.sh`.
+**Carrying over unfinished work.** `project-carry-over.yml` (Sprint carry-over) runs daily and, while a sprint is running, moves every open card that is not Done from an earlier sprint into the running one. Done cards, closed issues and PRs, cards with no sprint and cards on a later sprint stay put, and nothing moves between sprints. A re-run changes nothing. To preview: **Actions → Sprint carry-over → Run workflow** (*dry_run* is on by default). Locally: `DRY_RUN=true OWNER_TYPE=organization PROJECT_OWNER=editrace-app PROJECT_NUMBER=1 .github/scripts/project-carry-over.sh`.
 
-It needs the secret `PROJECT_TOKEN`: a token with the `project` scope, because `GITHUB_TOKEN` cannot write to a user-owned project. It is Anthony's personal token. Note its expiry date when you create it and rotate it before then (**Settings → Secrets and variables → Actions**). A run that fails with "PROJECT_TOKEN expired, revoked or missing the project scope" means it needs replacing. If the repo moves to an organisation or the token owner changes, switch to a GitHub App.
+It needs the secret `PROJECT_TOKEN`: a token with the `project` scope, because `GITHUB_TOKEN` cannot access Projects v2. It is a maintainer's personal token for now, and it needs access to the `editrace-app` org project. Note its expiry date when you create it and rotate it before then (**Settings → Secrets and variables → Actions**). A run that fails with "PROJECT_TOKEN expired, revoked or missing the project scope" means it needs replacing. A "Project #1 not found" error usually means the token cannot see the org project, not that it expired. The repo now lives in the `editrace-app` org, so if the token owner changes or leaves, switch to a GitHub App.
 
 ### Which skill to use
 

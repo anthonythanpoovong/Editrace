@@ -109,7 +109,7 @@ out=$(pl meeting_eve)
 d=$(jq -r '.embeds[0].description' <<<"$out"); [[ "$d" == *'Come prepared'* && "$d" == *'What you are blocked by'* && "$d" == *'(https://meet.google.com/xmq-csjt-npw)' ]]
 check "payload: eve lists the agenda and the Meet link" $?
 out=$(pl sprint_due)
-[ "$(jq -r .content <<<"$out")" = '<@&999> ⏰ Sprint due tomorrow' ] && [ "$(jq -r '.embeds[0].title' <<<"$out")" = 'Sprint 1 ends Sunday, October 18' ] && jq -r '.embeds[0].description' <<<"$out" | grep -q 'projects/2'
+[ "$(jq -r .content <<<"$out")" = '<@&999> ⏰ Sprint due tomorrow' ] && [ "$(jq -r '.embeds[0].title' <<<"$out")" = 'Sprint 1 ends Sunday, October 18' ] && jq -r '.embeds[0].description' <<<"$out" | grep -q 'projects/1'
 check "payload: 'Sprint due tomorrow' with the sprint, due date and board link" $?
 out=$(SPRINT_TITLE='@everyone **x** [a](http://evil.test)' pl sprint_due)
 ! jq -r '.embeds[0].title' <<<"$out" | grep -qE '@everyone|\]\(http' && [ "$(jq -c .allowed_mentions <<<"$out")" = '{"parse":[],"roles":["999"]}' ]
@@ -193,7 +193,9 @@ if [ "$1" = api ] && [[ "$*" == *git/refs* ]]; then # claim refs: POST creates, 
 fi
 echo gh >> "$FAKE_GH_CALLS"
 [ -z "${FAKE_GH_FAIL:-}" ] || { echo "HTTP 401: Bad credentials" >&2; exit 1; }
-echo '{"data":{"user":{"projectV2":{"field":{"configuration":{"iterations":[{"title":"Sprint 1","startDate":"2026-10-05","duration":14}]}}}}}}'
+[[ "$*" == *'repositoryOwner(login'* ]] || { echo "unexpected query: $*" >&2; exit 1; } # users and orgs both resolve through repositoryOwner
+[ -z "${FAKE_NO_PROJECT:-}" ] || { echo '{"data":{"repositoryOwner":{"projectV2":null}}}'; exit 0; }
+echo '{"data":{"repositoryOwner":{"projectV2":{"field":{"configuration":{"iterations":[{"title":"Sprint 1","startDate":"2026-10-05","duration":14}]}}}}}}'
 FAKE
 chmod +x "$tmp/curl" "$tmp/gh"
 export FAKE_SENT="$tmp/sent" FAKE_GH_CALLS="$tmp/gh_calls" FAKE_REF_CALLS="$tmp/ref_calls" FAKE_REFS="$tmp/refs"
@@ -212,6 +214,8 @@ run DRY_RUN=true NOW=2026-10-17T13:00:00Z; [ "$?" -eq 0 ] && grep -q 'Sprint due
 check "orchestrator: the sprint reminder reads the board once" $?
 run DRY_RUN=true NOW=2026-10-17T13:00:00Z FAKE_GH_FAIL=1; [ "$?" -ne 0 ] && grep -q "PROJECT_TOKEN" "$tmp/out"
 check "orchestrator: an unreadable board fails loudly and names PROJECT_TOKEN" $?
+run DRY_RUN=true NOW=2026-10-17T13:00:00Z FAKE_NO_PROJECT=1; [ "$?" -ne 0 ] && grep -q "PROJECT_TOKEN cannot access it" "$tmp/out"
+check "orchestrator: a project the token cannot see says so, not 'no Sprint field'" $?
 run DRY_RUN=false NOW=2026-10-14T18:30:00Z; [ "$?" -ne 0 ] && grep -q "DRY_RUN=true" "$tmp/out"
 check "orchestrator: a simulated time can never post" $?
 run DRY_RUN=true NOW=2026-10-14T18:30:00 ; [ "$?" -ne 0 ]

@@ -1,13 +1,13 @@
 name: Sprint carry-over
 
-# Moves unfinished work into the running sprint (#243): every open item on the Editrace project board (Project #2)
+# Moves unfinished work into the running sprint (#243): every open item on the Editrace project board (editrace-app project #1)
 # that is not Done and sits on an earlier sprint. Done items, closed issues and PRs, items with no sprint and items
 # on a later sprint are never touched, and nothing moves between sprints. Idempotent, so a daily run is safe:
 # the first run after a sprint starts does the work and the rest find nothing to do.
 # Manual run: dry_run (on by default) lists what would move without changing the board.
 # Not a required check and not part of ci-ok: a failed move or an unreadable board shows as a red X.
-# Needs: secret PROJECT_TOKEN (a token with the "project" scope; GITHUB_TOKEN cannot write to a user-owned
-# project). It is Anthony's personal token: see CONTRIBUTING.md for expiry and rotation.
+# Needs: secret PROJECT_TOKEN (a token with the "project" scope; GITHUB_TOKEN cannot access Projects v2).
+# It is a maintainer's personal token for now: see CONTRIBUTING.md for expiry and rotation.
 #
 # Scheduled runs always use the default branch; the script is checked out from it too, so a change here only
 # takes effect once merged.
@@ -30,8 +30,9 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  PROJECT_OWNER: anthonythanpoovong
-  PROJECT_NUMBER: "2"
+  PROJECT_OWNER: editrace-app
+  OWNER_TYPE: organization
+  PROJECT_NUMBER: "1"
 
 jobs:
   carry-over:

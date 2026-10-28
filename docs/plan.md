@@ -138,7 +138,7 @@ All four collaborators are code owners on every path, so any of them can approve
 
 Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and the `epic` / `story` / `subtask` labels. Phases are GitHub milestones. Subtasks exist only where a story has separable, parallel parts (#9, #16, #18, #19, #22, #27, #31, #32); other stories use checklists.
 
-**New work starts as a proposal, not an issue.** New epics and stories are drafted in `docs/epics/` (`/propose-epic`), and technical decisions in `docs/decisions/` as ADRs (`/propose-adr`). Both are questioned first by `/grill`, which looks for customer evidence in `docs/customers/` (logged with `/log-interview`) and sends open unknowns to a time-boxed `/spike`. Code-owner approval and merging the proposal PR is the approval; issues are created only after that. A few stories added to an existing epic, without changing its Goal or Exit criteria, can skip the proposal: `/draft-stories` drafts them and creates the issues only once the author approves the drafts. See the [Claude Code Skills](https://github.com/anthonythanpoovong/Editrace/wiki/Claude-Code-Skills) wiki page.
+**New work starts as a proposal, not an issue.** New epics and stories are drafted in `docs/epics/` (`/propose-epic`), and technical decisions in `docs/decisions/` as ADRs (`/propose-adr`). Both are questioned first by `/grill`, which looks for customer evidence in `docs/customers/` (logged with `/log-interview`) and sends open unknowns to a time-boxed `/spike`. Code-owner approval and merging the proposal PR is the approval; issues are created only after that. A few stories added to an existing epic, without changing its Goal or Exit criteria, can skip the proposal: `/draft-stories` drafts them and creates the issues only once the author approves the drafts. See the [Claude Code Skills](https://github.com/editrace-app/Editrace/wiki/Claude-Code-Skills) wiki page.
 
 | Epic | Stories | Owner |
 |---|---|---|
@@ -233,7 +233,7 @@ Work is organized as **Epic → Story → Subtask**, using GitHub sub-issues and
 
 ## Links
 
-- GitHub: https://github.com/anthonythanpoovong/Editrace
-- Project Board: https://github.com/users/anthonythanpoovong/projects/2 (views: Spikes, Blocked, Quick wins, per-area incl. MCP and RAG)
-- Wiki (per-feature docs): https://github.com/anthonythanpoovong/Editrace/wiki
+- GitHub: https://github.com/editrace-app/Editrace
+- Project Board: https://github.com/orgs/editrace-app/projects/1 (views: Spikes, Blocked, Quick wins, per-area incl. MCP and RAG)
+- Wiki (per-feature docs): https://github.com/editrace-app/Editrace/wiki
 - Proposals: [`docs/epics/`](epics/README.md) (epics) · [`docs/decisions/`](decisions/README.md) (ADRs)
