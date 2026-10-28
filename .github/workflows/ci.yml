@@ -66,9 +66,34 @@ jobs:
           fi
           echo "code=$code" >> "$GITHUB_OUTPUT"
           echo "supabase=$supabase" >> "$GITHUB_OUTPUT"
-      - uses: gitleaks/gitleaks-action@v2
+      # The gitleaks CLI, not gitleaks/gitleaks-action: since the repo moved to the editrace-app organization, the action
+      # refuses to run without a paid GITLEAKS_LICENSE. The CLI is the same scanner and needs none. Pinned release with a
+      # checksum, like actionlint below, at the version .pre-commit-config.yaml uses; bump them together. It reads the
+      # repo's .gitleaks.toml.
+      - name: Scan for secrets (gitleaks)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_VERSION: 8.30.0
+          GITLEAKS_SHA256: 79a3ab579b53f71efd634f3aaf7e04a0fa0cf206b7ed434638d1547a2470a66e
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.sha }}
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/gitleaks.tar.gz" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum -c -
+          tar xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
+          # The commits this run brings in, as the action scanned: a PR's own commits, or a push's new ones. When there's
+          # no earlier commit to compare with (a new branch), scan the whole history.
+          range=""
+          if [ "$EVENT_NAME" = pull_request ]; then
+            range="$PR_BASE..$PR_HEAD"
+          elif [ -n "$PUSH_BEFORE" ] && [ "$PUSH_BEFORE" != 0000000000000000000000000000000000000000 ]; then
+            range="$PUSH_BEFORE..$PUSH_AFTER"
+          fi
+          echo "Scanning ${range:-the whole history}"
+          "$RUNNER_TEMP/gitleaks" git --redact --verbose --exit-code 1 ${range:+--log-opts="$range"} .
 
   # Unit tests for the CI helper scripts (e.g. the Discord review payload's @-defusing, #140).
   # Also lints the workflow files themselves (syntax, expressions, shellcheck on run: steps; added with deploy.yml, #48)
