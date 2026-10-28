@@ -4,7 +4,7 @@
 - **Date:** 2026-10-28
 - **Author:** @anthonythanpoovong
 - **Deciders:** @anthonythanpoovong
-- **Related:** #320, #302, #163, #300, ADR 0001
+- **Related:** #320, #302, #163, #300
 - **Supersedes:**
 
 ## Context
@@ -16,6 +16,7 @@ The constraint is the Modal **Starter** plan. It has no service users, so the on
 What we've verified (2026-10-27/28):
 - Modal's docs say API tokens are added per workspace, and that users can belong to several workspaces.
 - Starter can create a second workspace once a payment method is added. The dashboard says it unlocks workspace creation and the full $30 credit, and charges $0.50 to verify the card, which is refunded.
+- Modal's [budgets docs](https://modal.com/docs/guide/budgets) say a workspace **spend limit** is a hard stop on net out-of-pocket charges (after credits), settable by Owners and Managers. Environment-level budgets need Team. Not yet confirmed in our dashboards (see Open questions).
 - We now own two workspaces, `anthonythanpoovong` and `editrace-app`, both as Owner.
 - Cost is the main constraint. We have no users, no revenue and no worker deployed yet.
 
@@ -24,7 +25,7 @@ Why now: the first real worker deploy (#7) is blocked until the isolation layout
 ## Options considered
 
 ### Option A: A separate Modal workspace per environment, one token each
-- `editrace-app` is prod and `anthonythanpoovong` is staging for now. Each GitHub environment (`staging`, `Production`) holds only its own workspace's token.
+- `editrace-app` is prod and `anthonythanpoovong` is staging for now. Each GitHub environment (`staging`, `Production`) holds only its own workspace's token. In Modal terms the environments are the workspaces.
 - ✅ Hard isolation. A staging token has no access to the prod workspace at all, not just a role boundary.
 - ✅ Separate spend caps per workspace, so a staging runaway can't use the prod budget.
 - ✅ $0 for the workspaces themselves.
@@ -54,28 +55,37 @@ We will **use a separate Modal workspace for each environment, with one API toke
 
 - **Prod** is `editrace-app`. **Staging** is `anthonythanpoovong` for now.
 - **Nothing is live yet.** No `MODAL_TOKEN_*` secrets are created or added to GitHub until we choose to start spending, so no job can deploy.
-- Each workspace gets a monthly spend limit, starting at $0 beyond the free credit where Modal allows it.
-- The `staging` and `prod` environments inside a workspace become redundant. We keep one environment per workspace.
+- Each workspace gets a **spend limit of $0**, so Modal stops any workload that would create an out-of-pocket charge. The free credit still runs. Raise a limit deliberately, per workspace, when we choose to spend.
+- Each workspace uses its default Modal environment (`main`), so the deploy step needs no `--env` flag. This drops the environment layer of defense in depth on purpose: the workspace is the boundary. The unused `prod` environment in `anthonythanpoovong` is deleted so a misdirected staging deploy can't land somewhere dead.
+- Each `MODAL_TOKEN_*` pair lives only in its matching GitHub environment, never at repo level. Those environments only accept deployments from `main` (`staging`) and protected branches (`Production`), so a branch workflow can't read them (`docs/environments.md`). Required reviewers aren't available on our GitHub plan.
+- @anthonythanpoovong creates both tokens. Starter tokens belong to a person, so they are rotated when anyone who created one leaves or loses access, and the Modal audit log shows that person for every deploy.
 
 ## Consequences
 
 - **Good:** a staging token can't reach prod. Each environment has its own budget. No recurring cost now.
-- **Bad / accepted trade-offs:** a card is on file, so overage past the credit is possible until the limits are confirmed. Staging sits under a personal workspace. Secrets and images are duplicated per workspace.
-- **One-way or two-way door:** two-way. If we outgrow this, we upgrade to Team and move to service users, revoking the workspace tokens. The cost is a rewrite of the deploy step and docs, with no data migration.
-- **Follow-up work:** reword #302 and `docs/environments.md` for workspaces and tokens per environment. Set the spend limits and update the Modal row in `docs/observability.md`. Later, move staging to its own workspace. Add tokens only when we're ready to spend (#320).
+- **Bad / accepted trade-offs:** a card is on file, so overage past the credit is possible until the limits are confirmed. Staging sits under a personal workspace, so staging billing and tokens depend on one person's account. Secrets and images are duplicated per workspace. The isolation protects CI tokens, not people: the same login owns both workspaces, so anyone with it can deploy to either from a terminal. Whether the free credit is per workspace is unconfirmed, so we don't count a second credit as budget.
+- **One-way or two-way door:** two-way. If we outgrow this, we upgrade to Team and move to service users, revoking the workspace tokens. The cost is a rewrite of the deploy step and docs, with no data migration. Moving staging to its own workspace later changes the workspace name in every staging endpoint URL, so keep any staging URL in configuration (env vars or Modal client lookups), never hardcoded in code, webhooks or docs.
+- **Follow-up work:**
+  - Convert #302 back to a draft now, then reword it. It already moves `MODAL_TOKEN_*` to environment secrets, so only the service-user wording and the `--env` flags change.
+  - Update `docs/environments.md`: workspaces and one token per environment, and remove the duplicated `MODAL_TOKEN_*` row that says "repo secrets".
+  - Set the spend limits and update the Modal row in `docs/observability.md`.
+  - Move staging to its own workspace when we first add a teammate to staging or before launch, whichever comes first.
+  - Add tokens only when we're ready to spend (#320).
 - **Affected:** no schema, DB, RLS or MCP changes. Cost: $0 now. Docs: `environments.md`, `observability.md`, #302.
 
 ## How we'll know
 
-- A staging token that tries to deploy to the prod workspace fails, checked once the tokens exist (before the first real deploy).
-- Modal spend stays at $0 until launch.
-- Revisit if the team needs per-person roles inside one workspace, if Starter limits (for example seats) block us, or if spend makes Team worthwhile.
+- Before this ADR is accepted: a throwaway token created in `anthonythanpoovong` cannot list or deploy in `editrace-app`, and the reverse. Delete the tokens afterwards.
+- Before the first real deploy: the real staging token fails to deploy to the prod workspace.
+- Net out-of-pocket Modal spend stays at $0 until launch. Usage inside the free credit is expected.
+- Revisit if the team needs per-person roles inside one workspace, if Starter limits (seats, GPU or container concurrency, storage) block us, or if spend makes Team worthwhile.
 
 ## Open questions
 
-- Does Starter offer a hard spend stop or only alerts? Owner: @anthonythanpoovong, check **Usage & billing** and **Resource limits**.
-- Does `editrace-app` show the Starter plan and its own free credit? Owner: @anthonythanpoovong.
-- When do we move staging out of the personal workspace? Owner: @anthonythanpoovong.
+- Can both workspaces set a $0 spend limit on Starter, as the docs imply? Owner: @anthonythanpoovong, check **Usage & billing** in each, and record the answer here.
+- Does `editrace-app` show the Starter plan and its own free credit, and is the credit per workspace or per account? Owner: @anthonythanpoovong.
+- What are the Starter seat, GPU and container concurrency and storage limits for a four-person team? Owner: @anthonythanpoovong.
+- Does the app call workers by URL or through the Modal client? Decides how much a staging move costs. Owner: @anthonythanpoovong.
 
 <details><summary>Grill scorecard</summary>
 
@@ -87,7 +97,7 @@ We will **use a separate Modal workspace for each environment, with one API toke
 | Fit with Key Decisions | ✅ solid | Keeps Modal, changes only the account layout |
 | Data and schema | ✅ solid | None affected |
 | Security and privacy | ⚠️ weak | Isolation depends on tokens never being shared across environments; not yet tested |
-| Cost | ⚠️ weak | $0 now, but a card is on file and the hard-stop limit is unverified |
+| Cost | ⚠️ weak | $0 now, but a card is on file and the $0 spend limit is unverified in the dashboards |
 | Failure modes | ✅ solid | Missing token fails the deploy job; no app means a notice only |
 | Reversibility | ✅ solid | Two-way door |
 | Observability | ⚠️ weak | Spend alerts not yet set up (`observability.md`) |
