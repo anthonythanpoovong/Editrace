@@ -43,7 +43,7 @@ From then on, every `git commit` runs ruff + ruff-format (Python), prettier (`we
 - Open a draft PR early. CI and Armour don't run on drafts (to save GitHub Actions minutes), so run the checks locally before marking it ready: `npm run lint`, `npm run typecheck` and `npm test` in `web/`, `make codegen` after a schema change, and `supabase test db` for migrations. Marking the PR ready runs CI and Armour once. After later pushes CI reruns automatically; add the `armour` label to ask Armour for another review.
 - The PR template opens pre-filled. Use `Closes #n` so the issue closes on merge.
 - **Keep PRs small.** Aim for under about 400 changed lines and one concern per PR. If a change is bigger, split it (schema first, then code that uses it) or say in the PR why it can't be split.
-- A PR that changes how the system works for others (new service, schema or MCP contract change, new setup steps, CI changes, new skills) is a **large change**: tick the `/sync-docs` box in the template and run `/sync-docs` after it merges.
+- A PR that changes how the system works for others (new service, schema or MCP contract change, new setup steps, CI changes, new skills) is a **large change**: tick the `/sync-docs` box in the template and run `/sync-docs` after it merges. If it slips, a weekly check (`sync-docs-due.yml`) opens one "Docs sync due" issue while a large-change area has changed on `main` since the wiki's last sync, and closes it once `/sync-docs` has caught up.
 
 ### Where new work comes from
 
