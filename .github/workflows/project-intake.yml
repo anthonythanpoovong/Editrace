@@ -1,13 +1,13 @@
 name: Project intake
 
-# Every new issue lands on the Editrace project board (Project #2) in the current sprint with
+# Every new issue lands on the Editrace project board (editrace-app project #1) in the current sprint with
 # Status Backlog, is assigned to its author (unless already assigned or opened by a bot), and gets any missing Level, Type and domain/area labels (#178). Labels are only
 # ever added (plus removing our own needs-triage once a domain is set), never changed or removed.
 # A sprint or status that is already set is never overwritten. Run it by hand (workflow_dispatch)
 # to backfill every open issue that is not on the board yet.
 # Not a required check and not part of ci-ok: a failed run shows as a red X and comments on the issue.
-# Needs: secret PROJECT_TOKEN (a token with the "project" scope; GITHUB_TOKEN cannot write to a
-# user-owned project). It is Anthony's personal token: see CONTRIBUTING.md for expiry and rotation.
+# Needs: secret PROJECT_TOKEN (a token with the "project" scope; GITHUB_TOKEN cannot access
+# Projects v2). It is a maintainer's personal token for now: see CONTRIBUTING.md for expiry and rotation.
 #
 # issues events always run from the default branch, so a change here only takes effect once merged.
 # The issue title and body are untrusted: the body only reaches the label script through env, and
@@ -21,8 +21,9 @@ on:
 permissions: {}
 
 env:
-  PROJECT_OWNER: anthonythanpoovong
-  PROJECT_NUMBER: "2"
+  PROJECT_OWNER: editrace-app
+  OWNER_TYPE: organization
+  PROJECT_NUMBER: "1"
 
 jobs:
   labels:

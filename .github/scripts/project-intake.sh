@@ -2,7 +2,7 @@
 # Puts one issue on the Editrace project board in the current sprint with Status Backlog (#178).
 # Idempotent: an issue already on the board is reused, and a Sprint or Status that is already set
 # is never overwritten. Needs a token with "project" scope in GH_TOKEN (GITHUB_TOKEN cannot write
-# to a user-owned project).
+# to Projects v2).
 # Inputs (env): ISSUE_NODE_ID (the issue's GraphQL node ID), PROJECT_OWNER, PROJECT_NUMBER.
 # Optional (env): OWNER_TYPE (user | organization; default user), TODAY (YYYY-MM-DD UTC; default now).
 # Nothing from the issue's title or body is used; only its node ID.
@@ -33,7 +33,7 @@ fields='fields(first: 50) { nodes {
   ... on ProjectV2IterationField { id name configuration { iterations { id title startDate duration } } } } }'
 proj=$(gql "query(\$owner: String!, \$n: Int!) { ${OWNER_TYPE:-user}(login: \$owner) { projectV2(number: \$n) { id $fields } } }" \
   -f owner="$PROJECT_OWNER" -F n="$PROJECT_NUMBER" | jq -c ".data.${OWNER_TYPE:-user}.projectV2")
-[ "$proj" != null ] || { echo "Project #$PROJECT_NUMBER not found for $PROJECT_OWNER" >&2; exit 1; }
+[ "$proj" != null ] || { echo "Project #$PROJECT_NUMBER not found for $PROJECT_OWNER, or PROJECT_TOKEN cannot access it (it needs the project scope and access to that project)" >&2; exit 1; }
 
 project_id=$(jq -r .id <<<"$proj")
 sprint_field=$(jq -r '.fields.nodes[] | select(.name == "Sprint") | .id' <<<"$proj")
