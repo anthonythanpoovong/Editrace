@@ -34,6 +34,7 @@ Labels are schema templates (`schema/template.schema.json`) with one video track
    **Picture-in-picture over a background** (e.g. a talking head in a box over still images): the background is the shot. A background change is a cut. Changes inside the box (a new clip, a time skip, the box moving, resizing, appearing or disappearing) are **not**.
 12. **Platform end card** (e.g. Instagram's logo card added when a reel is downloaded, with or without a black frame before it): **not part of the edit.** Label nothing from its first frame to the end, not even the black frame (it's not a flash), and add it to the video's `exclude` list in the manifest, `{"start": <first>, "duration": <frames>, "reason": "platform end card"}`, so `score.py` leaves it out of scoring on both sides. Also note it in `notes` (`platform end card: frames <first>-<last>`) for people reading the manifest.
    **Instagram's black frame or the creator's?** Use the watermark, the small Instagram logo and @handle that Instagram stamps on every frame of the creator's video, black frames included. Black frames **with** the watermark are the creator's ending: part of the edit, labeled as usual (a cut to black, or a `fade_black`). The single black frame **without** it, right before the card, is Instagram's and belongs to the end card. Not every download has that black frame, and downloads saved some other way may have no watermark or card at all.
+   **Black frames at the start or end that aren't part of the edit** (no content and no watermark, e.g. a blank frame added by the download or the platform): label nothing on them and add them to `exclude`, `"reason": "black frame, not part of the edit"`, with a note. At the start, extend the range by one frame, to the first frame with content, so the switch from black isn't scored as a cut (`score.py` only skips frames inside the range). Black frames **with** the watermark, or a fade, are the creator's and are labeled as usual (rule 5, and the watermark check above).
 13. **Unsure:** record your best guess and list the frame in the video's `ambiguous` list in the manifest. These get reviewed with a second labeler, and they're reported separately in the results.
 
 ## Workflow
@@ -99,6 +100,7 @@ Make a timeline at the video's fps starting at `01:00:00:00` and put **timeline 
   | `text-heavy` | lots of on-screen text or captions |
   | `speed-ramp` | speeds up or slows down within shots |
   | `zoom` | zoom punches or zoom transitions |
+  | `lip-sync` | someone mouthing along to trending audio (movie dialogue, a song), usually to camera |
 
 - **`music`**: what's on the soundtrack, used by the sound-ID spike (#11):
   - `"released"`: a commercially released song
