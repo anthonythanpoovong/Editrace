@@ -32,6 +32,7 @@ SAMPLE_SIZE = (
     112,
 )  # frames are shrunk to this (width, height) before comparing, as when DISTINCT_MIN was chosen
 # The convention while the flag lives in `confidence` (no schema field yet): below this means "needs review".
+# Provisional: how flags are stored long-term is decided in #343, so code reading it as a flag should link there.
 # Unflagged cuts score 0.5 or more; flagged ones are scaled into 0-0.4, so the most suspect still sort lowest.
 REVIEW_BELOW = 0.5
 FLAGGED_MAX = 0.4
