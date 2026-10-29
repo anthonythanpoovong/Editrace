@@ -552,10 +552,11 @@
       "labeled": true,
       "labeling_minutes": 8,
       "notes": [
-        "blur effect (approximate frames, may be off by a few): 36-37, 123-128, 207-214",
+        "blur effect (approximate frames, may be off by a few): 36-41, 123-128, 207-214",
         "zoom in (approximate): 117-121, 161-164",
         "zoom out (approximate): 126-129, 210-214",
-        "brightness flash during each blur (rule 4): 36-37, 123-128, 207-214. Looks like the same footage brightened, not a solid or different frame, but not certain; the edit_styles tag flash is kept for these, though there are no flash cuts",
+        "brightness flash during each blur (rule 4): 36-41, 123-128, 207-214. Looks like the same footage brightened, not a solid or different frame, but not certain; the edit_styles tag flash is kept for these, though there are no flash cuts",
+        "stage-lighting flashes in the footage itself (not edit effects) at about 42-45, 96, 147, 197 and 203: same shot, not cuts (rule 4). The picture is clear from 42 and 46 is the same footage after the flash. 96 looks like a wider shot only because of the lighting; 202-204 is a camera move with a flash. Reviewed after the detector ran (it reported cuts at 46, 96, 147, 197 and 203)",
         "zooms, blurs and flashes are inside one continuous shot, not cuts (rules 4, 10). Unsure whether the shot switches or a flash cut hides inside the blurs: best guess no, listed in ambiguous at 36 (whether the flash after the cut at 36 adds a second cut), 125 and 211",
         "platform end card: frames 216-335"
       ],
