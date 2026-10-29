@@ -516,7 +516,7 @@
         "flash: cut at frame 439",
         "flash: cut at frame 506",
         "flash: cut at frame 525",
-        "reviewed after the detector ran (2026-10-29, Calvin): the flash burst 265-283 is real flash cuts between different but similar-looking shots; 274 removed, it is not a cut (273-274 is one 2-frame shot)",
+        "reviewed after the detector ran (2026-10-29, Calvin): the flash burst 265-283 is real flash cuts between different but similar-looking shots; 274 removed, it is not a cut (273-274 is one 2-frame shot). Also checked: the cuts inside whips (110, 375, 450, 462) are on the right frames; 386-397 is a text card with a background laid over the shot, and its text changing at 390 is not a cut (rule 9), with the cut at 398 where the background goes; nothing changes at 427 or 431, the same shot between the cuts at 418 and 439",
         "platform end card: frames 569-679 (marked at 30 fps frame 711 in the labeler)"
       ],
       "ambiguous": [],
