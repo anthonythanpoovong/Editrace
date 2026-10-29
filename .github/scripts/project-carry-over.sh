@@ -5,7 +5,7 @@
 # between sprints (no running sprint). Status, assignees and everything else stay as they are. Idempotent:
 # once moved, an item is no longer on an earlier sprint. A failed move is reported and fails the run at the
 # end, after the others have been tried.
-# Needs a token with "project" scope in GH_TOKEN (GITHUB_TOKEN cannot write to a user-owned project).
+# Needs a token with "project" scope in GH_TOKEN (GITHUB_TOKEN cannot access Projects v2).
 # Inputs (env): PROJECT_OWNER, PROJECT_NUMBER. Optional: OWNER_TYPE (user | organization; default user),
 # TODAY (YYYY-MM-DD UTC; default now), DRY_RUN (true: list what would move, change nothing).
 set -euo pipefail
@@ -42,7 +42,7 @@ while :; do
   args=(-f owner="$PROJECT_OWNER" -F n="$PROJECT_NUMBER")
   [ -z "$after" ] || args+=(-f after="$after")
   page=$(gql "$query" "${args[@]}" | jq -c ".data.$owner_type.projectV2")
-  [ "$page" != null ] || { echo "Project #$PROJECT_NUMBER not found for $PROJECT_OWNER" >&2; exit 1; }
+  [ "$page" != null ] || { echo "Project #$PROJECT_NUMBER not found for $PROJECT_OWNER, or PROJECT_TOKEN cannot access it (it needs the project scope and access to that project)" >&2; exit 1; }
   project_id=$(jq -r .id <<<"$page")
   field=$(jq -c .field <<<"$page")
   items=$(jq -c --argjson more "$(jq -c '.items.nodes' <<<"$page")" '. + $more' <<<"$items")

@@ -1,0 +1,106 @@
+name: Sync docs due
+
+# Weekly. If a large-change area (.github/scripts/sync-docs-paths.sh) changed on main since the wiki's last
+# "Docs-Synced-To:" marker, open one "Docs sync due" issue asking for /sync-docs. Later runs update that issue
+# instead of opening more, and close it once the marker has caught up. Deterministic: no model, so it costs
+# only runner minutes. It complements sync-docs-nudge.yml, which comments on each merged PR; this is the
+# batched reminder that has one place to look and, optionally, an owner.
+# Needs nothing but GITHUB_TOKEN. Optional repo variable DOCS_SYNC_ASSIGNEE: a GitHub login to assign.
+# Issues created with GITHUB_TOKEN don't fire other workflows, so the issue is not added to the project board
+# automatically.
+# A missing marker, an unreadable wiki or a marker that is not in main's history fails the run (red X)
+# instead of looking like "up to date". Not a required check.
+# Manual run: dry_run prints the issue instead of creating, editing or closing anything.
+#
+# Scheduled runs always use the default branch; the scripts are checked out from it too.
+
+on:
+  schedule:
+    - cron: "0 14 * * 1"   # Monday 14:00 UTC (10:00 EDT / 9:00 EST)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Print the issue instead of creating, editing or closing it
+        type: boolean
+        default: true
+
+permissions: {}
+
+# One run at a time, so two runs close together can never both open an issue.
+concurrency:
+  group: sync-docs-due
+  cancel-in-progress: false
+
+jobs:
+  due:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0   # the diff runs from the marker commit, which can be days back
+
+      - name: Work out what changed since the last sync
+        id: due
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh auth setup-git
+          git clone -q "https://github.com/$REPO.wiki.git" "$RUNNER_TEMP/wiki"
+          git -C "$RUNNER_TEMP/wiki" log --format=%B > "$RUNNER_TEMP/wiki.log"
+          base=$(grep -m1 '^Docs-Synced-To:' "$RUNNER_TEMP/wiki.log" | awk '{print $2}' || true)
+          if [ -z "$base" ]; then
+            echo "::error::No Docs-Synced-To marker in the wiki history. Run /sync-docs once to set it."
+            exit 1
+          fi
+          if ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            echo "::error::The wiki's Docs-Synced-To commit $base is not in main's history."
+            exit 1
+          fi
+          .github/scripts/sync-docs-due.sh "$base" HEAD > "$RUNNER_TEMP/body.md"
+          if [ -s "$RUNNER_TEMP/body.md" ]; then
+            echo "due=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "due=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open, update or close the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          DUE: ${{ steps.due.outputs.due }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          ASSIGNEE: ${{ vars.DOCS_SYNC_ASSIGNEE }}
+        run: |
+          set -euo pipefail
+          title="Docs sync due"
+          existing=$(gh issue list --repo "$REPO" --state open --search "\"$title\" in:title" \
+            --json number,title --jq "[.[] | select(.title == \"$title\")][0].number // empty")
+
+          if [ "$DUE" = "true" ]; then
+            if [ "$DRY_RUN" = "true" ]; then
+              if [ -n "$existing" ]; then echo "Dry run. Would update #$existing with:"; else echo "Dry run. Would open an issue with:"; fi
+              cat "$RUNNER_TEMP/body.md"
+            elif [ -n "$existing" ]; then
+              gh issue edit "$existing" --repo "$REPO" --body-file "$RUNNER_TEMP/body.md"
+            else
+              args=()
+              if [ -n "$ASSIGNEE" ]; then args+=(--assignee "$ASSIGNEE"); fi
+              gh issue create --repo "$REPO" --title "$title" --body-file "$RUNNER_TEMP/body.md" "${args[@]}"
+            fi
+          elif [ -n "$existing" ]; then
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "Dry run. Would close #$existing: docs are up to date."
+            else
+              gh issue close "$existing" --repo "$REPO" --reason completed \
+                --comment "The wiki's Docs-Synced-To marker has caught up with main, so nothing is outstanding."
+            fi
+          else
+            echo "Docs are up to date and no issue is open; nothing to do."
+          fi

@@ -2,8 +2,8 @@ import { describe, expect, test } from "vitest";
 import { isPublicPath, loginRedirect } from "./guard";
 
 describe("isPublicPath", () => {
-  test.each(["/", "/login", "/signup", "/forgot-password", "/auth/callback"])("%s is public", (p) => expect(isPublicPath(p)).toBe(true));
-  test.each(["/account", "/reset-password", "/upload", "/authx", "/login/extra"])("%s needs a session", (p) => expect(isPublicPath(p)).toBe(false));
+  test.each(["/", "/login", "/signup", "/forgot-password", "/auth/callback", "/api/waitlist"])("%s is public", (p) => expect(isPublicPath(p)).toBe(true));
+  test.each(["/account", "/reset-password", "/upload", "/authx", "/login/extra", "/api/waitlist/extra", "/api/runtime"])("%s needs a session", (p) => expect(isPublicPath(p)).toBe(false));
 });
 
 describe("loginRedirect", () => {

@@ -1,7 +1,7 @@
 name: Project intake (PRs)
 
 # A new pull request is assigned to its author (unless already assigned or opened by a bot).
-# Pull requests never get a card on the Editrace board (Project #2): only tickets are on the board,
+# Pull requests never get a card on the Editrace board (editrace-app project #1): only tickets are on the board,
 # and a PR is tracked by the ticket it closes (#178).
 # Not a required check and not part of ci-ok: a failed run shows as a red X.
 #

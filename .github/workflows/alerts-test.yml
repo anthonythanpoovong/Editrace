@@ -1,16 +1,14 @@
 name: Alerts test
 
 # Posts a test message to #alerts on Discord, to check DISCORD_ALERTS_WEBHOOK works (#50).
-# Runs by hand (Actions → Alerts test → Run workflow), e.g. after the webhook URL is rotated,
-# and automatically only when this file changes on a branch other than main, so a PR that edits
-# it sends one test message. Never pings anyone. Not a required check and not part of ci-ok.
+# Runs only by hand (Actions → Alerts test → Run workflow), e.g. after the webhook URL is rotated.
+# No push trigger: a paths filter on push also fires when a branch merges in main, which posted
+# a test message for every branch that caught up after #187. Never pings anyone. Not a required
+# check and not part of ci-ok.
 # Needs: secret DISCORD_ALERTS_WEBHOOK (docs/observability.md#spend-alerts).
 
 on:
   workflow_dispatch:
-  push:
-    branches-ignore: [main]
-    paths: [.github/workflows/alerts-test.yml]
 
 permissions: {}
 
