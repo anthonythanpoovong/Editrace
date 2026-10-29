@@ -505,7 +505,6 @@
         "flash: cut at frame 269",
         "flash: cut at frame 271",
         "flash: cut at frame 273",
-        "flash: cut at frame 274",
         "flash: cut at frame 275",
         "flash: cut at frame 277",
         "flash: cut at frame 279",
@@ -517,6 +516,7 @@
         "flash: cut at frame 439",
         "flash: cut at frame 506",
         "flash: cut at frame 525",
+        "reviewed after the detector ran (2026-10-29, Calvin): the flash burst 265-283 is real flash cuts between different but similar-looking shots; 274 removed, it is not a cut (273-274 is one 2-frame shot)",
         "platform end card: frames 569-679 (marked at 30 fps frame 711 in the labeler)"
       ],
       "ambiguous": [],
