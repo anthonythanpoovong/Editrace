@@ -12,7 +12,13 @@ from typing import Any, ClassVar
 
 from workers.base import Compute, Job, Worker
 from workers.cache import Partial
-from workers.cuts.detect import PARAMS, find_cuts, suspect_cuts, to_partial
+from workers.cuts.detect import (
+    PARAMS,
+    find_cuts,
+    library_versions,
+    suspect_cuts,
+    to_partial,
+)
 
 
 class CutsWorker(Worker):
@@ -23,8 +29,9 @@ class CutsWorker(Worker):
     compute: ClassVar[Compute] = Compute(cpu=2.0, memory_mb=4096, timeout_s=300)
 
     def params(self) -> Mapping[str, Any]:
-        """The detector and flagging settings, so changing any of them re-analyzes instead of serving a cached result."""
-        return dict(PARAMS)
+        """The detector and flagging settings and the library versions, so changing any of them re-analyzes instead of
+        serving a cached result."""
+        return {**PARAMS, "libraries": library_versions()}
 
     def detect(self, video: Path, job: Job) -> Partial:
         detection = find_cuts(video)

@@ -75,7 +75,7 @@ def test_params_carry_every_setting_that_changes_the_output(
     store: FileResultStore,
 ) -> None:
     params = CutsWorker(store, LocalFetcher()).params()
-    assert params == PARAMS
+    assert {k: v for k, v in params.items() if k != "libraries"} == PARAMS
     for setting in (
         "adaptive_threshold",
         "min_scene_len",
@@ -83,6 +83,8 @@ def test_params_carry_every_setting_that_changes_the_output(
         "review_below",
     ):
         assert setting in params
+    # Decoding can differ between library builds, so a version bump must miss the cache.
+    assert set(params["libraries"]) == {"scenedetect", "opencv"}
 
 
 def test_a_source_with_another_frame_count_fails_and_is_not_cached(

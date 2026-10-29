@@ -16,6 +16,7 @@ from workers.cuts.detect import (
     Detection,
     confidence,
     cut_confidence,
+    cut_score,
     find_cuts,
     suspect_cuts,
     to_partial,
@@ -148,6 +149,12 @@ def test_unflagged_cuts_never_fall_below_the_line() -> None:
     weak = Cut(50, math.nan)  # a missing ratio maps to strength 0
     assert cut_confidence(weak, is_flagged=False) == REVIEW_BELOW
     assert cut_confidence(Cut(50, math.inf), is_flagged=True) == FLAGGED_MAX
+
+
+def test_a_missing_ratio_is_the_least_certain_cut_not_the_most() -> None:
+    assert math.isnan(cut_score(None))
+    assert cut_score(3.5) == 3.5
+    assert cut_confidence(Cut(50, cut_score(None)), is_flagged=False) == REVIEW_BELOW
 
 
 A, B, C, WHITE = (40, 40, 200), (200, 60, 40), (40, 180, 60), (255, 255, 255)

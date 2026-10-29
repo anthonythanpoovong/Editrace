@@ -80,10 +80,22 @@ def find_cuts(video: Path) -> Detection:
     cuts = []
     for start, _ in scenes[1:]:
         (ratio,) = stats.get_metrics(start.frame_num, [ratio_key])
-        cuts.append(
-            Cut(start.frame_num, float(ratio) if ratio is not None else math.inf)
-        )
+        cuts.append(Cut(start.frame_num, cut_score(ratio)))
     return Detection(cuts, frames)
+
+
+def cut_score(ratio: float | None) -> float:
+    """A cut's score from its adaptive ratio. A missing ratio is NaN, so it gets the lowest confidence, not the highest."""
+    return float(ratio) if ratio is not None else math.nan
+
+
+def library_versions() -> dict[str, str]:
+    """The decoding and detection libraries' versions. Results can change with them (decoding differs by a cut
+    between builds, see `test_golden.py`), so they're part of the worker's params, its cache key."""
+    import cv2
+    import scenedetect
+
+    return {"scenedetect": scenedetect.__version__, "opencv": cv2.__version__}
 
 
 def suspect_cuts(video: Path, cuts: list[Cut], fps: float) -> frozenset[int]:
