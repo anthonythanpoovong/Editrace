@@ -9,6 +9,8 @@ dependencies = ["pydantic>=2"]
 # CI installs every extra (`uv sync --all-extras`).
 [project.optional-dependencies]
 cuts = ["scenedetect==0.7.2", "opencv-python==5.0.0.93"]  # scenedetect requires opencv-python; pin it too
+# The Modal app (workers/modal_app.py); the same version deploy.yml installs to deploy it (#302).
+deploy = ["modal==1.6.1"]
 
 # Not an installable package: the folders below are plain top-level packages, imported from the repo root
 # (`from editrace_schema import Template`). CI runs `uv sync`, `ruff`, `pyright` and `pytest` from the root.
