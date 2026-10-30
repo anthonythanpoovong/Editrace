@@ -32,9 +32,14 @@ git checkout -b adr/NNNN-kebab-title origin/main
 git add docs/decisions/NNNN-kebab-title.md
 git commit -m "ADR NNNN: <title> (proposed)"
 git push -u origin adr/NNNN-kebab-title
+# Quoted heredoc, so backticks and $(...) in the ADR text are not expanded.
+PR_BODY=$(mktemp)
+cat > "$PR_BODY" <<'EOF_PR'
+<summary + grill scorecard + 'Approval = code-owner review and merge'>
+EOF_PR
 gh pr create --draft --label proposal,adr \
   --title "ADR NNNN: <title>" \
-  --body "<summary + grill scorecard + 'Approval = code-owner review and merge'>"
+  --body-file "$PR_BODY"
 ```
 Then start the discussion thread in the **ADR** category of GitHub Discussions, so the team can talk it through, and link the two:
 ```sh
