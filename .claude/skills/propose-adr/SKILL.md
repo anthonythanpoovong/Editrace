@@ -41,12 +41,22 @@ Then start the discussion thread in the **ADR** category of GitHub Discussions, 
 read -r REPO_ID OWNER NAME < <(gh repo view --json id,owner,name --jq '[.id,.owner.login,.name]|@tsv')
 CAT_ID=$(gh api graphql -f query='query($o:String!,$n:String!){repository(owner:$o,name:$n){discussionCategories(first:20){nodes{id name}}}}' \
   -f o="$OWNER" -f n="$NAME" --jq '.data.repository.discussionCategories.nodes[]|select(.name=="ADR").id')
-gh api graphql -f query='mutation($r:ID!,$c:ID!,$t:String!,$b:String!){createDiscussion(input:{repositoryId:$r,categoryId:$c,title:$t,body:$b}){discussion{url}}}' \
-  -f r="$REPO_ID" -f c="$CAT_ID" -f t="ADR NNNN: <title>" -f b="<decision in short, options, open questions, PR link>" \
-  --jq '.data.createDiscussion.discussion.url'
-gh pr comment <pr-number> --body "Discussion thread for this ADR: <discussion-url>"
+if [ -n "$CAT_ID" ]; then
+  # Write the title and body with a quoted heredoc so backticks and $(...) in the ADR text are not expanded.
+  TMP=$(mktemp -d)
+  cat > "$TMP/title" <<'EOF_TITLE'
+ADR NNNN: <title>
+EOF_TITLE
+  cat > "$TMP/body" <<'EOF_BODY'
+<decision in short, options, open questions, PR link>
+EOF_BODY
+  gh api graphql -f query='mutation($r:ID!,$c:ID!,$t:String!,$b:String!){createDiscussion(input:{repositoryId:$r,categoryId:$c,title:$t,body:$b}){discussion{url}}}' \
+    -f r="$REPO_ID" -f c="$CAT_ID" -F t=@"$TMP/title" -F b=@"$TMP/body" \
+    --jq '.data.createDiscussion.discussion.url'
+  gh pr comment <pr-number> --body "Discussion thread for this ADR: <discussion-url>"
+fi
 ```
-The body is the decision in short, the options, the open questions and the PR link, and says approval happens on the PR. If there is no `ADR` category (empty `CAT_ID`), skip the thread and tell the author.
+The body is the decision in short, the options, the open questions and the PR link, and says approval happens on the PR. If there is no `ADR` category (empty `CAT_ID`), the guard skips the thread and the PR comment; tell the author. Never create the discussion with an empty category ID.
 
 Tell the author: the PR is a draft and the discussion thread is open. Mark the PR **Ready for review** when discussion is done. It merges only with code-owner approval (CODEOWNERS covers `docs/decisions/`).
 
