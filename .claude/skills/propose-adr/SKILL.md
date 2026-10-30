@@ -50,10 +50,10 @@ EOF_TITLE
   cat > "$TMP/body" <<'EOF_BODY'
 <decision in short, options, open questions, PR link>
 EOF_BODY
-  gh api graphql -f query='mutation($r:ID!,$c:ID!,$t:String!,$b:String!){createDiscussion(input:{repositoryId:$r,categoryId:$c,title:$t,body:$b}){discussion{url}}}' \
+  DISC_URL=$(gh api graphql -f query='mutation($r:ID!,$c:ID!,$t:String!,$b:String!){createDiscussion(input:{repositoryId:$r,categoryId:$c,title:$t,body:$b}){discussion{url}}}' \
     -f r="$REPO_ID" -f c="$CAT_ID" -F t=@"$TMP/title" -F b=@"$TMP/body" \
-    --jq '.data.createDiscussion.discussion.url'
-  gh pr comment <pr-number> --body "Discussion thread for this ADR: <discussion-url>"
+    --jq '.data.createDiscussion.discussion.url')
+  [ -n "$DISC_URL" ] && gh pr comment <pr-number> --body "Discussion thread for this ADR: $DISC_URL"
 fi
 ```
 The body is the decision in short, the options, the open questions and the PR link, and says approval happens on the PR. If there is no `ADR` category (empty `CAT_ID`), the guard skips the thread and the PR comment; tell the author. Never create the discussion with an empty category ID.
