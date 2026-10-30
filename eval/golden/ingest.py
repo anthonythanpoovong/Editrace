@@ -8,9 +8,11 @@
 - Re-running skips any original whose sha256 is already in the manifest, so ids stay stable.
 - Ids come from the file name: `v13.mp4` is ingested as v13, so labelers can split numbers between them. Any other
   name gets one more than the highest id in the manifest (and in this run). An id that's already taken, or an original
-  that already sits where its output would go, stops the run before anything is written.
+  that already sits where its output would go, stops the run before anything is written. So does a label file that
+  already has labels for an id the manifest doesn't list.
+- The manifest is saved, atomically, after each video, so a failure partway through a batch keeps the ones done.
 
-Usage: python3.11 ingest.py [--ffmpeg-dir DIR] ORIGINAL.mp4 [...]
+Usage: uv run python eval/golden/ingest.py [--ffmpeg-dir DIR] ORIGINAL.mp4 [...]
 """
 
 from __future__ import annotations
@@ -19,10 +21,12 @@ import argparse
 import hashlib
 import itertools
 import json
+import os
 import re
 import shutil
 import subprocess
 import sys
+import time
 from fractions import Fraction
 from math import gcd
 from pathlib import Path
@@ -95,6 +99,34 @@ def manifest() -> dict:
     return {"videos": []}
 
 
+def save_manifest(data: dict) -> None:
+    """Write the manifest atomically: to a temp file, then swapped in, so it's never left half-written. Saved after
+    every video, so a failure partway through a batch keeps the videos already done."""
+    tmp = MANIFEST.with_name(MANIFEST.name + ".tmp")
+    tmp.write_text(json.dumps(data, indent=2) + "\n")
+    for attempt in range(5):
+        try:
+            os.replace(tmp, MANIFEST)
+            return
+        except (
+            PermissionError
+        ):  # Windows: briefly locked by a sync client (OneDrive) or virus scanner
+            if attempt == 4:
+                raise
+            time.sleep(0.2 * (attempt + 1))
+
+
+def has_labels(path: Path) -> bool:
+    """Whether a label file holds labeling work (any cuts or transitions). Unreadable counts as yes, to be safe."""
+    if not path.exists():
+        return False
+    try:
+        tracks = json.loads(path.read_text()).get("tracks", [])
+    except (json.JSONDecodeError, AttributeError):
+        return True
+    return any(t.get("cuts") or t.get("transitions") for t in tracks)
+
+
 VIDEO_ID = re.compile(r"v\d{2,}")
 LOOKS_LIKE_ID = re.compile(
     r"v\d+", re.IGNORECASE
@@ -140,6 +172,11 @@ def plan_ids(
         if out.exists() and out.samefile(original):
             sys.exit(
                 f"{original} is where {vid}'s output goes; move it out of videos/ first (e.g. into videos/originals/)"
+            )
+        if has_labels(ROOT / "labels" / f"{vid}.json"):
+            sys.exit(
+                f"labels/{vid}.json already has labels but {vid} isn't in the manifest; "
+                "move it aside or rename the file to a free id"
             )
         taken.add(vid)
         known.add(digest)
@@ -274,11 +311,10 @@ def main() -> None:
                 "exclude": [],
             }
         )
+        save_manifest(data)
         print(
             f"{original.name} -> {vid}.mp4 ({'remuxed, CFR' if info['cfr'] else 'conformed from VFR'}, {conformed['frames']} frames)"
         )
-
-    MANIFEST.write_text(json.dumps(data, indent=2) + "\n")
 
 
 if __name__ == "__main__":

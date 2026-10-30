@@ -331,3 +331,59 @@ def test_an_already_ingested_named_file_doesnt_push_numbering_up(
         str(original(tmp_path, "clip.mov", b"new")),
     )
     assert ids(golden) == ["v01", "v02"]
+
+
+class FailingTools(FakeTools):
+    """ffmpeg fails on one original, as on a corrupt upload."""
+
+    def __init__(self, fail_on: str) -> None:
+        super().__init__(CFR)
+        self.fail_on = fail_on
+
+    def __call__(self, cmd: list[str], **kwargs) -> SimpleNamespace:
+        if "-i" in cmd and Path(cmd[cmd.index("-i") + 1]).name == self.fail_on:
+            raise subprocess.CalledProcessError(1, cmd)
+        return super().__call__(cmd, **kwargs)
+
+
+def test_a_failure_partway_keeps_the_videos_already_done(
+    golden: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    a, b = original(tmp_path, "a.mov", b"a"), original(tmp_path, "b.mov", b"b")
+    with pytest.raises(subprocess.CalledProcessError):
+        run(monkeypatch, FailingTools("b.mov"), str(a), str(b))
+    assert ids(golden) == ["v01"]
+    assert not (golden / "manifest.json.tmp").exists()
+    run(
+        monkeypatch, FakeTools(CFR), str(a), str(b)
+    )  # the rerun skips a instead of re-ingesting it
+    assert ids(golden) == ["v01", "v02"]
+
+
+def test_a_label_file_with_work_in_it_is_never_overwritten(
+    golden: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (golden / "labels").mkdir()
+    label = golden / "labels" / "v13.json"
+    label.write_text(json.dumps({"tracks": [{"cuts": [{"frame": 40}]}]}))
+    before = label.read_text()
+    with pytest.raises(SystemExit, match="already has labels"):
+        run(monkeypatch, FakeTools(CFR), str(original(tmp_path, "v13.mov")))
+    assert label.read_text() == before
+
+
+def test_the_manifest_save_retries_a_briefly_locked_file(
+    golden: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real_replace, attempts = os.replace, []
+
+    def locked_twice(src: Path, dst: Path) -> None:
+        attempts.append(dst)
+        if len(attempts) <= 2:
+            raise PermissionError("in use by another process")
+        real_replace(src, dst)
+
+    monkeypatch.setattr(ingest.os, "replace", locked_twice)
+    monkeypatch.setattr(ingest.time, "sleep", lambda _s: None)
+    ingest.save_manifest({"videos": [{"id": "v01"}]})
+    assert len(attempts) == 3 and ids(golden) == ["v01"]
