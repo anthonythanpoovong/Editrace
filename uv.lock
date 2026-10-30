@@ -110,6 +110,8 @@ dependencies = [
 
 [package.optional-dependencies]
 cuts = [
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "opencv-python" },
     { name = "scenedetect" },
 ]
@@ -124,6 +126,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "numpy", marker = "extra == 'cuts'", specifier = ">=2.4" },
     { name = "opencv-python", marker = "extra == 'cuts'", specifier = "==5.0.0.93" },
     { name = "pydantic", specifier = ">=2" },
     { name = "scenedetect", marker = "extra == 'cuts'", specifier = "==0.7.2" },

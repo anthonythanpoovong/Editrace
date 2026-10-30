@@ -154,7 +154,10 @@ def test_unflagged_cuts_never_fall_below_the_line() -> None:
 def test_a_missing_ratio_is_the_least_certain_cut_not_the_most() -> None:
     assert math.isnan(cut_score(None))
     assert cut_score(3.5) == 3.5
-    assert cut_confidence(Cut(50, cut_score(None)), is_flagged=False) == REVIEW_BELOW
+    partial = to_partial(Detection([Cut(50, cut_score(None))], 100))
+    assert (
+        partial["tracks"][0]["cuts"][0]["confidence"] == 0.0
+    )  # flagged, not passed at the line
 
 
 A, B, C, WHITE = (40, 40, 200), (200, 60, 40), (40, 180, 60), (255, 255, 255)

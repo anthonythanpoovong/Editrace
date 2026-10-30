@@ -45,6 +45,7 @@ PARAMS: dict[str, Any] = {
     "distinct_min": DISTINCT_MIN,
     "sample_size": list(SAMPLE_SIZE),
     "review_below": REVIEW_BELOW,
+    "flag_unscored": True,
 }
 
 
@@ -86,7 +87,7 @@ def find_cuts(video: Path) -> Detection:
 
 
 def cut_score(ratio: float | None) -> float:
-    """A cut's score from its adaptive ratio. A missing ratio is NaN, so it gets the lowest confidence, not the highest."""
+    """A cut's score from its adaptive ratio. A missing ratio is NaN, so the cut is flagged for review (`to_partial()`)."""
     return float(ratio) if ratio is not None else math.nan
 
 
@@ -109,7 +110,6 @@ def suspect_cuts(video: Path, cuts: list[Cut], fps: float) -> frozenset[int]:
     (the frames between are a blend), so they can be flagged too until the transition detector (#23) can say so.
     """
     import cv2
-    import numpy as np
 
     window = max(1, round(PAIR_WINDOW_S * fps))
     frames = sorted(c.frame for c in cuts)
@@ -130,7 +130,7 @@ def suspect_cuts(video: Path, cuts: list[Cut], fps: float) -> frozenset[int]:
             if n in needed:
                 sampled[n] = cv2.resize(
                     image, SAMPLE_SIZE, interpolation=cv2.INTER_AREA
-                ).astype(np.float32)
+                )  # uint8: 4x less memory
     finally:
         capture.release()
 
@@ -138,8 +138,8 @@ def suspect_cuts(video: Path, cuts: list[Cut], fps: float) -> frozenset[int]:
     for a, b in pairs:
         before, after = sampled[a - 1], sampled[b]
         between = [sampled[n] for n in range(a, b)]
-        to_before = min(float(np.abs(m - before).mean()) for m in between)
-        to_after = min(float(np.abs(m - after).mean()) for m in between)
+        to_before = min(float(cv2.absdiff(m, before).mean()) for m in between)
+        to_after = min(float(cv2.absdiff(m, after).mean()) for m in between)
         if min(to_before, to_after) < DISTINCT_MIN:
             out.update((a, b))
     return frozenset(out)
@@ -172,10 +172,14 @@ def to_partial(detection: Detection, suspect: frozenset[int] = frozenset()) -> d
 
     Slots tile the video: a boundary at every cut. A slot is only as certain as its least certain boundary cut, so a
     slot next to a flagged cut is flagged too; a video with no cuts is one slot, as certain as can be. `suspect` holds
-    the frames of cuts `suspect_cuts()` marks for review; confidence below REVIEW_BELOW means "needs review".
+    the frames of cuts `suspect_cuts()` marks for review, and a cut with no score is flagged too; confidence below
+    REVIEW_BELOW means "needs review".
     """
     cuts = sorted(detection.cuts, key=lambda c: c.frame)
-    conf = {c.frame: cut_confidence(c, c.frame in suspect) for c in cuts}
+    conf = {
+        c.frame: cut_confidence(c, c.frame in suspect or math.isnan(c.score))
+        for c in cuts
+    }
     edges = [0, *(c.frame for c in cuts), detection.frames]
     slots = []
     for i, (a, b) in enumerate(itertools.pairwise(edges)):
