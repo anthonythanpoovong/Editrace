@@ -110,6 +110,26 @@ Make a timeline at the video's fps starting at `01:00:00:00` and put **timeline 
 
   Don't write the song's name: #11 checks whether the vendors find it on their own.
 
+## Captions (word timing, #12)
+
+Ground truth for the captions worker's ±100ms word-timing bar. This labels spoken words only — on-screen text, stickers and burned-in captions are a different track (#13) and aren't labeled here (see rule 9 above).
+
+### Workflow
+
+1. Open `eval/golden/word_labeler.html` in Chrome. Pick `videos/vNN.mp4` and set the fps. Unlike `labeler.html`, this plays **audio** — word timing has to be heard, not seen. Slow playback down (the Rate control) for precise boundaries.
+2. Label **blind**: don't look at the captions worker's output first.
+3. For each spoken word: type its text into the word box, press `[` on the frame where it starts, then `]` (or `Enter`) on the frame where it ends. Press `L` before a word that starts a new caption line, or `B` before one that starts a new caption block (a new on-screen caption group), matching how the original captions were grouped if the video has burned-in or platform captions to reference for grouping — timing, not grouping, is what's scored.
+4. Press `A` to flag a word as ambiguous (hard to place exactly, e.g. fast or overlapping speech) if unsure.
+5. Save (`S`) to download `vNN.words.json`. Convert: `python3.11 eval/golden/words_to_label.py vNN ~/Downloads/vNN.words.json`. This writes a `captions` track into `labels/vNN.json` and records ambiguous word frames and captions-labeling time in the manifest, additively alongside (never overwriting) any cuts/transitions labeling already recorded for that video. Re-running replaces the previous captions track.
+6. Spot-check a few words against the audio before committing.
+
+### Rules
+
+1. A word's range is the frames it's actually being spoken (first frame of its first sound to the last frame of its last sound), not the frames a caption graphic happens to be on screen.
+2. Silence, music-only or non-speech stretches get no words; a video with no speech at all gets an empty `captions` track (no video is excluded from this pass for having no speech).
+3. Mark the language with the BCP 47 tag field at the top of the labeler (e.g. `en`, `pt-BR`); mixed-language or unclear audio: record your best single tag and flag the first affected word ambiguous.
+4. Overlapping words (two people talking at once) aren't supported by this tool yet; pick the clearer or primary speaker and flag the overlap region ambiguous. Revisit if this comes up often.
+
 ## After the detectors run
 
 Review every disagreement between labels and detectors. If a label was wrong, fix it, and report how many labels changed alongside the results. Never change a label silently to match a detector.
