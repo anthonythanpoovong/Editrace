@@ -1,0 +1,79 @@
+{
+  "schema_version": "0.1.0",
+  "source": {
+    "duration": 303,
+    "fps": {
+      "num": 30,
+      "den": 1
+    },
+    "resolution": {
+      "width": 720,
+      "height": 1280
+    },
+    "aspect_ratio": {
+      "num": 9,
+      "den": 16
+    },
+    "content_hash": "sha256:c6fc5345ebe7d447b1f30643943e7ed9a50b1eefd9e81e79f65a92ea7a4bd5f5"
+  },
+  "tracks": [
+    {
+      "id": "video-1",
+      "kind": "video",
+      "slots": [
+        {
+          "id": "slot-1",
+          "range": {
+            "start": 0,
+            "duration": 101
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        },
+        {
+          "id": "slot-2",
+          "range": {
+            "start": 101,
+            "duration": 202
+          },
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        }
+      ],
+      "cuts": [
+        {
+          "id": "cut-1",
+          "frame": 101,
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        }
+      ],
+      "transitions": [
+        {
+          "id": "transition-1",
+          "type": "zoom",
+          "range": {
+            "start": 101,
+            "duration": 82
+          },
+          "from_slot": "slot-2",
+          "to_slot": "slot-2",
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -169,6 +169,490 @@
       "notes": [],
       "ambiguous": [],
       "exclude": []
+    },
+    {
+      "id": "v06",
+      "content_hash": "sha256:e574c38519e6fb34bdf7e0a6d483045714c60318b96c600931a220ad88ae2fd7",
+      "original_sha256": "f2667390d354ebe6354bb1860ad5c8cfd160d6aa22c841faabd28c8f0c4b6fc8",
+      "fps": {
+        "num": 24000,
+        "den": 1001
+      },
+      "frames": 304,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": true,
+      "rights": "full",
+      "edit_styles": [
+        "fast-cuts",
+        "montage",
+        "beat-synced"
+      ],
+      "music": "released",
+      "labeled": true,
+      "labeling_minutes": 8,
+      "notes": [
+        "platform end card: frames 206-303 (1 black frame + Instagram end card), not part of the edit, unlabeled. Exclude from scoring. Start frame checked against the video (black frame at 206)"
+      ],
+      "ambiguous": [],
+      "exclude": [
+        {
+          "start": 206,
+          "duration": 98,
+          "reason": "platform end card"
+        }
+      ]
+    },
+    {
+      "id": "v07",
+      "content_hash": "sha256:31ea7790c7ae6dd6fdd9764a6e5b44960b200243073c65c83ddd4573084d71fd",
+      "original_sha256": "0c6323ae7bcbd316a44c2355d42c01cc3539835118fc9131a5778757c27cca41",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 524,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "beat-synced",
+        "montage"
+      ],
+      "music": "released",
+      "labeled": true,
+      "labeling_minutes": 6,
+      "notes": [
+        "platform end card: frames 403-523 (black frames + Instagram end card), not part of the edit, unlabeled. Exclude from scoring. Start frame checked against the video (Instagram watermark gone at 403; frames 368-402 are the creator's own black ending, with the watermark, and are part of the edit)"
+      ],
+      "ambiguous": [],
+      "exclude": [
+        {
+          "start": 403,
+          "duration": 121,
+          "reason": "platform end card"
+        }
+      ]
+    },
+    {
+      "id": "v08",
+      "content_hash": "sha256:5a094576bc531254a76c27c15b67ae9ef07e93d51475da8f9e84279b37752930",
+      "original_sha256": "ed0900dbcd96e7d83cde0bd13e04e289f6c527df8d83e3baa1e40ebcb41897f6",
+      "fps": {
+        "num": 24,
+        "den": 1
+      },
+      "frames": 521,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": true,
+      "rights": "full",
+      "edit_styles": [
+        "beat-synced",
+        "flash",
+        "whip",
+        "speed-ramp",
+        "zoom",
+        "fast-cuts"
+      ],
+      "music": "released",
+      "labeled": true,
+      "labeling_minutes": 9,
+      "notes": [
+        "flash: cut at frame 39",
+        "flash: cut at frame 50",
+        "flash: cut at frame 94",
+        "flash: cut at frame 105",
+        "flash: cut at frame 165",
+        "flash: cut at frame 176",
+        "flash: cut at frame 231",
+        "flash: cut at frame 247",
+        "flash: cut at frame 263",
+        "flash: cut at frame 275",
+        "flash: cut at frame 281",
+        "flash: cut at frame 286",
+        "flash: cut at frame 298",
+        "flash: cut at frame 319",
+        "flash: cut at frame 354",
+        "flash: cut at frame 383",
+        "platform end card: frames 423-520, fades in over the last shot (marked at 30 fps frame 529 in the labeler)"
+      ],
+      "ambiguous": [],
+      "exclude": [
+        {
+          "start": 423,
+          "duration": 98,
+          "reason": "platform end card"
+        }
+      ]
+    },
+    {
+      "id": "v09",
+      "content_hash": "sha256:350dc23503787f498b000ff69ada5ca0cb49528dd9a907f5c70889e61090d850",
+      "original_sha256": "9ac6b7ef3777e52c03dcf89b9bc9bd2575966d41782b03e54f968664413f5b42",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 483,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "beat-synced",
+        "slow-paced",
+        "whip",
+        "fast-cuts",
+        "zoom",
+        "montage"
+      ],
+      "music": "released",
+      "labeled": true,
+      "labeling_minutes": 2,
+      "notes": [
+        "flash: cut at frame 24",
+        "flash: cut at frame 41",
+        "flash: cut at frame 56",
+        "flash: cut at frame 68",
+        "flash: cut at frame 77",
+        "flash: cut at frame 84",
+        "flash: cut at frame 89",
+        "flash: cut at frame 103",
+        "flash: cut at frame 150",
+        "flash: cut at frame 182",
+        "flash: cut at frame 199",
+        "flash: cut at frame 214",
+        "flash: cut at frame 230",
+        "flash: cut at frame 246",
+        "flash: cut at frame 277",
+        "flash: cut at frame 293",
+        "flash: cut at frame 324",
+        "platform end card: frames 362-482"
+      ],
+      "ambiguous": [],
+      "exclude": [
+        {
+          "start": 362,
+          "duration": 121,
+          "reason": "platform end card"
+        }
+      ]
+    },
+    {
+      "id": "v10",
+      "content_hash": "sha256:ad4c676737939735fac6d22f923ff04accca9576a0672590b6c641b027b63204",
+      "original_sha256": "00619815eab91eadb9be01316786e009fbc87a030b58bdaab65997ff651cc93f",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 729,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "fast-cuts",
+        "beat-synced"
+      ],
+      "music": "original",
+      "labeled": true,
+      "labeling_minutes": 1,
+      "notes": [
+        "platform end card: frames 608-728",
+        "flash: cut at frame 35",
+        "flash: cut at frame 54",
+        "flash: cut at frame 68",
+        "flash: cut at frame 75",
+        "flash: cut at frame 86",
+        "flash: cut at frame 93",
+        "flash: cut at frame 101",
+        "flash: cut at frame 106",
+        "flash: cut at frame 247",
+        "flash: cut at frame 257",
+        "flash: cut at frame 303",
+        "flash: cut at frame 306",
+        "flash: cut at frame 309",
+        "flash: cut at frame 312",
+        "flash: cut at frame 315",
+        "flash: cut at frame 318",
+        "flash: cut at frame 321",
+        "flash: cut at frame 324",
+        "flash: cut at frame 327",
+        "flash: cut at frame 330",
+        "flash: cut at frame 333",
+        "flash: cut at frame 336",
+        "flash: cut at frame 339",
+        "flash: cut at frame 342",
+        "flash: cut at frame 347",
+        "flash: cut at frame 348",
+        "flash: cut at frame 351",
+        "flash: cut at frame 354",
+        "flash: cut at frame 357",
+        "flash: cut at frame 360",
+        "flash: cut at frame 363",
+        "flash: cut at frame 366",
+        "flash: cut at frame 369",
+        "flash: cut at frame 372",
+        "flash: cut at frame 375",
+        "flash: cut at frame 378",
+        "flash: cut at frame 381",
+        "flash: cut at frame 384",
+        "flash: cut at frame 387",
+        "flash: cut at frame 390",
+        "flash: cut at frame 393",
+        "flash: cut at frame 396",
+        "flash: cut at frame 399",
+        "flash: cut at frame 402",
+        "flash: cut at frame 405",
+        "flash: cut at frame 408",
+        "flash: cut at frame 411",
+        "flash: cut at frame 414",
+        "flash: cut at frame 415",
+        "flash: cut at frame 465",
+        "flash: cut at frame 516",
+        "flash: cut at frame 560"
+      ],
+      "ambiguous": [],
+      "exclude": [
+        {
+          "start": 608,
+          "duration": 121,
+          "reason": "platform end card"
+        }
+      ]
+    },
+    {
+      "id": "v11",
+      "content_hash": "sha256:c6fc5345ebe7d447b1f30643943e7ed9a50b1eefd9e81e79f65a92ea7a4bd5f5",
+      "original_sha256": "d768065efbae96e5a743bf28b96ad316b6dd913c97ec5027f25a4862d9a01683",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 303,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "zoom",
+        "slow-paced"
+      ],
+      "music": "original",
+      "labeled": true,
+      "labeling_minutes": 1,
+      "notes": [
+        "flash: cut at frame 101",
+        "platform end card: frames 183-302"
+      ],
+      "ambiguous": [],
+      "exclude": [
+        {
+          "start": 183,
+          "duration": 120,
+          "reason": "platform end card"
+        }
+      ]
+    },
+    {
+      "id": "v12",
+      "content_hash": "sha256:63458430397e3e789478ed472dce66911d007d33a45b851fdee97f57b2c25a6d",
+      "original_sha256": "53c6eb153dbaf26c0eb518ea8d9fc2505e3c1823c28270ef21b632ae74dcab70",
+      "fps": {
+        "num": 24,
+        "den": 1
+      },
+      "frames": 680,
+      "resolution": {
+        "width": 720,
+        "height": 540
+      },
+      "vfr": true,
+      "rights": "full",
+      "edit_styles": [
+        "fast-cuts",
+        "beat-synced",
+        "whip",
+        "montage",
+        "speed-ramp",
+        "zoom",
+        "flash"
+      ],
+      "music": "released",
+      "labeled": true,
+      "labeling_minutes": 9,
+      "notes": [
+        "flash: cut at frame 44",
+        "flash: cut at frame 196",
+        "flash: cut at frame 223",
+        "flash: cut at frame 265",
+        "flash: cut at frame 267",
+        "flash: cut at frame 269",
+        "flash: cut at frame 271",
+        "flash: cut at frame 273",
+        "flash: cut at frame 275",
+        "flash: cut at frame 277",
+        "flash: cut at frame 279",
+        "flash: cut at frame 281",
+        "flash: cut at frame 283",
+        "flash: cut at frame 311",
+        "flash: cut at frame 354",
+        "flash: cut at frame 418",
+        "flash: cut at frame 439",
+        "flash: cut at frame 506",
+        "flash: cut at frame 525",
+        "reviewed after the detector ran (2026-10-29, Calvin): the flash burst 265-283 is real flash cuts between different but similar-looking shots; 274 removed, it is not a cut (273-274 is one 2-frame shot). Also checked: the cuts inside whips (110, 375, 450, 462) are on the right frames; 386-397 is a text card with a background laid over the shot, and its text changing at 390 is not a cut (rule 9), with the cut at 398 where the background goes; nothing changes at 427 or 431, the same shot between the cuts at 418 and 439",
+        "platform end card: frames 569-679 (marked at 30 fps frame 711 in the labeler)"
+      ],
+      "ambiguous": [],
+      "exclude": [
+        {
+          "start": 569,
+          "duration": 111,
+          "reason": "platform end card"
+        }
+      ]
+    },
+    {
+      "id": "v13",
+      "content_hash": "sha256:d9f006c6775651f7cc0bc0e7758f0ca023c283bbe382c9993a17befea3e334a0",
+      "original_sha256": "89fdb94fa82a605a63801ebab5bce753414d93a342fb31f705d771f3db01fb9a",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 336,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "beat-synced",
+        "flash",
+        "zoom"
+      ],
+      "music": "original",
+      "labeled": true,
+      "labeling_minutes": 8,
+      "notes": [
+        "blur effect (approximate frames, may be off by a few): 36-41, 123-128, 207-214",
+        "zoom in (approximate): 117-121, 161-164",
+        "zoom out (approximate): 126-129, 210-214",
+        "brightness flash during each blur (rule 4): 36-41, 123-128, 207-214. Looks like the same footage brightened, not a solid or different frame, but not certain; the edit_styles tag flash is kept for these, though there are no flash cuts",
+        "stage-lighting flashes in the footage itself (not edit effects) at about 42-45, 96, 147, 197 and 203: same shot, not cuts (rule 4). The picture is clear from 42 and 46 is the same footage after the flash. 96 looks like a wider shot only because of the lighting; 202-204 is a camera move with a flash. Reviewed after the detector ran (it reported cuts at 46, 96, 147, 197 and 203)",
+        "zooms, blurs and flashes are inside one continuous shot, not cuts (rules 4, 10). Unsure whether the shot switches or a flash cut hides inside the blurs: best guess no, listed in ambiguous at 36 (whether the flash after the cut at 36 adds a second cut), 125 and 211",
+        "platform end card: frames 216-335"
+      ],
+      "ambiguous": [
+        36,
+        125,
+        211
+      ],
+      "exclude": [
+        {
+          "start": 216,
+          "duration": 120,
+          "reason": "platform end card"
+        }
+      ]
+    },
+    {
+      "id": "v14",
+      "content_hash": "sha256:8199319e45328f28bd3a3efa5f152dcf5847cc331e3f06949095f385ef0e4cde",
+      "original_sha256": "340040a176eb47cbdd1b006d698bb3cc113696d62661eaa65081a76a645e1cc1",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 396,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "fast-cuts",
+        "beat-synced",
+        "montage"
+      ],
+      "music": "released",
+      "labeled": true,
+      "labeling_minutes": 6,
+      "notes": [
+        "black first frame 0: no content or watermark, not part of the edit (download artifact); frames 0-1 excluded so the switch from black at 1 isn't scored",
+        "car montage with the car as a steady overlay over a changing background, frames 1-205 (rule 11): each background change labeled as a cut. At 70 and 138 the car overlay and background change together into a whole new shot, labeled as one cut each. 69-70 is a 1-frame background shot. Regular full-frame shots from 206",
+        "platform end card: frames 275-395 (Instagram's unwatermarked black frame at 275, card from 276)",
+        "edit_styles: whip and zoom removed at labeling, none found"
+      ],
+      "ambiguous": [],
+      "exclude": [
+        {
+          "start": 0,
+          "duration": 2,
+          "reason": "black frame, not part of the edit"
+        },
+        {
+          "start": 275,
+          "duration": 121,
+          "reason": "platform end card"
+        }
+      ]
+    },
+    {
+      "id": "v15",
+      "content_hash": "sha256:3d15a58825679f5148db4e0a0b626ad90d87ef970219fc1ac32e2b8a625011e7",
+      "original_sha256": "1f6b91a39132e5076c773fc51e8f2f0ca7ab7e652da9b108be8a5d5bd70fc7ce",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 483,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "talking-head",
+        "slow-paced",
+        "lip-sync"
+      ],
+      "music": "original",
+      "labeled": true,
+      "labeling_minutes": 4,
+      "notes": [
+        "zoom in and out are camera moves while filming, not edit effects; not cuts (rule 10)",
+        "platform end card: frames 363-482 (no black frame before it)",
+        "edit_styles: zoom removed at labeling, the zooms are in-camera",
+        "person talks to camera, lip-syncing to trending dialogue audio (from a movie, song, etc.)"
+      ],
+      "ambiguous": [],
+      "exclude": [
+        {
+          "start": 363,
+          "duration": 120,
+          "reason": "platform end card"
+        }
+      ]
     }
   ]
 }
