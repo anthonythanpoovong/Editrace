@@ -96,6 +96,9 @@ def manifest() -> dict:
 
 
 VIDEO_ID = re.compile(r"v\d{2,}")
+LOOKS_LIKE_ID = re.compile(
+    r"v\d+", re.IGNORECASE
+)  # V13, v1: probably meant as an id, so warn
 
 
 def plan_ids(
@@ -105,7 +108,11 @@ def plan_ids(
     name never leaves a half-written manifest."""
     taken = {v["id"] for v in videos}
     known = {v["original_sha256"] for v in videos}
-    named = [o.stem for o in originals if VIDEO_ID.fullmatch(o.stem)]
+    named = [
+        o.stem
+        for o, h in zip(originals, hashes, strict=True)
+        if h not in known and VIDEO_ID.fullmatch(o.stem)
+    ]
     numbers = [int(i[1:]) for i in taken | set(named) if VIDEO_ID.fullmatch(i)]
     highest = max(numbers, default=0)
     ids: list[str | None] = []
@@ -118,11 +125,19 @@ def plan_ids(
         else:
             highest += 1
             vid = f"v{highest:02d}"
+            if LOOKS_LIKE_ID.fullmatch(original.stem):
+                print(
+                    f"warning: {original.name} looks like an id but isn't one (a lowercase v and 2+ digits, e.g. "
+                    f"v13.mp4), so it gets {vid}",
+                    file=sys.stderr,
+                )
         if vid in taken:
             sys.exit(
                 f"{original.name}: {vid} is already in the manifest; rename the file to a free id"
             )
-        if (ROOT / "videos" / f"{vid}.mp4").resolve() == original.resolve():
+        out = ROOT / "videos" / f"{vid}.mp4"
+        # samefile, not comparing paths: on case-insensitive file systems (Windows, macOS) Videos/v13.MP4 is this file.
+        if out.exists() and out.samefile(original):
             sys.exit(
                 f"{original} is where {vid}'s output goes; move it out of videos/ first (e.g. into videos/originals/)"
             )

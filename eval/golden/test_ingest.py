@@ -283,3 +283,51 @@ def test_an_original_already_at_its_output_path_is_refused(
     with pytest.raises(SystemExit, match="move it out of videos/"):
         run(monkeypatch, FakeTools(CFR), str(inside))
     assert inside.read_bytes() == b"the only copy"
+
+
+@pytest.mark.parametrize("name", ["videos/v13.MP4", "VIDEOS/v13.mp4"])
+def test_a_differently_cased_path_to_the_output_is_refused_where_it_is_the_same_file(
+    golden: Path, monkeypatch: pytest.MonkeyPatch, name: str
+) -> None:
+    (golden / "videos").mkdir()
+    inside = golden / name
+    inside.parent.mkdir(exist_ok=True)
+    inside.write_bytes(b"the only copy")
+    if (
+        golden / "videos" / "v13.mp4"
+    ).exists():  # case-insensitive (Windows, macOS): it's the output file
+        with pytest.raises(SystemExit, match="move it out of videos/"):
+            run(monkeypatch, FakeTools(CFR), str(inside))
+    else:  # case-sensitive (Linux): a different file, so ingesting is safe
+        run(monkeypatch, FakeTools(CFR), str(inside))
+        assert ids(golden) == ["v13"]
+    assert inside.read_bytes() == b"the only copy"
+
+
+def test_a_name_that_looks_like_an_id_warns(
+    golden: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    existing(golden, "v01")
+    run(monkeypatch, FakeTools(CFR), str(original(tmp_path, "V13.mov")))
+    assert ids(golden) == ["v01", "v02"]
+    assert "V13.mov looks like an id but isn't one" in capsys.readouterr().err
+
+
+def test_an_already_ingested_named_file_doesnt_push_numbering_up(
+    golden: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    done = original(tmp_path, "v20.mov", b"ingested before it was renamed")
+    videos = [
+        {"id": "v01", "original_sha256": hashlib.sha256(done.read_bytes()).hexdigest()}
+    ]
+    (golden / "manifest.json").write_text(json.dumps({"videos": videos}))
+    run(
+        monkeypatch,
+        FakeTools(CFR),
+        str(done),
+        str(original(tmp_path, "clip.mov", b"new")),
+    )
+    assert ids(golden) == ["v01", "v02"]
