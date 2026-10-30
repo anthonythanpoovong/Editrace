@@ -200,3 +200,190 @@ def test_missing_ffmpeg_stops(
     with pytest.raises(SystemExit, match="ffmpeg not found on PATH"):
         run(monkeypatch, FakeTools([]), str(original(tmp_path)))
     assert not (golden / "manifest.json").exists()
+
+
+CFR = [i / 30 for i in range(90)]
+
+
+def existing(golden: Path, *ids: str) -> None:
+    videos = [{"id": i, "original_sha256": f"hash-of-{i}"} for i in ids]
+    (golden / "manifest.json").write_text(json.dumps({"videos": videos}))
+
+
+def ids(golden: Path) -> list[str]:
+    return [v["id"] for v in manifest(golden)["videos"]]
+
+
+def test_a_vnn_file_name_is_the_id(
+    golden: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    existing(golden, "v01", "v02")
+    run(monkeypatch, FakeTools(CFR), str(original(tmp_path, "v13.mov")))
+    assert ids(golden) == ["v01", "v02", "v13"]
+    assert (golden / "videos" / "v13.mp4").exists() and (
+        golden / "labels" / "v13.json"
+    ).exists()
+
+
+def test_other_names_get_one_more_than_the_highest_id(
+    golden: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Counting entries would give v04 here, which is taken; the highest id is v08, so the next is v09.
+    existing(golden, "v01", "v05", "v08")
+    run(monkeypatch, FakeTools(CFR), str(original(tmp_path, "IMG_4821.mov")))
+    assert ids(golden)[-1] == "v09"
+
+
+def test_names_that_only_look_like_ids_are_numbered(
+    golden: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run(
+        monkeypatch,
+        FakeTools(CFR),
+        str(original(tmp_path, "v1.mov", b"a")),
+        str(original(tmp_path, "clip2.mov", b"b")),
+    )
+    assert ids(golden) == ["v01", "v02"]
+
+
+def test_a_batch_numbers_past_the_named_files_in_it(
+    golden: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    existing(golden, "v01")
+    run(
+        monkeypatch,
+        FakeTools(CFR),
+        str(original(tmp_path, "v13.mov", b"a")),
+        str(original(tmp_path, "clip.mov", b"b")),
+    )
+    assert ids(golden) == ["v01", "v13", "v14"]
+
+
+def test_a_taken_id_stops_the_run_before_anything_is_written(
+    golden: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    existing(golden, "v13")
+    before = (golden / "manifest.json").read_text()
+    clean, taken = (
+        original(tmp_path, "clip.mov", b"a"),
+        original(tmp_path, "v13.mov", b"b"),
+    )
+    with pytest.raises(SystemExit, match="v13 is already in the manifest"):
+        run(monkeypatch, FakeTools(CFR), str(clean), str(taken))
+    assert (golden / "manifest.json").read_text() == before
+    assert not (golden / "videos").exists() or not any((golden / "videos").iterdir())
+
+
+def test_an_original_already_at_its_output_path_is_refused(
+    golden: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (golden / "videos").mkdir()
+    inside = golden / "videos" / "v13.mp4"
+    inside.write_bytes(b"the only copy")
+    with pytest.raises(SystemExit, match="move it out of videos/"):
+        run(monkeypatch, FakeTools(CFR), str(inside))
+    assert inside.read_bytes() == b"the only copy"
+
+
+@pytest.mark.parametrize("name", ["videos/v13.MP4", "VIDEOS/v13.mp4"])
+def test_a_differently_cased_path_to_the_output_is_refused_where_it_is_the_same_file(
+    golden: Path, monkeypatch: pytest.MonkeyPatch, name: str
+) -> None:
+    (golden / "videos").mkdir()
+    inside = golden / name
+    inside.parent.mkdir(exist_ok=True)
+    inside.write_bytes(b"the only copy")
+    if (
+        golden / "videos" / "v13.mp4"
+    ).exists():  # case-insensitive (Windows, macOS): it's the output file
+        with pytest.raises(SystemExit, match="move it out of videos/"):
+            run(monkeypatch, FakeTools(CFR), str(inside))
+    else:  # case-sensitive (Linux): a different file, so ingesting is safe
+        run(monkeypatch, FakeTools(CFR), str(inside))
+        assert ids(golden) == ["v13"]
+    assert inside.read_bytes() == b"the only copy"
+
+
+def test_a_name_that_looks_like_an_id_warns(
+    golden: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    existing(golden, "v01")
+    run(monkeypatch, FakeTools(CFR), str(original(tmp_path, "V13.mov")))
+    assert ids(golden) == ["v01", "v02"]
+    assert "V13.mov looks like an id but isn't one" in capsys.readouterr().err
+
+
+def test_an_already_ingested_named_file_doesnt_push_numbering_up(
+    golden: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    done = original(tmp_path, "v20.mov", b"ingested before it was renamed")
+    videos = [
+        {"id": "v01", "original_sha256": hashlib.sha256(done.read_bytes()).hexdigest()}
+    ]
+    (golden / "manifest.json").write_text(json.dumps({"videos": videos}))
+    run(
+        monkeypatch,
+        FakeTools(CFR),
+        str(done),
+        str(original(tmp_path, "clip.mov", b"new")),
+    )
+    assert ids(golden) == ["v01", "v02"]
+
+
+class FailingTools(FakeTools):
+    """ffmpeg fails on one original, as on a corrupt upload."""
+
+    def __init__(self, fail_on: str) -> None:
+        super().__init__(CFR)
+        self.fail_on = fail_on
+
+    def __call__(self, cmd: list[str], **kwargs) -> SimpleNamespace:
+        if "-i" in cmd and Path(cmd[cmd.index("-i") + 1]).name == self.fail_on:
+            raise subprocess.CalledProcessError(1, cmd)
+        return super().__call__(cmd, **kwargs)
+
+
+def test_a_failure_partway_keeps_the_videos_already_done(
+    golden: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    a, b = original(tmp_path, "a.mov", b"a"), original(tmp_path, "b.mov", b"b")
+    with pytest.raises(subprocess.CalledProcessError):
+        run(monkeypatch, FailingTools("b.mov"), str(a), str(b))
+    assert ids(golden) == ["v01"]
+    assert not (golden / "manifest.json.tmp").exists()
+    run(
+        monkeypatch, FakeTools(CFR), str(a), str(b)
+    )  # the rerun skips a instead of re-ingesting it
+    assert ids(golden) == ["v01", "v02"]
+
+
+def test_a_label_file_with_work_in_it_is_never_overwritten(
+    golden: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (golden / "labels").mkdir()
+    label = golden / "labels" / "v13.json"
+    label.write_text(json.dumps({"tracks": [{"cuts": [{"frame": 40}]}]}))
+    before = label.read_text()
+    with pytest.raises(SystemExit, match="already has labels"):
+        run(monkeypatch, FakeTools(CFR), str(original(tmp_path, "v13.mov")))
+    assert label.read_text() == before
+
+
+def test_the_manifest_save_retries_a_briefly_locked_file(
+    golden: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real_replace, attempts = os.replace, []
+
+    def locked_twice(src: Path, dst: Path) -> None:
+        attempts.append(dst)
+        if len(attempts) <= 2:
+            raise PermissionError("in use by another process")
+        real_replace(src, dst)
+
+    monkeypatch.setattr(ingest.os, "replace", locked_twice)
+    monkeypatch.setattr(ingest.time, "sleep", lambda _s: None)
+    ingest.save_manifest({"videos": [{"id": "v01"}]})
+    assert len(attempts) == 3 and ids(golden) == ["v01"]

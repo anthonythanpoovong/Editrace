@@ -30,3 +30,12 @@ def test_label_is_a_valid_template_matching_the_manifest(video: dict) -> None:
         assert 0 <= r["start"] and r["duration"] > 0
         assert r["start"] + r["duration"] <= video["frames"]
         assert not any(r["start"] <= f < r["start"] + r["duration"] for f in cuts)
+
+
+def test_ids_are_unique_and_each_has_one_label_file() -> None:
+    # Two labelers on different branches can claim the same id; git doesn't always catch it when both merge.
+    ids = [v["id"] for v in MANIFEST["videos"]]
+    assert len(ids) == len(set(ids)), (
+        f"duplicate ids: {sorted({i for i in ids if ids.count(i) > 1})}"
+    )
+    assert {p.stem for p in (ROOT / "labels").glob("*.json")} == set(ids)

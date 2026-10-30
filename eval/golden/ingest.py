@@ -6,8 +6,13 @@
 - Outputs are `videos/vNN.mp4` (never committed), a `manifest.json` entry and `labels/vNN.json`, a schema template with
   `source` filled in and empty `cuts` and `transitions` for the labeler (LABELING.md).
 - Re-running skips any original whose sha256 is already in the manifest, so ids stay stable.
+- Ids come from the file name: `v13.mp4` is ingested as v13, so labelers can split numbers between them. Any other
+  name gets one more than the highest id in the manifest (and in this run). An id that's already taken, or an original
+  that already sits where its output would go, stops the run before anything is written. So does a label file that
+  already has labels for an id the manifest doesn't list.
+- The manifest is saved, atomically, after each video, so a failure partway through a batch keeps the ones done.
 
-Usage: python3.11 ingest.py [--ffmpeg-dir DIR] ORIGINAL.mp4 [...]
+Usage: uv run python eval/golden/ingest.py [--ffmpeg-dir DIR] ORIGINAL.mp4 [...]
 """
 
 from __future__ import annotations
@@ -16,9 +21,12 @@ import argparse
 import hashlib
 import itertools
 import json
+import os
+import re
 import shutil
 import subprocess
 import sys
+import time
 from fractions import Fraction
 from math import gcd
 from pathlib import Path
@@ -91,6 +99,91 @@ def manifest() -> dict:
     return {"videos": []}
 
 
+def save_manifest(data: dict) -> None:
+    """Write the manifest atomically: to a temp file, then swapped in, so it's never left half-written. Saved after
+    every video, so a failure partway through a batch keeps the videos already done."""
+    tmp = MANIFEST.with_name(MANIFEST.name + ".tmp")
+    tmp.write_text(json.dumps(data, indent=2) + "\n")
+    for attempt in range(5):
+        try:
+            os.replace(tmp, MANIFEST)
+            return
+        except (
+            PermissionError
+        ):  # Windows: briefly locked by a sync client (OneDrive) or virus scanner
+            if attempt == 4:
+                raise
+            time.sleep(0.2 * (attempt + 1))
+
+
+def has_labels(path: Path) -> bool:
+    """Whether a label file holds labeling work (any cuts or transitions). Unreadable counts as yes, to be safe."""
+    if not path.exists():
+        return False
+    try:
+        tracks = json.loads(path.read_text()).get("tracks", [])
+    except (json.JSONDecodeError, AttributeError):
+        return True
+    return any(t.get("cuts") or t.get("transitions") for t in tracks)
+
+
+VIDEO_ID = re.compile(r"v\d{2,}")
+LOOKS_LIKE_ID = re.compile(
+    r"v\d+", re.IGNORECASE
+)  # V13, v1: probably meant as an id, so warn
+
+
+def plan_ids(
+    originals: list[Path], hashes: list[str], videos: list[dict]
+) -> list[str | None]:
+    """The id each original gets, or None for one that's already ingested. Checked for the whole run up front, so a bad
+    name never leaves a half-written manifest."""
+    taken = {v["id"] for v in videos}
+    known = {v["original_sha256"] for v in videos}
+    named = [
+        o.stem
+        for o, h in zip(originals, hashes, strict=True)
+        if h not in known and VIDEO_ID.fullmatch(o.stem)
+    ]
+    numbers = [int(i[1:]) for i in taken | set(named) if VIDEO_ID.fullmatch(i)]
+    highest = max(numbers, default=0)
+    ids: list[str | None] = []
+    for original, digest in zip(originals, hashes, strict=True):
+        if digest in known:
+            ids.append(None)
+            continue
+        if VIDEO_ID.fullmatch(original.stem):
+            vid = original.stem
+        else:
+            highest += 1
+            vid = f"v{highest:02d}"
+            if LOOKS_LIKE_ID.fullmatch(original.stem):
+                print(
+                    f"warning: {original.name} looks like an id but isn't one (a lowercase v and 2+ digits, e.g. "
+                    f"v13.mp4), so it gets {vid}",
+                    file=sys.stderr,
+                )
+        if vid in taken:
+            sys.exit(
+                f"{original.name}: {vid} is already in the manifest; rename the file to a free id"
+            )
+        out = ROOT / "videos" / f"{vid}.mp4"
+        # samefile, not comparing paths: on case-insensitive file systems (Windows, macOS) Videos/v13.MP4 is this file.
+        if out.exists() and out.samefile(original):
+            sys.exit(
+                f"{original} is where {vid}'s output goes; move it out of videos/ first (e.g. into videos/originals/)"
+            )
+        if has_labels(ROOT / "labels" / f"{vid}.json"):
+            sys.exit(
+                f"labels/{vid}.json already has labels but {vid} isn't in the manifest; "
+                "move it aside or rename the file to a free id"
+            )
+        taken.add(vid)
+        known.add(digest)
+        ids.append(vid)
+    return ids
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -112,16 +205,15 @@ def main() -> None:
 
     ffmpeg, ffprobe = tool("ffmpeg"), tool("ffprobe")
     data = manifest()
-    known = {v["original_sha256"] for v in data["videos"]}
+    hashes = [sha256(o) for o in args.originals]
+    ids = plan_ids(args.originals, hashes, data["videos"])
     (ROOT / "videos").mkdir(exist_ok=True)
     (ROOT / "labels").mkdir(exist_ok=True)
 
-    for original in args.originals:
-        original_hash = sha256(original)
-        if original_hash in known:
+    for original, original_hash, vid in zip(args.originals, hashes, ids, strict=True):
+        if vid is None:
             print(f"skip {original.name}: already ingested")
             continue
-        vid = f"v{len(data['videos']) + 1:02d}"
         out = ROOT / "videos" / f"{vid}.mp4"
         info = probe(ffprobe, original)
         if info["cfr"]:
@@ -219,12 +311,10 @@ def main() -> None:
                 "exclude": [],
             }
         )
-        known.add(original_hash)
+        save_manifest(data)
         print(
             f"{original.name} -> {vid}.mp4 ({'remuxed, CFR' if info['cfr'] else 'conformed from VFR'}, {conformed['frames']} frames)"
         )
-
-    MANIFEST.write_text(json.dumps(data, indent=2) + "\n")
 
 
 if __name__ == "__main__":
