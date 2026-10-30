@@ -1,0 +1,234 @@
+{
+  "schema_version": "0.1.0",
+  "source": {
+    "duration": 426,
+    "fps": {
+      "num": 30,
+      "den": 1
+    },
+    "resolution": {
+      "width": 720,
+      "height": 1280
+    },
+    "aspect_ratio": {
+      "num": 9,
+      "den": 16
+    },
+    "content_hash": "sha256:cda1e10cef7f732fc2aca9df7b4fe870e8a39b418da9baab7cfb2ee03365090d"
+  },
+  "tracks": [
+    {
+      "id": "video-1",
+      "kind": "video",
+      "slots": [],
+      "cuts": [],
+      "transitions": []
+    },
+    {
+      "id": "captions-1",
+      "kind": "captions",
+      "captions": [
+        {
+          "id": "caption-1",
+          "range": {
+            "start": 11,
+            "duration": 286
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "Winners",
+                  "range": {
+                    "start": 11,
+                    "duration": 16
+                  }
+                },
+                {
+                  "text": "never",
+                  "range": {
+                    "start": 32,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "quit",
+                  "range": {
+                    "start": 46,
+                    "duration": 12
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "Quitters",
+                  "range": {
+                    "start": 83,
+                    "duration": 21
+                  }
+                },
+                {
+                  "text": "never",
+                  "range": {
+                    "start": 118,
+                    "duration": 13
+                  }
+                },
+                {
+                  "text": "win",
+                  "range": {
+                    "start": 141,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "Take",
+                  "range": {
+                    "start": 187,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "the",
+                  "range": {
+                    "start": 196,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "biggest",
+                  "range": {
+                    "start": 202,
+                    "duration": 13
+                  }
+                },
+                {
+                  "text": "Risk",
+                  "range": {
+                    "start": 215,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "you",
+                  "range": {
+                    "start": 224,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "can",
+                  "range": {
+                    "start": 229,
+                    "duration": 9
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "And",
+                  "range": {
+                    "start": 255,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "make",
+                  "range": {
+                    "start": 260,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "the",
+                  "range": {
+                    "start": 268,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "best",
+                  "range": {
+                    "start": 275,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "out",
+                  "range": {
+                    "start": 285,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "of",
+                  "range": {
+                    "start": 289,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "it",
+                  "range": {
+                    "start": 293,
+                    "duration": 4
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-2",
+          "range": {
+            "start": 331,
+            "duration": 38
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "You",
+                  "range": {
+                    "start": 331,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "can",
+                  "range": {
+                    "start": 354,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "win",
+                  "range": {
+                    "start": 362,
+                    "duration": 7
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        }
+      ]
+    }
+  ]
+}

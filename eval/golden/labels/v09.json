@@ -1,0 +1,1215 @@
+{
+  "schema_version": "0.1.0",
+  "source": {
+    "duration": 1023,
+    "fps": {
+      "num": 30,
+      "den": 1
+    },
+    "resolution": {
+      "width": 720,
+      "height": 1280
+    },
+    "aspect_ratio": {
+      "num": 9,
+      "den": 16
+    },
+    "content_hash": "sha256:e01d5c8542a8a63115bc02956615943a5dddd955649fe3c1be56d84be85619e5"
+  },
+  "tracks": [
+    {
+      "id": "video-1",
+      "kind": "video",
+      "slots": [],
+      "cuts": [],
+      "transitions": []
+    },
+    {
+      "id": "captions-1",
+      "kind": "captions",
+      "captions": [
+        {
+          "id": "caption-1",
+          "range": {
+            "start": 1,
+            "duration": 128
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "if",
+                  "range": {
+                    "start": 1,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "you're",
+                  "range": {
+                    "start": 5,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "on",
+                  "range": {
+                    "start": 7,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "a",
+                  "range": {
+                    "start": 9,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "budget",
+                  "range": {
+                    "start": 14,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "and",
+                  "range": {
+                    "start": 22,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "you're",
+                  "range": {
+                    "start": 24,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "going",
+                  "range": {
+                    "start": 27,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "Japan",
+                  "range": {
+                    "start": 34,
+                    "duration": 10
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "Here",
+                  "range": {
+                    "start": 46,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "are",
+                  "range": {
+                    "start": 52,
+                    "duration": 1
+                  }
+                },
+                {
+                  "text": "five",
+                  "range": {
+                    "start": 53,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "things",
+                  "range": {
+                    "start": 68,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "you",
+                  "range": {
+                    "start": 77,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "can",
+                  "range": {
+                    "start": 80,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "do",
+                  "range": {
+                    "start": 84,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "without",
+                  "range": {
+                    "start": 91,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "spending",
+                  "range": {
+                    "start": 98,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "a",
+                  "range": {
+                    "start": 109,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "single",
+                  "range": {
+                    "start": 112,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "yen",
+                  "range": {
+                    "start": 121,
+                    "duration": 8
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-2",
+          "range": {
+            "start": 131,
+            "duration": 222
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "First",
+                  "range": {
+                    "start": 131,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "explore",
+                  "range": {
+                    "start": 140,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "Tokyo's",
+                  "range": {
+                    "start": 148,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "famous",
+                  "range": {
+                    "start": 159,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "landmark",
+                  "range": {
+                    "start": 169,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "Shibuya",
+                  "range": {
+                    "start": 179,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "crossing",
+                  "range": {
+                    "start": 190,
+                    "duration": 10
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "walk",
+                  "range": {
+                    "start": 204,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "the",
+                  "range": {
+                    "start": 210,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "streets",
+                  "range": {
+                    "start": 212,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "at",
+                  "range": {
+                    "start": 220,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "night",
+                  "range": {
+                    "start": 222,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "to",
+                  "range": {
+                    "start": 231,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "see",
+                  "range": {
+                    "start": 233,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "all",
+                  "range": {
+                    "start": 240,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "the",
+                  "range": {
+                    "start": 245,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "neon",
+                  "range": {
+                    "start": 248,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "lights",
+                  "range": {
+                    "start": 257,
+                    "duration": 12
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "visit",
+                  "range": {
+                    "start": 271,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "Sensoji",
+                  "range": {
+                    "start": 279,
+                    "duration": 14
+                  }
+                },
+                {
+                  "text": "Asakusa",
+                  "range": {
+                    "start": 295,
+                    "duration": 15
+                  }
+                },
+                {
+                  "text": "one",
+                  "range": {
+                    "start": 315,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "of",
+                  "range": {
+                    "start": 318,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "Tokyo's",
+                  "range": {
+                    "start": 320,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "famous",
+                  "range": {
+                    "start": 330,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "temples",
+                  "range": {
+                    "start": 341,
+                    "duration": 12
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-3",
+          "range": {
+            "start": 356,
+            "duration": 86
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "You",
+                  "range": {
+                    "start": 356,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "can",
+                  "range": {
+                    "start": 362,
+                    "duration": 1
+                  }
+                },
+                {
+                  "text": "experience",
+                  "range": {
+                    "start": 363,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "the",
+                  "range": {
+                    "start": 374,
+                    "duration": 1
+                  }
+                },
+                {
+                  "text": "Japanese",
+                  "range": {
+                    "start": 375,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "traditional",
+                  "range": {
+                    "start": 387,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "culture",
+                  "range": {
+                    "start": 398,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "and",
+                  "range": {
+                    "start": 409,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "take",
+                  "range": {
+                    "start": 412,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "amazing",
+                  "range": {
+                    "start": 416,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "photos",
+                  "range": {
+                    "start": 427,
+                    "duration": 15
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-4",
+          "range": {
+            "start": 442,
+            "duration": 185
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "If",
+                  "range": {
+                    "start": 442,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "you're",
+                  "range": {
+                    "start": 444,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "visiting",
+                  "range": {
+                    "start": 446,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "Kyoto",
+                  "range": {
+                    "start": 454,
+                    "duration": 13
+                  }
+                },
+                {
+                  "text": "take",
+                  "range": {
+                    "start": 469,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "a",
+                  "range": {
+                    "start": 473,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "walk",
+                  "range": {
+                    "start": 476,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "to",
+                  "range": {
+                    "start": 482,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "the",
+                  "range": {
+                    "start": 484,
+                    "duration": 1
+                  }
+                },
+                {
+                  "text": "iconic",
+                  "range": {
+                    "start": 485,
+                    "duration": 12
+                  }
+                },
+                {
+                  "text": "red",
+                  "range": {
+                    "start": 500,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "Tori",
+                  "range": {
+                    "start": 506,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "Gates",
+                  "range": {
+                    "start": 514,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "at",
+                  "range": {
+                    "start": 524,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "Fushimi",
+                  "range": {
+                    "start": 531,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "Inari",
+                  "range": {
+                    "start": 541,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "shrine",
+                  "range": {
+                    "start": 551,
+                    "duration": 10
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "the",
+                  "range": {
+                    "start": 564,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "peak",
+                  "range": {
+                    "start": 567,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "is",
+                  "range": {
+                    "start": 573,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "a",
+                  "range": {
+                    "start": 575,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "bit",
+                  "range": {
+                    "start": 578,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "of",
+                  "range": {
+                    "start": 581,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "a",
+                  "range": {
+                    "start": 583,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "hike",
+                  "range": {
+                    "start": 586,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "but",
+                  "range": {
+                    "start": 594,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "the",
+                  "range": {
+                    "start": 597,
+                    "duration": 1
+                  }
+                },
+                {
+                  "text": "scenery",
+                  "range": {
+                    "start": 598,
+                    "duration": 13
+                  }
+                },
+                {
+                  "text": "is",
+                  "range": {
+                    "start": 611,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "unreal",
+                  "range": {
+                    "start": 615,
+                    "duration": 12
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-5",
+          "range": {
+            "start": 630,
+            "duration": 315
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "In",
+                  "range": {
+                    "start": 630,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "Osaka",
+                  "range": {
+                    "start": 632,
+                    "duration": 13
+                  }
+                },
+                {
+                  "text": "head",
+                  "range": {
+                    "start": 646,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "to",
+                  "range": {
+                    "start": 649,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "Dontonbori",
+                  "range": {
+                    "start": 652,
+                    "duration": 18
+                  }
+                },
+                {
+                  "text": "for",
+                  "range": {
+                    "start": 670,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "the",
+                  "range": {
+                    "start": 674,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "famous",
+                  "range": {
+                    "start": 677,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "runnig",
+                  "range": {
+                    "start": 690,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "man",
+                  "range": {
+                    "start": 695,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "sign",
+                  "range": {
+                    "start": 700,
+                    "duration": 8
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "Area",
+                  "range": {
+                    "start": 710,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "has",
+                  "range": {
+                    "start": 716,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "incredible",
+                  "range": {
+                    "start": 718,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "street",
+                  "range": {
+                    "start": 729,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "energy",
+                  "range": {
+                    "start": 736,
+                    "duration": 13
+                  }
+                },
+                {
+                  "text": "with",
+                  "range": {
+                    "start": 749,
+                    "duration": 1
+                  }
+                },
+                {
+                  "text": "lots",
+                  "range": {
+                    "start": 751,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "of",
+                  "range": {
+                    "start": 758,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "food",
+                  "range": {
+                    "start": 762,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "to",
+                  "range": {
+                    "start": 766,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "try",
+                  "range": {
+                    "start": 769,
+                    "duration": 9
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "Need",
+                  "range": {
+                    "start": 782,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "a",
+                  "range": {
+                    "start": 786,
+                    "duration": 1
+                  }
+                },
+                {
+                  "text": "brek",
+                  "range": {
+                    "start": 787,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "from",
+                  "range": {
+                    "start": 791,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "city",
+                  "range": {
+                    "start": 796,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "walk",
+                  "range": {
+                    "start": 812,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "to",
+                  "range": {
+                    "start": 817,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "the",
+                  "range": {
+                    "start": 820,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "peaceful",
+                  "range": {
+                    "start": 825,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "forest",
+                  "range": {
+                    "start": 831,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "at",
+                  "range": {
+                    "start": 842,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "Meiji",
+                  "range": {
+                    "start": 845,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "Jinju",
+                  "range": {
+                    "start": 857,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "craziest",
+                  "range": {
+                    "start": 869,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "part",
+                  "range": {
+                    "start": 878,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "is",
+                  "range": {
+                    "start": 883,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "it's",
+                  "range": {
+                    "start": 886,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "in",
+                  "range": {
+                    "start": 889,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "Tokyo",
+                  "range": {
+                    "start": 894,
+                    "duration": 12
+                  }
+                },
+                {
+                  "text": "one",
+                  "range": {
+                    "start": 906,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "of",
+                  "range": {
+                    "start": 910,
+                    "duration": 1
+                  }
+                },
+                {
+                  "text": "the",
+                  "range": {
+                    "start": 911,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "busiest",
+                  "range": {
+                    "start": 914,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "cities",
+                  "range": {
+                    "start": 922,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "in",
+                  "range": {
+                    "start": 931,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "Japan",
+                  "range": {
+                    "start": 935,
+                    "duration": 10
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-6",
+          "range": {
+            "start": 949,
+            "duration": 70
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "Save",
+                  "range": {
+                    "start": 949,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "this",
+                  "range": {
+                    "start": 954,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "for",
+                  "range": {
+                    "start": 960,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "your",
+                  "range": {
+                    "start": 963,
+                    "duration": 1
+                  }
+                },
+                {
+                  "text": "next",
+                  "range": {
+                    "start": 964,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "Japan",
+                  "range": {
+                    "start": 968,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "trip",
+                  "range": {
+                    "start": 976,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "and",
+                  "range": {
+                    "start": 982,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "follow",
+                  "range": {
+                    "start": 985,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "for",
+                  "range": {
+                    "start": 993,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "more",
+                  "range": {
+                    "start": 996,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "travel",
+                  "range": {
+                    "start": 1000,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "tips",
+                  "range": {
+                    "start": 1008,
+                    "duration": 11
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        }
+      ]
+    }
+  ]
+}

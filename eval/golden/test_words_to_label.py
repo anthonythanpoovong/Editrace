@@ -160,7 +160,6 @@ def test_rerun_replaces_the_existing_captions_track(golden: Path, monkeypatch: p
 @pytest.mark.parametrize(
     ("words", "extra", "message"),
     [
-        ([], {}, "no words found"),
         ([word(DURATION)], {}, "outside the video"),
         ([word(10, duration=400)], {}, "outside the video"),
         ([word(10, duration=0)], {}, "duration < 1"),
@@ -179,6 +178,20 @@ def test_bad_words_are_rejected(
     with pytest.raises(SystemExit, match=re.escape(message)):
         run(monkeypatch, "v01", str(saved(golden, words, **extra)))
     assert (golden / "labels" / "v01.json").read_text() == before
+
+
+def test_no_speech_gives_an_empty_captions_track(golden: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    run(monkeypatch, "v01", str(saved(golden, [], labeling_minutes=1)))
+    assert captions_track(golden)["captions"] == []
+    assert entry(golden)["captions_labeled"] is True
+    assert entry(golden)["captions_labeling_minutes"] == 1
+
+
+def test_words_list_is_required(golden: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    path = golden / "v01.words.json"
+    path.write_text(json.dumps({"video_id": "v01", "frames": DURATION}))
+    with pytest.raises(SystemExit, match="has no 'words' list"):
+        run(monkeypatch, "v01", str(path))
 
 
 def test_missing_manifest_entry_writes_nothing(golden: Path, monkeypatch: pytest.MonkeyPatch) -> None:

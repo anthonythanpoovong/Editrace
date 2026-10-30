@@ -1,0 +1,312 @@
+{
+  "schema_version": "0.1.0",
+  "source": {
+    "duration": 515,
+    "fps": {
+      "num": 30,
+      "den": 1
+    },
+    "resolution": {
+      "width": 720,
+      "height": 1280
+    },
+    "aspect_ratio": {
+      "num": 9,
+      "den": 16
+    },
+    "content_hash": "sha256:70f87d93bf27c6c640998727d09e965d919d7a759ec9c5c4c9bef55b547d0361"
+  },
+  "tracks": [
+    {
+      "id": "video-1",
+      "kind": "video",
+      "slots": [],
+      "cuts": [],
+      "transitions": []
+    },
+    {
+      "id": "captions-1",
+      "kind": "captions",
+      "captions": [
+        {
+          "id": "caption-1",
+          "range": {
+            "start": 6,
+            "duration": 43
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "There's",
+                  "range": {
+                    "start": 6,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "this",
+                  "range": {
+                    "start": 10,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "famous",
+                  "range": {
+                    "start": 14,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "quote",
+                  "range": {
+                    "start": 24,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "that",
+                  "range": {
+                    "start": 33,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "goes",
+                  "range": {
+                    "start": 38,
+                    "duration": 11
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-2",
+          "range": {
+            "start": 67,
+            "duration": 175
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "Those",
+                  "range": {
+                    "start": 67,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "who",
+                  "range": {
+                    "start": 73,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "say",
+                  "range": {
+                    "start": 76,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "they",
+                  "range": {
+                    "start": 81,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "can",
+                  "range": {
+                    "start": 86,
+                    "duration": 13
+                  }
+                },
+                {
+                  "text": "do",
+                  "range": {
+                    "start": 112,
+                    "duration": 8
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "and",
+                  "range": {
+                    "start": 158,
+                    "duration": 1
+                  }
+                },
+                {
+                  "text": "those",
+                  "range": {
+                    "start": 160,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "who",
+                  "range": {
+                    "start": 167,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "say",
+                  "range": {
+                    "start": 170,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "they",
+                  "range": {
+                    "start": 175,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "can't",
+                  "range": {
+                    "start": 179,
+                    "duration": 13
+                  }
+                },
+                {
+                  "text": "talk",
+                  "range": {
+                    "start": 194,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "about",
+                  "range": {
+                    "start": 204,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "those",
+                  "range": {
+                    "start": 214,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "who",
+                  "range": {
+                    "start": 228,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "can",
+                  "range": {
+                    "start": 230,
+                    "duration": 12
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-3",
+          "range": {
+            "start": 262,
+            "duration": 97
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "So",
+                  "range": {
+                    "start": 262,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "my",
+                  "range": {
+                    "start": 266,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "question",
+                  "range": {
+                    "start": 271,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "for",
+                  "range": {
+                    "start": 280,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "you",
+                  "range": {
+                    "start": 282,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "is",
+                  "range": {
+                    "start": 289,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "can",
+                  "range": {
+                    "start": 347,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "you",
+                  "range": {
+                    "start": 354,
+                    "duration": 5
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        }
+      ]
+    }
+  ]
+}

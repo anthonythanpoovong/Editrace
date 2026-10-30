@@ -1,0 +1,874 @@
+{
+  "schema_version": "0.1.0",
+  "source": {
+    "duration": 825,
+    "fps": {
+      "num": 30,
+      "den": 1
+    },
+    "resolution": {
+      "width": 720,
+      "height": 1280
+    },
+    "aspect_ratio": {
+      "num": 9,
+      "den": 16
+    },
+    "content_hash": "sha256:7a773ac429a079888062fe5587efe6e11a635f42a29d2ad9c923d77193c3dcee"
+  },
+  "tracks": [
+    {
+      "id": "video-1",
+      "kind": "video",
+      "slots": [],
+      "cuts": [],
+      "transitions": []
+    },
+    {
+      "id": "captions-1",
+      "kind": "captions",
+      "captions": [
+        {
+          "id": "caption-1",
+          "range": {
+            "start": 43,
+            "duration": 144
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "You",
+                  "range": {
+                    "start": 43,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "are",
+                  "range": {
+                    "start": 54,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "so",
+                  "range": {
+                    "start": 58,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "intense",
+                  "range": {
+                    "start": 69,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "have",
+                  "range": {
+                    "start": 77,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "you",
+                  "range": {
+                    "start": 80,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "blinked",
+                  "range": {
+                    "start": 87,
+                    "duration": 13
+                  }
+                },
+                {
+                  "text": "since",
+                  "range": {
+                    "start": 101,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "you",
+                  "range": {
+                    "start": 112,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "come",
+                  "range": {
+                    "start": 120,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "here",
+                  "range": {
+                    "start": 126,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "jesus",
+                  "range": {
+                    "start": 151,
+                    "duration": 20
+                  }
+                },
+                {
+                  "text": "how",
+                  "range": {
+                    "start": 173,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "we",
+                  "range": {
+                    "start": 182,
+                    "duration": 5
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-2",
+          "range": {
+            "start": 191,
+            "duration": 43
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "I",
+                  "range": {
+                    "start": 191,
+                    "duration": 1
+                  }
+                },
+                {
+                  "text": "like",
+                  "range": {
+                    "start": 192,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "to",
+                  "range": {
+                    "start": 200,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "look",
+                  "range": {
+                    "start": 203,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "at",
+                  "range": {
+                    "start": 209,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "what",
+                  "range": {
+                    "start": 213,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "I",
+                  "range": {
+                    "start": 215,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "like",
+                  "range": {
+                    "start": 218,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "to",
+                  "range": {
+                    "start": 224,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "see",
+                  "range": {
+                    "start": 227,
+                    "duration": 7
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-3",
+          "range": {
+            "start": 240,
+            "duration": 62
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "How",
+                  "range": {
+                    "start": 240,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "long",
+                  "range": {
+                    "start": 252,
+                    "duration": 14
+                  }
+                },
+                {
+                  "text": "until",
+                  "range": {
+                    "start": 272,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "you",
+                  "range": {
+                    "start": 281,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "get",
+                  "range": {
+                    "start": 285,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "bored",
+                  "range": {
+                    "start": 292,
+                    "duration": 10
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-4",
+          "range": {
+            "start": 308,
+            "duration": 72
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "Probably",
+                  "range": {
+                    "start": 308,
+                    "duration": 18
+                  }
+                },
+                {
+                  "text": "over",
+                  "range": {
+                    "start": 327,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "a",
+                  "range": {
+                    "start": 334,
+                    "duration": 1
+                  }
+                },
+                {
+                  "text": "weeked",
+                  "range": {
+                    "start": 335,
+                    "duration": 14
+                  }
+                },
+                {
+                  "text": "maybe",
+                  "range": {
+                    "start": 355,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "a",
+                  "range": {
+                    "start": 360,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "week",
+                  "range": {
+                    "start": 362,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "max",
+                  "range": {
+                    "start": 369,
+                    "duration": 11
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-5",
+          "range": {
+            "start": 380,
+            "duration": 49
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "Man",
+                  "range": {
+                    "start": 380,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "is",
+                  "range": {
+                    "start": 388,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "a",
+                  "range": {
+                    "start": 391,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "needs",
+                  "range": {
+                    "start": 394,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "to",
+                  "range": {
+                    "start": 400,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "move",
+                  "range": {
+                    "start": 404,
+                    "duration": 17
+                  }
+                },
+                {
+                  "text": "bro",
+                  "range": {
+                    "start": 421,
+                    "duration": 8
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-6",
+          "range": {
+            "start": 434,
+            "duration": 21
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "We",
+                  "range": {
+                    "start": 434,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "taking",
+                  "range": {
+                    "start": 436,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "to",
+                  "range": {
+                    "start": 445,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "long",
+                  "range": {
+                    "start": 448,
+                    "duration": 7
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-7",
+          "range": {
+            "start": 502,
+            "duration": 110
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "I",
+                  "range": {
+                    "start": 502,
+                    "duration": 1
+                  }
+                },
+                {
+                  "text": "like",
+                  "range": {
+                    "start": 503,
+                    "duration": 12
+                  }
+                },
+                {
+                  "text": "you're",
+                  "range": {
+                    "start": 515,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "here",
+                  "range": {
+                    "start": 523,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "for",
+                  "range": {
+                    "start": 527,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "a",
+                  "range": {
+                    "start": 533,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "good",
+                  "range": {
+                    "start": 535,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "time",
+                  "range": {
+                    "start": 540,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "not",
+                  "range": {
+                    "start": 549,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "a",
+                  "range": {
+                    "start": 551,
+                    "duration": 1
+                  }
+                },
+                {
+                  "text": "long",
+                  "range": {
+                    "start": 553,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "time",
+                  "range": {
+                    "start": 560,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "and",
+                  "range": {
+                    "start": 568,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "you",
+                  "range": {
+                    "start": 571,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "don't",
+                  "range": {
+                    "start": 573,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "like",
+                  "range": {
+                    "start": 577,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "to",
+                  "range": {
+                    "start": 582,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "waste",
+                  "range": {
+                    "start": 586,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "people's",
+                  "range": {
+                    "start": 593,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "time",
+                  "range": {
+                    "start": 602,
+                    "duration": 10
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-8",
+          "range": {
+            "start": 612,
+            "duration": 46
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "Know",
+                  "range": {
+                    "start": 612,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "you",
+                  "range": {
+                    "start": 615,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "gotta",
+                  "range": {
+                    "start": 618,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "have",
+                  "range": {
+                    "start": 623,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "fun",
+                  "range": {
+                    "start": 626,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "do",
+                  "range": {
+                    "start": 642,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "you",
+                  "range": {
+                    "start": 644,
+                    "duration": 1
+                  }
+                },
+                {
+                  "text": "know",
+                  "range": {
+                    "start": 646,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "what",
+                  "range": {
+                    "start": 649,
+                    "duration": 1
+                  }
+                },
+                {
+                  "text": "i'm",
+                  "range": {
+                    "start": 650,
+                    "duration": 1
+                  }
+                },
+                {
+                  "text": "saying",
+                  "range": {
+                    "start": 651,
+                    "duration": 7
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-9",
+          "range": {
+            "start": 660,
+            "duration": 132
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "mmmm",
+                  "range": {
+                    "start": 660,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "you're",
+                  "range": {
+                    "start": 670,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "using",
+                  "range": {
+                    "start": 675,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "all",
+                  "range": {
+                    "start": 683,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "my",
+                  "range": {
+                    "start": 686,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "trigger",
+                  "range": {
+                    "start": 691,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "words",
+                  "range": {
+                    "start": 698,
+                    "duration": 13
+                  }
+                },
+                {
+                  "text": "I",
+                  "range": {
+                    "start": 721,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "love",
+                  "range": {
+                    "start": 723,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "you",
+                  "range": {
+                    "start": 730,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "I",
+                  "range": {
+                    "start": 750,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "appreciate",
+                  "range": {
+                    "start": 754,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "that",
+                  "range": {
+                    "start": 766,
+                    "duration": 4
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "Thank",
+                  "range": {
+                    "start": 781,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "you",
+                  "range": {
+                    "start": 789,
+                    "duration": 3
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        }
+      ]
+    }
+  ]
+}

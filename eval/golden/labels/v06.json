@@ -1,0 +1,669 @@
+{
+  "schema_version": "0.1.0",
+  "source": {
+    "duration": 789,
+    "fps": {
+      "num": 30,
+      "den": 1
+    },
+    "resolution": {
+      "width": 1080,
+      "height": 1920
+    },
+    "aspect_ratio": {
+      "num": 9,
+      "den": 16
+    },
+    "content_hash": "sha256:9e8fb2f9780200ebedd1724c23f8f272e16889d6e5de3650c9f7d4f255595f40"
+  },
+  "tracks": [
+    {
+      "id": "video-1",
+      "kind": "video",
+      "slots": [],
+      "cuts": [],
+      "transitions": []
+    },
+    {
+      "id": "captions-1",
+      "kind": "captions",
+      "captions": [
+        {
+          "id": "caption-1",
+          "range": {
+            "start": 8,
+            "duration": 135
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "we",
+                  "range": {
+                    "start": 8,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "look",
+                  "range": {
+                    "start": 15,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "down",
+                  "range": {
+                    "start": 23,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "now",
+                  "range": {
+                    "start": 33,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "to",
+                  "range": {
+                    "start": 43,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "sixteen",
+                  "range": {
+                    "start": 50,
+                    "duration": 18
+                  }
+                },
+                {
+                  "text": "olds",
+                  "range": {
+                    "start": 69,
+                    "duration": 16
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "And",
+                  "range": {
+                    "start": 102,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "say",
+                  "range": {
+                    "start": 106,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "where",
+                  "range": {
+                    "start": 114,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "you",
+                  "range": {
+                    "start": 121,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "gonna",
+                  "range": {
+                    "start": 124,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "go",
+                  "range": {
+                    "start": 128,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "to",
+                  "range": {
+                    "start": 131,
+                    "duration": 1
+                  }
+                },
+                {
+                  "text": "college",
+                  "range": {
+                    "start": 132,
+                    "duration": 11
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-2",
+          "range": {
+            "start": 165,
+            "duration": 66
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "What",
+                  "range": {
+                    "start": 165,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "are",
+                  "range": {
+                    "start": 171,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "you",
+                  "range": {
+                    "start": 176,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "going",
+                  "range": {
+                    "start": 183,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "to",
+                  "range": {
+                    "start": 193,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "do",
+                  "range": {
+                    "start": 196,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "for",
+                  "range": {
+                    "start": 202,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "the",
+                  "range": {
+                    "start": 205,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "rest",
+                  "range": {
+                    "start": 208,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "of",
+                  "range": {
+                    "start": 216,
+                    "duration": 1
+                  }
+                },
+                {
+                  "text": "your",
+                  "range": {
+                    "start": 217,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "life",
+                  "range": {
+                    "start": 221,
+                    "duration": 10
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-3",
+          "range": {
+            "start": 274,
+            "duration": 107
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "And",
+                  "range": {
+                    "start": 274,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "it's",
+                  "range": {
+                    "start": 280,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "like",
+                  "range": {
+                    "start": 286,
+                    "duration": 7
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "They're",
+                  "range": {
+                    "start": 300,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "not",
+                  "range": {
+                    "start": 305,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "fully",
+                  "range": {
+                    "start": 319,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "baked",
+                  "range": {
+                    "start": 329,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "yet",
+                  "range": {
+                    "start": 340,
+                    "duration": 9
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "How",
+                  "range": {
+                    "start": 358,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "do",
+                  "range": {
+                    "start": 363,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "they",
+                  "range": {
+                    "start": 366,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "know",
+                  "range": {
+                    "start": 372,
+                    "duration": 9
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-4",
+          "range": {
+            "start": 411,
+            "duration": 177
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "Give",
+                  "range": {
+                    "start": 411,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "them",
+                  "range": {
+                    "start": 414,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "a",
+                  "range": {
+                    "start": 419,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "break",
+                  "range": {
+                    "start": 422,
+                    "duration": 15
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "Just",
+                  "range": {
+                    "start": 459,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "say",
+                  "range": {
+                    "start": 463,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "look",
+                  "range": {
+                    "start": 473,
+                    "duration": 13
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "I",
+                  "range": {
+                    "start": 496,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "think",
+                  "range": {
+                    "start": 501,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "After",
+                  "range": {
+                    "start": 510,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "High",
+                  "range": {
+                    "start": 520,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "school",
+                  "range": {
+                    "start": 528,
+                    "duration": 12
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "take",
+                  "range": {
+                    "start": 554,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "a",
+                  "range": {
+                    "start": 561,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "year",
+                  "range": {
+                    "start": 564,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "off",
+                  "range": {
+                    "start": 573,
+                    "duration": 15
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-5",
+          "range": {
+            "start": 594,
+            "duration": 195
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "Take",
+                  "range": {
+                    "start": 594,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "two",
+                  "range": {
+                    "start": 601,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "years",
+                  "range": {
+                    "start": 606,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "off",
+                  "range": {
+                    "start": 615,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "Join",
+                  "range": {
+                    "start": 632,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "the",
+                  "range": {
+                    "start": 638,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "peace",
+                  "range": {
+                    "start": 642,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "corps",
+                  "range": {
+                    "start": 651,
+                    "duration": 7
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "Travel",
+                  "range": {
+                    "start": 669,
+                    "duration": 14
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "Go",
+                  "range": {
+                    "start": 703,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "figure",
+                  "range": {
+                    "start": 706,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "things",
+                  "range": {
+                    "start": 716,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "out",
+                  "range": {
+                    "start": 726,
+                    "duration": 12
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "Or",
+                  "range": {
+                    "start": 755,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "just",
+                  "range": {
+                    "start": 759,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "enjoy",
+                  "range": {
+                    "start": 766,
+                    "duration": 12
+                  }
+                },
+                {
+                  "text": "yourself",
+                  "range": {
+                    "start": 778,
+                    "duration": 11
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        }
+      ]
+    }
+  ]
+}

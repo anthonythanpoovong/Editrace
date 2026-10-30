@@ -91,9 +91,10 @@ def main() -> None:
         sys.exit(
             f"labeler saw {saved.get('frames')} frames but the label says {duration}; was the right file and fps used?"
         )
-    words = saved.get("words") or []
-    if not words:
-        sys.exit(f"no words found in {words_path}")
+    # An empty list is valid: a video with no speech gets an empty captions track (LABELING.md, captions rule 2).
+    words = saved.get("words")
+    if not isinstance(words, list):
+        sys.exit(f"{words_path} has no 'words' list")
     language = saved.get("language")
     if language and not LANGUAGE_PATTERN.fullmatch(language):
         sys.exit(f"'{language}' isn't a valid BCP 47 language tag (e.g. 'en', 'pt-BR')")

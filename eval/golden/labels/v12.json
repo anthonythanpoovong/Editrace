@@ -1,0 +1,446 @@
+{
+  "schema_version": "0.1.0",
+  "source": {
+    "duration": 305,
+    "fps": {
+      "num": 30,
+      "den": 1
+    },
+    "resolution": {
+      "width": 720,
+      "height": 1280
+    },
+    "aspect_ratio": {
+      "num": 9,
+      "den": 16
+    },
+    "content_hash": "sha256:049654e3db66adbecf1fb2c9df8c0da83ec43d57b8139c750af9b257220df21e"
+  },
+  "tracks": [
+    {
+      "id": "video-1",
+      "kind": "video",
+      "slots": [],
+      "cuts": [],
+      "transitions": []
+    },
+    {
+      "id": "captions-1",
+      "kind": "captions",
+      "captions": [
+        {
+          "id": "caption-1",
+          "range": {
+            "start": 0,
+            "duration": 28
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "All",
+                  "range": {
+                    "start": 0,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "I",
+                  "range": {
+                    "start": 3,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "to",
+                  "range": {
+                    "start": 6,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "do",
+                  "range": {
+                    "start": 11,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "is",
+                  "range": {
+                    "start": 15,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "travel",
+                  "range": {
+                    "start": 17,
+                    "duration": 11
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-2",
+          "range": {
+            "start": 40,
+            "duration": 13
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "That's",
+                  "range": {
+                    "start": 40,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "it",
+                  "range": {
+                    "start": 49,
+                    "duration": 4
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-3",
+          "range": {
+            "start": 62,
+            "duration": 31
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "I",
+                  "range": {
+                    "start": 62,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "want",
+                  "range": {
+                    "start": 64,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "to",
+                  "range": {
+                    "start": 68,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "learn",
+                  "range": {
+                    "start": 70,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "new",
+                  "range": {
+                    "start": 75,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "cultures",
+                  "range": {
+                    "start": 79,
+                    "duration": 14
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-4",
+          "range": {
+            "start": 94,
+            "duration": 73
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "I",
+                  "range": {
+                    "start": 94,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "want",
+                  "range": {
+                    "start": 96,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "to",
+                  "range": {
+                    "start": 100,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "try",
+                  "range": {
+                    "start": 102,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "new",
+                  "range": {
+                    "start": 108,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "foods",
+                  "range": {
+                    "start": 111,
+                    "duration": 13
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "I",
+                  "range": {
+                    "start": 125,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "want",
+                  "range": {
+                    "start": 130,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "to",
+                  "range": {
+                    "start": 136,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "meet",
+                  "range": {
+                    "start": 146,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "new",
+                  "range": {
+                    "start": 151,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "people",
+                  "range": {
+                    "start": 155,
+                    "duration": 12
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-5",
+          "range": {
+            "start": 169,
+            "duration": 81
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "I",
+                  "range": {
+                    "start": 169,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "want",
+                  "range": {
+                    "start": 172,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "to",
+                  "range": {
+                    "start": 178,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "see",
+                  "range": {
+                    "start": 180,
+                    "duration": 13
+                  }
+                },
+                {
+                  "text": "this",
+                  "range": {
+                    "start": 194,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "beaitiful",
+                  "range": {
+                    "start": 201,
+                    "duration": 14
+                  }
+                },
+                {
+                  "text": "earth",
+                  "range": {
+                    "start": 215,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "that",
+                  "range": {
+                    "start": 223,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "we",
+                  "range": {
+                    "start": 226,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "call",
+                  "range": {
+                    "start": 231,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "home",
+                  "range": {
+                    "start": 239,
+                    "duration": 11
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-6",
+          "range": {
+            "start": 250,
+            "duration": 52
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "Like",
+                  "range": {
+                    "start": 250,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "that's",
+                  "range": {
+                    "start": 281,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "all",
+                  "range": {
+                    "start": 288,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "I",
+                  "range": {
+                    "start": 292,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "want",
+                  "range": {
+                    "start": 294,
+                    "duration": 8
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        }
+      ]
+    }
+  ]
+}

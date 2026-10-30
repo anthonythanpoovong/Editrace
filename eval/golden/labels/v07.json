@@ -1,0 +1,748 @@
+{
+  "schema_version": "0.1.0",
+  "source": {
+    "duration": 696,
+    "fps": {
+      "num": 2997,
+      "den": 125
+    },
+    "resolution": {
+      "width": 720,
+      "height": 1280
+    },
+    "aspect_ratio": {
+      "num": 9,
+      "den": 16
+    },
+    "content_hash": "sha256:49d73d62f0d2998fb93a5b437d4abf4f348a4cc8a60893d3dc7d23c17dd5437c"
+  },
+  "tracks": [
+    {
+      "id": "video-1",
+      "kind": "video",
+      "slots": [],
+      "cuts": [],
+      "transitions": []
+    },
+    {
+      "id": "captions-1",
+      "kind": "captions",
+      "captions": [
+        {
+          "id": "caption-1",
+          "range": {
+            "start": 0,
+            "duration": 68
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "The",
+                  "range": {
+                    "start": 0,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "blood",
+                  "range": {
+                    "start": 3,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "the",
+                  "range": {
+                    "start": 10,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "sweat",
+                  "range": {
+                    "start": 12,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "the",
+                  "range": {
+                    "start": 21,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "tears",
+                  "range": {
+                    "start": 24,
+                    "duration": 8
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "The",
+                  "range": {
+                    "start": 32,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "working",
+                  "range": {
+                    "start": 34,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "the",
+                  "range": {
+                    "start": 45,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "working",
+                  "range": {
+                    "start": 47,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "the",
+                  "range": {
+                    "start": 57,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "working",
+                  "range": {
+                    "start": 59,
+                    "duration": 9
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-2",
+          "range": {
+            "start": 68,
+            "duration": 82
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "The",
+                  "range": {
+                    "start": 68,
+                    "duration": 1
+                  }
+                },
+                {
+                  "text": "working",
+                  "range": {
+                    "start": 70,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "and",
+                  "range": {
+                    "start": 79,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "no",
+                  "range": {
+                    "start": 81,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "applause",
+                  "range": {
+                    "start": 84,
+                    "duration": 12
+                  }
+                },
+                {
+                  "text": "the",
+                  "range": {
+                    "start": 96,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "working",
+                  "range": {
+                    "start": 98,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "and",
+                  "range": {
+                    "start": 107,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "no",
+                  "range": {
+                    "start": 109,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "applause",
+                  "range": {
+                    "start": 113,
+                    "duration": 9
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "the",
+                  "range": {
+                    "start": 122,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "working",
+                  "range": {
+                    "start": 125,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "and",
+                  "range": {
+                    "start": 133,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "no",
+                  "range": {
+                    "start": 135,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "applause",
+                  "range": {
+                    "start": 138,
+                    "duration": 12
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-3",
+          "range": {
+            "start": 156,
+            "duration": 219
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "You're",
+                  "range": {
+                    "start": 156,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "almost",
+                  "range": {
+                    "start": 161,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "there",
+                  "range": {
+                    "start": 172,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "you're",
+                  "range": {
+                    "start": 197,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "almost",
+                  "range": {
+                    "start": 201,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "there",
+                  "range": {
+                    "start": 211,
+                    "duration": 9
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "You",
+                  "range": {
+                    "start": 238,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "are",
+                  "range": {
+                    "start": 240,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "almost",
+                  "range": {
+                    "start": 243,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "there",
+                  "range": {
+                    "start": 254,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "Do",
+                  "range": {
+                    "start": 273,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "not",
+                  "range": {
+                    "start": 276,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "give",
+                  "range": {
+                    "start": 281,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "up",
+                  "range": {
+                    "start": 285,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "now",
+                  "range": {
+                    "start": 287,
+                    "duration": 10
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "Do",
+                  "range": {
+                    "start": 305,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "not",
+                  "range": {
+                    "start": 308,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "turn",
+                  "range": {
+                    "start": 315,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "left",
+                  "range": {
+                    "start": 322,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "now",
+                  "range": {
+                    "start": 332,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "do",
+                  "range": {
+                    "start": 343,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "not",
+                  "range": {
+                    "start": 347,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "turn",
+                  "range": {
+                    "start": 353,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "right",
+                  "range": {
+                    "start": 359,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "now",
+                  "range": {
+                    "start": 366,
+                    "duration": 9
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-4",
+          "range": {
+            "start": 376,
+            "duration": 195
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "Fix",
+                  "range": {
+                    "start": 376,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "your",
+                  "range": {
+                    "start": 386,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "fat",
+                  "range": {
+                    "start": 390,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "focus",
+                  "range": {
+                    "start": 399,
+                    "duration": 12
+                  }
+                },
+                {
+                  "text": "on",
+                  "range": {
+                    "start": 412,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "the",
+                  "range": {
+                    "start": 421,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "finsih",
+                  "range": {
+                    "start": 425,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "line",
+                  "range": {
+                    "start": 433,
+                    "duration": 8
+                  }
+                },
+                {
+                  "text": "You're",
+                  "range": {
+                    "start": 451,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "almost",
+                  "range": {
+                    "start": 456,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "there",
+                  "range": {
+                    "start": 467,
+                    "duration": 9
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "Stay",
+                  "range": {
+                    "start": 493,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "down",
+                  "range": {
+                    "start": 500,
+                    "duration": 10
+                  }
+                },
+                {
+                  "text": "Stay",
+                  "range": {
+                    "start": 517,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "hungry",
+                  "range": {
+                    "start": 523,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "stay",
+                  "range": {
+                    "start": 535,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "encouraged",
+                  "range": {
+                    "start": 542,
+                    "duration": 13
+                  }
+                },
+                {
+                  "text": "they",
+                  "range": {
+                    "start": 556,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "built",
+                  "range": {
+                    "start": 559,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "up",
+                  "range": {
+                    "start": 567,
+                    "duration": 4
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        },
+        {
+          "id": "caption-5",
+          "range": {
+            "start": 574,
+            "duration": 119
+          },
+          "lines": [
+            {
+              "words": [
+                {
+                  "text": "Exercise",
+                  "range": {
+                    "start": 574,
+                    "duration": 16
+                  }
+                },
+                {
+                  "text": "your",
+                  "range": {
+                    "start": 590,
+                    "duration": 3
+                  }
+                },
+                {
+                  "text": "faith",
+                  "range": {
+                    "start": 593,
+                    "duration": 7
+                  }
+                },
+                {
+                  "text": "and",
+                  "range": {
+                    "start": 601,
+                    "duration": 2
+                  }
+                },
+                {
+                  "text": "move",
+                  "range": {
+                    "start": 604,
+                    "duration": 5
+                  }
+                },
+                {
+                  "text": "forward",
+                  "range": {
+                    "start": 610,
+                    "duration": 11
+                  }
+                }
+              ]
+            },
+            {
+              "words": [
+                {
+                  "text": "You're",
+                  "range": {
+                    "start": 622,
+                    "duration": 4
+                  }
+                },
+                {
+                  "text": "almost",
+                  "range": {
+                    "start": 627,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "there",
+                  "range": {
+                    "start": 638,
+                    "duration": 9
+                  }
+                },
+                {
+                  "text": "You",
+                  "range": {
+                    "start": 659,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "are",
+                  "range": {
+                    "start": 666,
+                    "duration": 6
+                  }
+                },
+                {
+                  "text": "almost",
+                  "range": {
+                    "start": 672,
+                    "duration": 11
+                  }
+                },
+                {
+                  "text": "there",
+                  "range": {
+                    "start": 683,
+                    "duration": 10
+                  }
+                }
+              ]
+            }
+          ],
+          "confidence": 1,
+          "provenance": {
+            "detector": "manual",
+            "version": "1"
+          },
+          "language": "en"
+        }
+      ]
+    }
+  ]
+}

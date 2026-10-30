@@ -169,6 +169,245 @@
       "notes": [],
       "ambiguous": [],
       "exclude": []
+    },
+    {
+      "id": "v06",
+      "content_hash": "sha256:9e8fb2f9780200ebedd1724c23f8f272e16889d6e5de3650c9f7d4f255595f40",
+      "original_sha256": "36c91e95079d93b0338bba3404200dfe1c371193e7bb9cbb56150ef95683e6d5",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 789,
+      "resolution": {
+        "width": 1080,
+        "height": 1920
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "talking-head",
+        "jump-cuts",
+        "text-heavy"
+      ],
+      "music": "none",
+      "labeled": false,
+      "labeling_minutes": null,
+      "notes": [],
+      "ambiguous": [],
+      "exclude": [],
+      "captions_labeled": true,
+      "captions_labeling_minutes": 59
+    },
+    {
+      "id": "v07",
+      "content_hash": "sha256:49d73d62f0d2998fb93a5b437d4abf4f348a4cc8a60893d3dc7d23c17dd5437c",
+      "original_sha256": "a459ee955442183cb55bf3d61599bdc5120596e99277fd53e6378627d200011d",
+      "fps": {
+        "num": 2997,
+        "den": 125
+      },
+      "frames": 696,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "talking-head",
+        "slow-paced",
+        "text-heavy"
+      ],
+      "music": "none",
+      "labeled": false,
+      "labeling_minutes": null,
+      "notes": [],
+      "ambiguous": [],
+      "exclude": [],
+      "captions_labeled": true,
+      "captions_labeling_minutes": 82
+    },
+    {
+      "id": "v08",
+      "content_hash": "sha256:cda1e10cef7f732fc2aca9df7b4fe870e8a39b418da9baab7cfb2ee03365090d",
+      "original_sha256": "9f2cff8c3d8e46f1d8810adabdb52834cedf0a191251b12fa060da6de519ab10",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 426,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "talking-head",
+        "slow-paced",
+        "text-heavy"
+      ],
+      "music": null,
+      "labeled": false,
+      "labeling_minutes": null,
+      "notes": [],
+      "ambiguous": [],
+      "exclude": [],
+      "captions_labeled": true,
+      "captions_labeling_minutes": 12
+    },
+    {
+      "id": "v09",
+      "content_hash": "sha256:e01d5c8542a8a63115bc02956615943a5dddd955649fe3c1be56d84be85619e5",
+      "original_sha256": "410b56fc58ea841c1da948bfa22560d67573ca6de69b38987fd0532cd0b2ad7b",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 1023,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "talking-head",
+        "montage",
+        "text-heavy"
+      ],
+      "music": null,
+      "labeled": false,
+      "labeling_minutes": null,
+      "notes": [
+        "captions: 1 ambiguous word(s) at frames [749]"
+      ],
+      "ambiguous": [
+        749
+      ],
+      "exclude": [],
+      "captions_labeled": true,
+      "captions_labeling_minutes": 87
+    },
+    {
+      "id": "v10",
+      "content_hash": "sha256:70f87d93bf27c6c640998727d09e965d919d7a759ec9c5c4c9bef55b547d0361",
+      "original_sha256": "441f9d43a32e22501d71bbacb6d116ac526bc55fc931c7f4e98b0d7ce9bd3048",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 515,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "talking-head",
+        "jump-cuts",
+        "montage",
+        "text-heavy"
+      ],
+      "music": "unknown",
+      "labeled": false,
+      "labeling_minutes": null,
+      "notes": [],
+      "ambiguous": [],
+      "exclude": [],
+      "captions_labeled": true,
+      "captions_labeling_minutes": 32
+    },
+    {
+      "id": "v11",
+      "content_hash": "sha256:7a773ac429a079888062fe5587efe6e11a635f42a29d2ad9c923d77193c3dcee",
+      "original_sha256": "7d4c0e15dad9c001fc3274ea3f064431e1fea7aded44748902c0732ad18887cf",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 825,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "talking-head"
+      ],
+      "music": null,
+      "labeled": false,
+      "labeling_minutes": null,
+      "notes": [
+        "captions: 3 ambiguous word(s) at frames [173, 182, 404]"
+      ],
+      "ambiguous": [
+        173,
+        182,
+        404
+      ],
+      "exclude": [],
+      "captions_labeled": true,
+      "captions_labeling_minutes": 43
+    },
+    {
+      "id": "v12",
+      "content_hash": "sha256:049654e3db66adbecf1fb2c9df8c0da83ec43d57b8139c750af9b257220df21e",
+      "original_sha256": "904cfb3f7fae8635d7c50986b7face3f3c980b2722076009dd84fa0db7223e40",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 305,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "montage",
+        "text-heavy"
+      ],
+      "music": null,
+      "labeled": false,
+      "labeling_minutes": null,
+      "notes": [],
+      "ambiguous": [],
+      "exclude": [],
+      "captions_labeled": true,
+      "captions_labeling_minutes": 27
+    },
+    {
+      "id": "v13",
+      "content_hash": "sha256:e5432f8be6a7079000f1e2da8c476fa18c50f2358dc20004de717ca8d6904f14",
+      "original_sha256": "156ad21643678c1c6f5270bf54a8e3b53b12f4273064eef163b891e0bb2bc500",
+      "fps": {
+        "num": 30,
+        "den": 1
+      },
+      "frames": 416,
+      "resolution": {
+        "width": 720,
+        "height": 1280
+      },
+      "vfr": false,
+      "rights": "full",
+      "edit_styles": [
+        "slow-paced",
+        "text-heavy"
+      ],
+      "music": null,
+      "labeled": false,
+      "labeling_minutes": null,
+      "notes": [],
+      "ambiguous": [],
+      "exclude": [],
+      "captions_labeled": true,
+      "captions_labeling_minutes": 1
     }
   ]
 }
