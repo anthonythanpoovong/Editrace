@@ -6,11 +6,13 @@ seam between this module and the model is `Transcriber.transcribe()`, so tests i
 model or run ffmpeg.
 """
 
+import math
 import shutil
 import subprocess
 import tempfile
+import wave
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, ClassVar, Protocol
 
@@ -55,6 +57,63 @@ def _extract_audio(video: Path, audio: Path, ffmpeg_dir: str | None = None) -> N
         raise RuntimeError(f"ffmpeg failed to extract audio: {result.stderr[-2000:]}")
 
 
+ENVELOPE_HOP_S = 0.01
+ENVELOPE_WINDOW_S = 0.02
+
+
+def _energy_db(audio: Path) -> list[float]:
+    """Loudness of a 16-bit mono wav in dB, one value per `ENVELOPE_HOP_S` (windows of `ENVELOPE_WINDOW_S`). numpy
+    comes with faster-whisper, so it is imported here, not at module level."""
+    import numpy as np
+
+    with wave.open(str(audio), "rb") as f:
+        rate = f.getframerate()
+        samples = np.frombuffer(f.readframes(f.getnframes()), dtype=np.int16)
+    x = samples.astype(np.float64) / 32768.0
+    hop, window = round(rate * ENVELOPE_HOP_S), round(rate * ENVELOPE_WINDOW_S)
+    if len(x) < window:
+        return []
+    starts = np.arange(0, len(x) - window + 1, hop)
+    squares = np.cumsum(np.concatenate(([0.0], x * x)))
+    mean_square = (squares[starts + window] - squares[starts]) / window
+    return (10 * np.log10(mean_square + 1e-12)).tolist()
+
+
+def refine_word_starts(
+    words: Sequence[TranscribedWord],
+    energy_db: Sequence[float],
+    hop_s: float = ENVELOPE_HOP_S,
+    fraction: float = 0.5,
+    min_shift_s: float = 0.15,
+    min_word_s: float = 0.03,
+) -> list[TranscribedWord]:
+    """Whisper stretches the first word after a pause back into the silence before it, so its start can be hundreds of
+    milliseconds early. Snap a word's start forward to where the audio gets loud: the first moment inside the word
+    that reaches `fraction` of the way (in dB) from the file's noise floor to the word's own peak. A start is only
+    moved if that onset is at least `min_shift_s` later (so ordinary dips between words are left alone), never
+    earlier than Whisper's start and never so late that the word is shorter than `min_word_s`."""
+    if not energy_db:
+        return list(words)
+    floor = sorted(energy_db)[len(energy_db) // 10]
+    refined = []
+    for w in words:
+        first = max(0, math.ceil(w.start_s / hop_s))
+        last = min(len(energy_db) - 1, math.floor(w.end_s / hop_s))
+        span = energy_db[first : last + 1]
+        if not span:
+            refined.append(w)
+            continue
+        threshold = floor + fraction * (max(span) - floor)
+        onset_s = next(
+            ((first + i) * hop_s for i, db in enumerate(span) if db >= threshold),
+            w.start_s,
+        )
+        if onset_s - w.start_s >= min_shift_s and w.end_s - onset_s >= min_word_s:
+            w = replace(w, start_s=onset_s)
+        refined.append(w)
+    return refined
+
+
 class WhisperTranscriber:
     """The real transcriber: faster-whisper (CTranslate2), lazily loaded so constructing a worker never downloads a
     model. Optional dependency -- see pyproject.toml's `captions` extra."""
@@ -65,12 +124,14 @@ class WhisperTranscriber:
         device: str = "auto",
         compute_type: str = "default",
         vad_filter: bool = True,
+        refine_starts: bool = True,
         ffmpeg_dir: str | None = None,
     ) -> None:
         self.model_size = model_size
         self.device = device
         self.compute_type = compute_type
         self.vad_filter = vad_filter
+        self.refine_starts = refine_starts
         self.ffmpeg_dir = ffmpeg_dir
         self._model: Any = None
 
@@ -101,6 +162,8 @@ class WhisperTranscriber:
                 for w in segment.words or []
                 if w.word.strip()
             ]
+            if self.refine_starts:
+                words = refine_word_starts(words, _energy_db(audio))
         return Transcription(info.language, words)
 
 
@@ -165,7 +228,7 @@ def _line_to_caption(
 
 class CaptionsWorker(Worker):
     name: ClassVar[str] = "captions"
-    version: ClassVar[str] = "0.1.0"
+    version: ClassVar[str] = "0.2.0"
     # Modal wrapper data only (#7); the base never imports Modal. T4 is the modest default for Whisper small/medium.
     compute: ClassVar[Compute] = Compute(gpu="T4", memory_mb=8192, timeout_s=900)
 
@@ -179,6 +242,7 @@ class CaptionsWorker(Worker):
         max_chars_per_line: int = 24,
         pause_s: float = 0.6,
         vad_filter: bool = True,
+        refine_starts: bool = True,
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
@@ -188,8 +252,9 @@ class CaptionsWorker(Worker):
         self.max_chars_per_line = max_chars_per_line
         self.pause_s = pause_s
         self.vad_filter = vad_filter
+        self.refine_starts = refine_starts
         self.transcriber = transcriber or WhisperTranscriber(
-            model_size=model_size, vad_filter=vad_filter
+            model_size=model_size, vad_filter=vad_filter, refine_starts=refine_starts
         )
 
     def params(self) -> Mapping[str, Any]:
@@ -200,6 +265,7 @@ class CaptionsWorker(Worker):
             "max_chars_per_line": self.max_chars_per_line,
             "pause_s": self.pause_s,
             "vad_filter": self.vad_filter,
+            "refine_starts": self.refine_starts,
         }
 
     def detect(self, video: Path, job: Job) -> Partial:

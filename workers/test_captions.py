@@ -20,6 +20,7 @@ from workers.captions import (
     _group_into_lines,
     _line_to_caption,
     _to_frame,
+    refine_word_starts,
 )
 from workers.storage import LocalFetcher
 
@@ -180,7 +181,7 @@ def test_transcribed_words_land_on_a_valid_captions_track(
     assert track["id"] == "captions-1" and track["kind"] == "captions"
     assert len(track["captions"]) == 1
     caption = track["captions"][0]
-    assert caption["provenance"] == {"detector": "captions", "version": "0.1.0"}
+    assert caption["provenance"] == {"detector": "captions", "version": "0.2.0"}
     assert [w["text"] for w in caption["lines"][0]["words"]] == ["Hello", "world"]
     # CaptionWord has no confidence field, so the base must not stamp provenance onto it.
     assert "provenance" not in caption["lines"][0]["words"][0]
@@ -213,6 +214,7 @@ def test_params_reflect_the_configured_settings(
         max_chars_per_line=20,
         pause_s=0.4,
         vad_filter=False,
+        refine_starts=False,
     )
     assert worker.params() == {
         "model_size": "medium",
@@ -221,6 +223,7 @@ def test_params_reflect_the_configured_settings(
         "max_chars_per_line": 20,
         "pause_s": 0.4,
         "vad_filter": False,
+        "refine_starts": False,
     }
 
 
@@ -264,3 +267,50 @@ def test_ffmpeg_failure_surfaces_stderr(
 def test_whisper_transcriber_construction_is_lazy() -> None:
     # Must not import faster-whisper (an optional, heavy dependency) just to build the object.
     WhisperTranscriber(model_size="tiny")
+
+
+def envelope(*stretches: tuple[float, float]) -> list[float]:
+    """A 10 ms loudness envelope built from (seconds, dB) stretches."""
+    return [db for seconds, db in stretches for _ in range(round(seconds * 100))]
+
+
+def test_a_start_inside_silence_snaps_forward_to_where_the_audio_gets_loud() -> None:
+    # Whisper says "hello" starts at 0.1 s, but the audio is silent until 0.6 s.
+    env = envelope((0.6, -60), (0.4, -10), (0.2, -60))
+    [hello] = refine_word_starts([word("hello", 0.1, 1.0)], env)
+    assert hello.start_s == pytest.approx(0.6, abs=0.011)
+    assert hello.end_s == 1.0
+
+
+def test_a_start_already_on_the_sound_is_left_alone() -> None:
+    env = envelope((0.2, -60), (0.8, -10), (0.2, -60))
+    words = [word("hello", 0.2, 1.0)]
+    assert refine_word_starts(words, env) == words
+
+
+def test_a_short_dip_inside_a_word_does_not_move_its_start() -> None:
+    # Loud, a 50 ms dip, loud again: the word starts on the first stretch, so it stays put.
+    env = envelope((0.3, -10), (0.05, -60), (0.3, -10), (0.2, -60))
+    words = [word("hello", 0.0, 0.65)]
+    assert refine_word_starts(words, env) == words
+
+
+def test_a_start_never_moves_so_late_that_the_word_vanishes() -> None:
+    env = envelope((0.5, -60), (0.01, -10), (0.5, -60))
+    words = [word("click", 0.0, 0.52)]
+    assert refine_word_starts(words, env) == words
+
+
+def test_each_word_is_refined_against_its_own_peak() -> None:
+    # A quiet word after a loud one is judged by its own level, not the loud word's.
+    env = envelope((0.3, -10), (0.4, -60), (0.3, -35), (0.2, -60))
+    loud, quiet = refine_word_starts(
+        [word("loud", 0.0, 0.3), word("quiet", 0.3, 1.0)], env
+    )
+    assert loud.start_s == 0.0
+    assert quiet.start_s == pytest.approx(0.7, abs=0.011)
+
+
+def test_no_audio_means_no_change() -> None:
+    words = [word("hello", 0.0, 0.5)]
+    assert refine_word_starts(words, []) == words
